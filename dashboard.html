@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FONEVI — Dashboard</title>
+  <link rel="stylesheet" href="main.css"/>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <link rel="stylesheet" href="loading.css"/>
+  <!-- Favicon + PWA -->
+  <link rel="icon"             href="favicon.svg"            type="image/svg+xml"/>
+  <link rel="icon"             href="icon-32x32.svg"   sizes="32x32" type="image/svg+xml"/>
+  <link rel="icon"             href="icon-16x16.svg"   sizes="16x16" type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="icon-180x180.svg" sizes="180x180"/>
+  <link rel="apple-touch-icon" href="icon-152x152.svg" sizes="152x152"/>
+  <link rel="manifest"         href="manifest.json"/>
+  <meta name="mobile-web-app-capable"                content="yes"/>
+  <meta name="apple-mobile-web-app-capable"          content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title"            content="FONEVI"/>
+  <meta name="theme-color"                           content="#0f2d52"/>
+  <link rel="stylesheet" href="transitions.css"/>
+  <link rel="stylesheet" href="darkmode.css"/>
+</head>
+<body>
+<div class="app-layout" id="app-layout">
+  <div class="main-content">
+    <div class="page-content">
+
+      <!-- KPIs -->
+      <div class="kpi-grid stagger" id="kpiGrid"></div>
+
+      <!-- Fila 1: Gráfico de barras + Gráfico de línea -->
+      <div class="grid-2" style="margin-bottom:20px;">
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Aportes vs Créditos — 2026</span>
+            <div class="tab-bar" id="tabBarras" style="margin:0;">
+              <button class="tab-btn active" data-tab="mensual">Mensual</button>
+              <button class="tab-btn" data-tab="trimestral">Trimestral</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="position:relative;height:220px;">
+              <canvas id="chartBarras"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Tendencia de ahorro acumulado</span>
+            <a href="reportes.html" class="btn-link">Ver reporte →</a>
+          </div>
+          <div class="card-body">
+            <div style="position:relative;height:220px;">
+              <canvas id="chartLinea"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Fila 2: Actividad + Dona distribución -->
+      <div class="grid-main-aside" style="margin-bottom:20px;">
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Actividad reciente</span>
+            <a href="contabilidad.html" class="btn-link">Ver todo →</a>
+          </div>
+          <div id="actividadReciente"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Distribución de fondos</span>
+          </div>
+          <div class="card-body">
+            <div style="position:relative;height:250px;">
+              <canvas id="chartDona"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Fila 3: Socios + Alertas -->
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Estado de socios</span>
+            <a href="socios.html" class="btn-link">Ver todos →</a>
+          </div>
+          <table class="data-table" id="sociosResumen"></table>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Alertas del sistema</span>
+            <a href="notificaciones.html" class="btn-link">Gestionar →</a>
+          </div>
+          <div class="card-body" id="alertasPanel"></div>
+        </div>
+      </div>
+
+      <!-- Acceso rápido -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Acceso rápido</span></div>
+        <div class="card-body">
+          <div class="grid-4" id="accesoRapido"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Chart.js 4 — CDN -->
+<script src="darkmode.js"></script>
+<script src="transitions.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- FONEVI JS -->
+<script src="data.js"></script>
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script src="layout.js"></script>
+<script src="app.js"></script>
+<script src="charts.js"></script>
+<script src="loading.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var s = Auth.getSession();
+  buildLayout(
+    "Panel de Control",
+    "Bienvenido, " + (s ? s.nombre.split(" ")[0] : "") + " \u2014 " + DB.config.periodo_actual,
+    '<a href="socios.html" class="btn btn-primary">+ Nuevo socio</a>'
+  );
+
+  initChartDefaults();
+
+  // ── Mostrar skeletons inmediatamente ──────────────────────
+  Skeleton.show("kpiGrid",          "kpis");
+  Skeleton.show("actividadReciente","activityRows", 5);
+  Skeleton.show("sociosResumen",    "tableRows",    5, 3);
+  Skeleton.show("alertasPanel",     "text",         3);
+
+  // Placeholder para gráficos
+  var barsWrap = document.querySelector("#chartBarras")?.parentElement;
+  var lineWrap = document.querySelector("#chartLinea")?.parentElement;
+  var donaWrap = document.querySelector("#chartDona")?.parentElement;
+  if (barsWrap) barsWrap.innerHTML = Skeleton.chartBar(220);
+  if (lineWrap) lineWrap.innerHTML = Skeleton.chartLine(220);
+  if (donaWrap) donaWrap.innerHTML = Skeleton.chartDona();
+
+  // ── Cargar secciones con retardos escalonados ─────────────
+  // KPIs primero (más importante)
+  setTimeout(function() {
+    renderKPIs();
+    Skeleton.hide("kpiGrid");
+  }, 400);
+
+  // Actividad y alertas
+  setTimeout(function() {
+    renderActividad();   Skeleton.hide("actividadReciente");
+    renderAlertas();     Skeleton.hide("alertasPanel");
+    renderAccesoRapido();
+  }, 650);
+
+  // Tabla de socios
+  setTimeout(function() {
+    renderSociosResumen();
+    Skeleton.hide("sociosResumen");
+  }, 800);
+
+  // Gráficos (los más pesados, al final)
+  setTimeout(function() {
+    if (barsWrap) barsWrap.innerHTML = '<canvas id="chartBarras"></canvas>';
+    if (lineWrap) lineWrap.innerHTML = '<canvas id="chartLinea"></canvas>';
+    if (donaWrap) donaWrap.innerHTML = '<canvas id="chartDona"></canvas>';
+    crearGraficoBarrasTabbed("chartBarras", "mensual");
+    crearGraficoLinea("chartLinea");
+    crearGraficoDistribucion("chartDona");
+  }, 950);
+
+  // Switch mensual / trimestral
+  initTabs("tabBarras", function(tab) {
+    var bw = document.querySelector("#chartBarras")?.parentElement;
+    if (bw) bw.innerHTML = '<canvas id="chartBarras"></canvas>';
+    crearGraficoBarrasTabbed("chartBarras", tab);
+  });
+});
+
+/* Wrapper del gráfico de barras con datos por tab */
+function crearGraficoBarrasTabbed(id, tab) {
+  destroyChart(id);
+  var ctx = document.getElementById(id);
+  if (!ctx) return;
+
+  var labels, aportes, creditos;
+  if (tab === "trimestral") {
+    labels   = ["Q1 2026","Q2 2026","Q3 2026","Q4 2026"];
+    aportes  = [39060000, 39780000, 39780000, 40200000];
+    creditos = [7100000,  6700000,  6400000,  7600000];
+  } else {
+    labels   = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+    aportes  = [13080000,12900000,13080000,13200000,13080000,13500000,13200000,13080000,13500000,13200000,13080000,13500000];
+    creditos = [2100000,3200000,1800000,2500000,1200000,3000000,2200000,1800000,2600000,1500000,2000000,3100000];
+  }
+
+  ChartInstances[id] = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Aportes",
+          data: aportes,
+          backgroundColor: ChartColors.navy,
+          borderRadius: { topLeft: 5, topRight: 5 },
+          borderSkipped: false,
+          barPercentage: 0.55,
+          categoryPercentage: 0.75
+        },
+        {
+          label: "Cr\u00e9ditos pagados",
+          data: creditos,
+          backgroundColor: ChartColors.gold,
+          borderRadius: { topLeft: 5, topRight: 5 },
+          borderSkipped: false,
+          barPercentage: 0.55,
+          categoryPercentage: 0.75
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true, position: "top", align: "end",
+          labels: { usePointStyle: true, pointStyle: "rectRounded", padding: 14, font: { size: 12 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(c) {
+              return " " + c.dataset.label + ": " +
+                new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",minimumFractionDigits:0}).format(c.raw);
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, border: { display: false } },
+        y: {
+          border: { display: false },
+          ticks: { callback: function(v){ return "$"+(v/1000000).toFixed(0)+"M"; }, maxTicksLimit: 5 }
+        }
+      }
+    }
+  });
+}
+
+/* ── Render functions ─────────────────────────────────────── */
+function renderKPIs() {
+  function fmtM(v){
+    if(v>=1000000) return "$"+(v/1000000).toFixed(1)+"M";
+    if(v>=1000)    return "$"+Math.round(v/1000)+"k";
+    return "$"+v;
+  }
+  var kpis = [
+    { label:"Total Ahorros",    value:fmtM(DataHelper.getTotalAhorros()), sub:"\u2191 3.2% vs mes anterior", subCls:"kpi-up",   icon:"\uD83D\uDCB0", cls:"green" },
+    { label:"Socios Activos",   value:DB.socios.filter(function(s){return s.estado==="activo";}).length, sub:"+4 nuevos este mes", subCls:"kpi-up", icon:"\uD83D\uDC65", cls:"blue" },
+    { label:"Cr\u00e9ditos Activos", value:DataHelper.getCreditosActivos().length, sub:fmtM(DataHelper.getTotalCartera())+" en cartera", subCls:"", icon:"\uD83D\uDCB3", cls:"gold" },
+    { label:"En Mora", value:DataHelper.getSociosMora().length, sub:"\u2191 2 socios morosos", subCls:"kpi-down", icon:"\u26A0", cls:"red" }
+  ];
+  document.getElementById("kpiGrid").innerHTML = kpis.map(function(k){
+    return '<div class="kpi-card '+k.cls+'">' +
+      '<div class="kpi-label">'+k.label+'</div>' +
+      '<div class="kpi-value">'+k.value+'</div>' +
+      '<div class="kpi-footer"><span class="'+k.subCls+'">'+k.sub+'</span></div>' +
+      '<div class="kpi-bg-icon">'+k.icon+'</div></div>';
+  }).join("");
+}
+
+function renderActividad() {
+  var items = [
+    { icon:"\uD83D\uDCB0", cls:"green", nombre:"Ana Torres",    desc:"Aporte mensual \u2014 Mar 2026", monto:"+$120.000",   pos:true,  tiempo:"Hoy, 9:14" },
+    { icon:"\uD83D\uDCB3", cls:"amber", nombre:"Luis Mora",     desc:"Cuota cr\u00e9dito #C-034",       monto:"+$85.000",    pos:true,  tiempo:"Hoy, 8:30" },
+    { icon:"\u26A0\uFE0F", cls:"red",   nombre:"Claudia R\u00edos",  desc:"Aporte en mora \u2014 2 meses",  monto:"-$240.000",   pos:false, tiempo:"Ayer" },
+    { icon:"\uD83D\uDCB3", cls:"navy",  nombre:"Pedro Salcedo", desc:"Cr\u00e9dito aprobado #C-039",    monto:"-$2.500.000", pos:false, tiempo:"Ayer" },
+    { icon:"\uD83D\uDCB0", cls:"green", nombre:"Patricia V.",   desc:"Aporte solidaridad",               monto:"+$30.000",    pos:true,  tiempo:"Mar 19" },
+    { icon:"\uD83D\uDCB3", cls:"blue",  nombre:"Mariana L\u00f3pez", desc:"Solicitud cr\u00e9dito $1.8M",  monto:"Pendiente",   pos:true,  tiempo:"Mar 18" }
+  ];
+  document.getElementById("actividadReciente").innerHTML = items.map(function(i){
+    return '<div class="activity-item">' +
+      '<div class="activity-icon '+i.cls+'">'+i.icon+'</div>' +
+      '<div><div class="activity-title">'+i.nombre+'</div><div class="activity-desc">'+i.desc+'</div></div>' +
+      '<div class="activity-right"><div class="activity-amount '+(i.pos?"pos":"neg")+'">'+i.monto+'</div>' +
+      '<div class="activity-time">'+i.tiempo+'</div></div></div>';
+  }).join("");
+}
+
+function renderSociosResumen() {
+  document.getElementById("sociosResumen").innerHTML =
+    "<thead><tr><th>Socio</th><th>Ahorro acum.</th><th>Estado</th></tr></thead><tbody>" +
+    DB.socios.slice(0,5).map(function(s){
+      return "<tr><td>"+s.nombre+"</td><td>"+DataHelper.formatCOP(s.ahorro_acumulado)+"</td><td>"+DataHelper.estadoPill(s.estado)+"</td></tr>";
+    }).join("") + "</tbody>";
+}
+
+function renderAlertas() {
+  var mora = DB.socios.filter(function(s){return s.estado==="mora";}).length;
+  document.getElementById("alertasPanel").innerHTML =
+    '<div class="alert danger"><div class="alert-icon">\uD83D\uDD34</div><div>' +
+    '<div class="alert-title">'+mora+' socios en mora</div>' +
+    '<div class="alert-body">Llevan m\u00e1s de 30 d\u00edas sin aporte.</div></div></div>' +
+    '<div class="alert warn"><div class="alert-icon">\u26A0\uFE0F</div><div>' +
+    '<div class="alert-title">Cr\u00e9dito pr\u00f3ximo a vencer</div>' +
+    '<div class="alert-body">Pedro Salcedo \u2014 \u00faltima cuota el 31 de marzo.</div></div></div>' +
+    '<div class="alert info"><div class="alert-icon">\u2139\uFE0F</div><div>' +
+    '<div class="alert-title">Cierre '+DB.config.periodo_actual+'</div>' +
+    '<div class="alert-body">10 d\u00edas para el corte. 18 pagos pendientes.</div></div></div>';
+}
+
+function renderAccesoRapido() {
+  var mod = [
+    { icon:"\uD83D\uDCB0", nombre:"Registrar Aporte", info:"127 socios activos",  href:"aportes.html" },
+    { icon:"\uD83D\uDCB3", nombre:"Nuevo Cr\u00e9dito",    info:"38 activos",          href:"creditos.html" },
+    { icon:"\uD83D\uDC64", nombre:"Agregar Socio",    info:"127 registrados",     href:"socios.html" },
+    { icon:"\uD83D\uDCC4", nombre:"Generar Reporte",  info:"9 tipos disponibles", href:"reportes.html" }
+  ];
+  document.getElementById("accesoRapido").innerHTML = mod.map(function(m){
+    return '<a href="'+m.href+'" class="module-card">' +
+      '<span class="module-emoji">'+m.icon+'</span>' +
+      '<div class="module-name">'+m.nombre+'</div>' +
+      '<div class="module-count">'+m.info+'</div></a>';
+  }).join("");
+}
+</script>
+</body>
+</html>

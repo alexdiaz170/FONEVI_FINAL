@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FONEVI — Contabilidad</title>
+  <link rel="stylesheet" href="main.css"/>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <!-- Favicon + PWA -->
+  <link rel="icon"             href="favicon.svg"            type="image/svg+xml"/>
+</head>
+<body>
+
+<div class="app-layout" id="app-layout">
+  <div class="main-content">
+    <div class="page-content">
+
+      <div class="page-header">
+        <h1>Contabilidad General</h1>
+        <p>Libro diario, ingresos, egresos y balance del fondo</p>
+      </div>
+
+      <!-- KPIs contables -->
+      <div class="kpi-grid" id="kpiContable"></div>
+
+      <!-- Tabs principales -->
+      <div class="tab-bar" id="contabTabs" style="margin-bottom:20px;">
+        <button class="tab-btn active" data-tab="libro">Libro Diario</button>
+        <button class="tab-btn" data-tab="ingresos">Ingresos</button>
+        <button class="tab-btn" data-tab="egresos">Egresos</button>
+        <button class="tab-btn" data-tab="balance">Balance</button>
+      </div>
+
+      <!-- Panel Libro Diario -->
+      <div id="panel-libro">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchContab" placeholder="Buscar movimiento..." />
+          </div>
+          <button class="btn btn-primary" onclick="Modal.open('modalNuevoMov')" data-role-staff>
+            + Nuevo Movimiento
+          </button>
+        </div>
+        <div class="card">
+          <table class="data-table" id="tablaLibro">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th>Monto</th>
+              </tr>
+            </thead>
+            <tbody id="libroTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel Ingresos -->
+      <div id="panel-ingresos" style="display:none;">
+        <div class="grid-2" style="margin-bottom:20px;" id="ingresosResumen"></div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Detalle de Ingresos</span></div>
+          <table class="data-table">
+            <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Monto</th></tr></thead>
+            <tbody id="ingresosTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel Egresos -->
+      <div id="panel-egresos" style="display:none;">
+        <div class="grid-2" style="margin-bottom:20px;" id="egresosResumen"></div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Detalle de Egresos</span></div>
+          <table class="data-table">
+            <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Monto</th></tr></thead>
+            <tbody id="egresosTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel Balance -->
+      <div id="panel-balance" style="display:none;">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title" style="color:var(--green);">ACTIVOS</span>
+            </div>
+            <table class="data-table" id="tablaActivos"></table>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title" style="color:var(--navy);">PATRIMONIO Y PASIVOS</span>
+            </div>
+            <table class="data-table" id="tablaPatrimonio"></table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px;">
+          <div class="card-body" style="text-align:center; padding:24px;">
+            <div style="font-size:13px; color:var(--muted); margin-bottom:6px;">Resultado del período</div>
+            <div id="resultadoPeriodo" style="font-family:var(--font-display); font-size:32px; font-weight:400;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Movimiento -->
+<div class="modal-overlay" id="modalNuevoMov">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Registrar Movimiento Contable</span>
+      <button class="modal-close" onclick="Modal.close('modalNuevoMov')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-control" id="nm-tipo" onchange="actualizarCategorias()">
+            <option value="ingreso">Ingreso</option>
+            <option value="egreso">Egreso</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Categoría</label>
+          <select class="form-control" id="nm-categoria"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Monto ($)</label>
+          <input type="number" class="form-control" id="nm-monto" placeholder="0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input type="date" class="form-control" id="nm-fecha" />
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Descripción</label>
+          <input type="text" class="form-control" id="nm-desc" placeholder="Describe el movimiento..." />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modalNuevoMov')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMovimiento()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+
+<script src="data.js"></script>
+<script src="auth.js"></script>
+<script src="layout.js"></script>
+<script src="app.js"></script>
+<script>
+const CATEGORIAS = {
+  ingreso: ["Aportes", "Intereses de créditos", "Fondo solidaridad", "Otros ingresos"],
+  egreso:  ["Crédito desembolsado", "Gastos administrativos", "Ayudas sociales", "Otros egresos"]
+};
+
+let tabActual = "libro";
+
+document.addEventListener("DOMContentLoaded", () => {
+  buildLayout("Contabilidad", "Libro diario y control financiero", "");
+  renderKPIs();
+  renderLibro();
+  actualizarCategorias();
+  document.getElementById("nm-fecha").value = new Date().toISOString().split("T")[0];
+  filterTable("searchContab", "tablaLibro");
+
+  initTabs("contabTabs", (tab) => {
+    tabActual = tab;
+    ["libro", "ingresos", "egresos", "balance"].forEach(p => {
+      document.getElementById("panel-" + p).style.display = tab === p ? "block" : "none";
+    });
+    if (tab === "ingresos")  renderIngresos();
+    if (tab === "egresos")   renderEgresos();
+    if (tab === "balance")   renderBalance();
+  });
+});
+
+function renderKPIs() {
+  const movs     = DB.movimientos;
+  const ingresos = movs.filter(m => m.tipo === "ingreso").reduce((t, m) => t + m.monto, 0);
+  const egresos  = movs.filter(m => m.tipo === "egreso").reduce((t, m) => t + m.monto, 0);
+  const neto     = ingresos - egresos;
+
+  const kpis = [
+    { label: "Total Ingresos",  value: DataHelper.formatCOP(ingresos), cls: "green", icon: "↑" },
+    { label: "Total Egresos",   value: DataHelper.formatCOP(egresos),  cls: "red",   icon: "↓" },
+    { label: "Resultado Neto",  value: DataHelper.formatCOP(neto),     cls: neto >= 0 ? "blue" : "red", icon: "=" },
+    { label: "Movimientos",     value: movs.length,                    cls: "gold",  icon: "📋" }
+  ];
+  document.getElementById("kpiContable").innerHTML = kpis.map(k => `
+    <div class="kpi-card ${k.cls}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-bg-icon">${k.icon}</div>
+    </div>
+  `).join("");
+}
+
+function renderLibro() {
+  const sorted = DB.movimientos.slice().sort((a, b) => b.fecha.localeCompare(a.fecha));
+  document.getElementById("libroTbody").innerHTML = sorted.map(m => `
+    <tr>
+      <td class="mono muted">${m.id}</td>
+      <td class="muted">${DataHelper.formatFecha(m.fecha)}</td>
+      <td>${m.tipo === "ingreso"
+        ? '<span class="pill pill-green">Ingreso</span>'
+        : '<span class="pill pill-red">Egreso</span>'}</td>
+      <td class="muted">${m.categoria}</td>
+      <td>${m.descripcion}</td>
+      <td style="font-weight:500; color:${m.tipo === 'ingreso' ? 'var(--green)' : 'var(--red)'};">
+        ${m.tipo === "ingreso" ? "+" : "−"}${DataHelper.formatCOP(m.monto)}
+      </td>
+    </tr>
+  `).join("");
+}
+
+function renderIngresos() {
+  const movs = DB.movimientos.filter(m => m.tipo === "ingreso");
+  const total = movs.reduce((t, m) => t + m.monto, 0);
+
+  // Agrupar por categoría
+  const cats = {};
+  movs.forEach(m => { cats[m.categoria] = (cats[m.categoria] || 0) + m.monto; });
+
+  document.getElementById("ingresosResumen").innerHTML = Object.entries(cats).map(([cat, val]) => `
+    <div class="card">
+      <div class="card-body">
+        <div class="kpi-label">${cat}</div>
+        <div style="font-family:var(--font-display); font-size:22px; color:var(--green); margin-top:6px;">${DataHelper.formatCOP(val)}</div>
+        <div class="progress" style="margin-top:8px;">
+          <div class="progress-fill green" style="width:${Math.round(val/total*100)}%"></div>
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-top:4px;">${Math.round(val/total*100)}% del total</div>
+      </div>
+    </div>
+  `).join("");
+
+  document.getElementById("ingresosTbody").innerHTML = movs
+    .sort((a, b) => b.fecha.localeCompare(a.fecha))
+    .map(m => `<tr>
+      <td class="muted">${DataHelper.formatFecha(m.fecha)}</td>
+      <td class="muted">${m.categoria}</td>
+      <td>${m.descripcion}</td>
+      <td style="font-weight:500; color:var(--green);">+${DataHelper.formatCOP(m.monto)}</td>
+    </tr>`).join("");
+}
+
+function renderEgresos() {
+  const movs = DB.movimientos.filter(m => m.tipo === "egreso");
+  const total = movs.reduce((t, m) => t + m.monto, 0);
+  const cats  = {};
+  movs.forEach(m => { cats[m.categoria] = (cats[m.categoria] || 0) + m.monto; });
+
+  document.getElementById("egresosResumen").innerHTML = Object.entries(cats).map(([cat, val]) => `
+    <div class="card">
+      <div class="card-body">
+        <div class="kpi-label">${cat}</div>
+        <div style="font-family:var(--font-display); font-size:22px; color:var(--red); margin-top:6px;">${DataHelper.formatCOP(val)}</div>
+        <div class="progress" style="margin-top:8px;">
+          <div class="progress-fill red" style="width:${Math.round(val/total*100)}%"></div>
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-top:4px;">${Math.round(val/total*100)}% del total</div>
+      </div>
+    </div>
+  `).join("");
+
+  document.getElementById("egresosTbody").innerHTML = movs
+    .sort((a, b) => b.fecha.localeCompare(a.fecha))
+    .map(m => `<tr>
+      <td class="muted">${DataHelper.formatFecha(m.fecha)}</td>
+      <td class="muted">${m.categoria}</td>
+      <td>${m.descripcion}</td>
+      <td style="font-weight:500; color:var(--red);">−${DataHelper.formatCOP(m.monto)}</td>
+    </tr>`).join("");
+}
+
+function renderBalance() {
+  const totalAhorros = DataHelper.getTotalAhorros();
+  const totalCartera = DataHelper.getTotalCartera();
+  const solidaridad  = DB.solidaridad.saldo_actual;
+  const totalActivos = totalAhorros + totalCartera + solidaridad;
+  const ingresos     = DB.movimientos.filter(m => m.tipo === "ingreso").reduce((t, m) => t + m.monto, 0);
+  const egresos      = DB.movimientos.filter(m => m.tipo === "egreso").reduce((t, m) => t + m.monto, 0);
+  const utilidades   = ingresos - egresos;
+
+  document.getElementById("tablaActivos").innerHTML = `
+    <tbody>
+      <tr><td>Ahorro de socios</td><td style="text-align:right; font-weight:500;">${DataHelper.formatCOP(totalAhorros)}</td></tr>
+      <tr><td>Cartera de créditos</td><td style="text-align:right; font-weight:500;">${DataHelper.formatCOP(totalCartera)}</td></tr>
+      <tr><td>Fondo de solidaridad</td><td style="text-align:right; font-weight:500;">${DataHelper.formatCOP(solidaridad)}</td></tr>
+      <tr style="background:var(--green-light);">
+        <td><strong>Total Activos</strong></td>
+        <td style="text-align:right;"><strong>${DataHelper.formatCOP(totalActivos)}</strong></td>
+      </tr>
+    </tbody>
+  `;
+
+  document.getElementById("tablaPatrimonio").innerHTML = `
+    <tbody>
+      <tr><td>Aportes de socios</td><td style="text-align:right; font-weight:500;">${DataHelper.formatCOP(totalAhorros)}</td></tr>
+      <tr><td>Utilidades retenidas</td><td style="text-align:right; font-weight:500;">${DataHelper.formatCOP(2500000)}</td></tr>
+      <tr><td>Resultado del período</td>
+        <td style="text-align:right; font-weight:500; color:${utilidades >= 0 ? 'var(--green)' : 'var(--red)'};">
+          ${DataHelper.formatCOP(utilidades)}</td></tr>
+      <tr style="background:var(--navy-light);">
+        <td><strong>Total Patrimonio</strong></td>
+        <td style="text-align:right;"><strong>${DataHelper.formatCOP(totalAhorros + 2500000 + utilidades)}</strong></td>
+      </tr>
+    </tbody>
+  `;
+
+  const rp = document.getElementById("resultadoPeriodo");
+  rp.textContent  = DataHelper.formatCOP(utilidades);
+  rp.style.color  = utilidades >= 0 ? "var(--green)" : "var(--red)";
+}
+
+function actualizarCategorias() {
+  const tipo = document.getElementById("nm-tipo").value;
+  const sel  = document.getElementById("nm-categoria");
+  sel.innerHTML = CATEGORIAS[tipo].map(c => `<option>${c}</option>`).join("");
+}
+
+function guardarMovimiento() {
+  const tipo  = document.getElementById("nm-tipo").value;
+  const monto = parseFloat(document.getElementById("nm-monto").value) || 0;
+  const desc  = document.getElementById("nm-desc").value.trim();
+  if (!desc || !monto) { Toast.warn("Completa todos los campos."); return; }
+
+  DB.movimientos.push({
+    id: "M" + String(DB.movimientos.length + 1).padStart(3, "0"),
+    tipo,
+    categoria:   document.getElementById("nm-categoria").value,
+    descripcion: desc,
+    monto,
+    fecha: document.getElementById("nm-fecha").value
+  });
+  Modal.close("modalNuevoMov");
+  renderKPIs();
+  renderLibro();
+  Toast.success("Movimiento registrado en el libro diario.");
+}
+</script>
+</body>
+</html>

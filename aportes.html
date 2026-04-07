@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FONEVI — Aportes</title>
+  <link rel="stylesheet" href="main.css"/>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <link rel="stylesheet" href="darkmode.css"/>
+  <!-- Favicon + PWA -->
+  <link rel="icon"             href="favicon.svg"            type="image/svg+xml"/>
+</head>
+<body>
+
+<div class="app-layout" id="app-layout">
+  <div class="main-content">
+    <div class="page-content">
+      <div class="page-header">
+        <h1>Módulo de Aportes</h1>
+        <p>Registro y control del ahorro mensual obligatorio</p>
+      </div>
+
+      <!-- KPIs del mes -->
+      <div class="kpi-grid" id="kpiAportes"></div>
+
+      <!-- Progreso del mes -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:14px; font-weight:500;">Progreso de recaudo — <span id="periodoLabel">Marzo 2026</span></span>
+            <span style="font-size:13px; color:var(--muted);" id="progLabel">109 / 127 socios</span>
+          </div>
+          <div class="progress" style="height:10px;">
+            <div class="progress-fill green" id="progFill" style="width:85%"></div>
+          </div>
+          <div style="display:flex; gap:20px; margin-top:12px; flex-wrap:wrap;">
+            <span style="font-size:12px; color:var(--green);">● Pagados: <strong id="cntPagados">109</strong></span>
+            <span style="font-size:12px; color:var(--amber);">● Pendientes: <strong id="cntPendientes">12</strong></span>
+            <span style="font-size:12px; color:var(--red);">● En mora: <strong id="cntMora">6</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros y tabla -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
+        <div class="tab-bar" id="filtroAporte">
+          <button class="tab-btn active" data-tab="todos">Todos</button>
+          <button class="tab-btn" data-tab="pagado">Pagados</button>
+          <button class="tab-btn" data-tab="pendiente">Pendientes</button>
+          <button class="tab-btn" data-tab="mora">En mora</button>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchAporte" placeholder="Buscar..." />
+          </div>
+          <button class="btn btn-primary" onclick="Modal.open('modalNuevoAporte')" data-role-staff>
+            + Registrar Aporte
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="data-table" id="tablaAportes">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Socio</th>
+              <th>Período</th>
+              <th>Monto</th>
+              <th>Fecha de pago</th>
+              <th>Método</th>
+              <th>Estado</th>
+              <th data-role-staff>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="aporteTbody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Aporte -->
+<div class="modal-overlay" id="modalNuevoAporte">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Registrar Aporte</span>
+      <button class="modal-close" onclick="Modal.close('modalNuevoAporte')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Socio</label>
+          <select class="form-control" id="na-socio" onchange="autocompletarMonto()">
+            <option value="">— Seleccionar —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Período</label>
+          <select class="form-control" id="na-periodo">
+            <option>Marzo 2026</option>
+            <option>Febrero 2026</option>
+            <option>Enero 2026</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Monto ($)</label>
+          <input type="number" class="form-control" id="na-monto" placeholder="120000" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Método de pago</label>
+          <select class="form-control" id="na-metodo">
+            <option value="nomina">Descuento nómina</option>
+            <option value="transferencia">Transferencia bancaria</option>
+            <option value="efectivo">Efectivo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de pago</label>
+          <input type="date" class="form-control" id="na-fecha" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observaciones</label>
+          <input type="text" class="form-control" id="na-obs" placeholder="Opcional" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modalNuevoAporte')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarAporte()">Registrar Aporte</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="darkmode.js"></script>
+<script src="data.js"></script>
+<script src="auth.js"></script>
+<script src="layout.js"></script>
+<script src="app.js"></script>
+<script>
+let filtroAporte = "todos";
+
+document.addEventListener("DOMContentLoaded", () => {
+  buildLayout("Aportes", "Control del ahorro mensual", "");
+  renderKPIs();
+  renderTabla("todos");
+  poblarSelectSocios();
+  document.getElementById("na-fecha").value = new Date().toISOString().split("T")[0];
+  filterTable("searchAporte", "tablaAportes");
+  initTabs("filtroAporte", (tab) => { filtroAporte = tab; renderTabla(tab); });
+});
+
+function renderKPIs() {
+  const aportes  = DB.aportes;
+  const pagados  = aportes.filter(a => a.estado === "pagado").length;
+  const pendient = aportes.filter(a => a.estado === "pendiente").length;
+  const mora     = aportes.filter(a => ["mora", "vencido"].includes(a.estado)).length;
+  const totalRec = aportes.filter(a => a.estado === "pagado").reduce((t, a) => t + a.monto, 0);
+
+  const kpis = [
+    { label: "Pagados", value: pagados, sub: "Este período", cls: "green", icon: "✓" },
+    { label: "Pendientes", value: pendient, sub: "Por recaudar", cls: "gold", icon: "⏱" },
+    { label: "En Mora", value: mora, sub: "Requieren seguimiento", cls: "red", icon: "⚠" },
+    { label: "Total Recaudado", value: DataHelper.formatCOP(totalRec), sub: "Todos los períodos", cls: "blue", icon: "💰" }
+  ];
+  document.getElementById("kpiAportes").innerHTML = kpis.map(k => `
+    <div class="kpi-card ${k.cls}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-footer">${k.sub}</div>
+      <div class="kpi-bg-icon">${k.icon}</div>
+    </div>
+  `).join("");
+}
+
+function renderTabla(filtro) {
+  let lista = DB.aportes;
+  if (filtro !== "todos") {
+    lista = lista.filter(a => {
+      if (filtro === "mora") return ["mora", "vencido"].includes(a.estado);
+      return a.estado === filtro;
+    });
+  }
+
+  document.getElementById("aporteTbody").innerHTML = lista.map(a => `
+    <tr>
+      <td class="mono muted">${a.id}</td>
+      <td>${DataHelper.getSocioNombre(a.socio_id)}</td>
+      <td>${a.periodo}</td>
+      <td style="font-weight:500;">${DataHelper.formatCOP(a.monto)}</td>
+      <td>${DataHelper.formatFecha(a.fecha_pago)}</td>
+      <td class="muted">${a.metodo ? a.metodo.charAt(0).toUpperCase() + a.metodo.slice(1) : "—"}</td>
+      <td>${DataHelper.estadoPill(a.estado)}</td>
+      <td data-role-staff>
+        ${a.estado !== "pagado"
+          ? `<button class="btn btn-link" onclick="marcarPagado('${a.id}')">Marcar pagado</button>`
+          : `<button class="btn btn-link">Comprobante</button>`
+        }
+      </td>
+    </tr>
+  `).join("");
+}
+
+function marcarPagado(id) {
+  const a = DB.aportes.find(x => x.id === id);
+  if (!a) return;
+  a.estado = "pagado";
+  a.fecha_pago = new Date().toISOString().split("T")[0];
+  a.metodo = "efectivo";
+  renderTabla(filtroAporte);
+  renderKPIs();
+  Toast.success(`Aporte ${id} marcado como pagado.`);
+}
+
+function poblarSelectSocios() {
+  const sel = document.getElementById("na-socio");
+  DB.socios.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.id;
+    opt.textContent = s.nombre;
+    sel.appendChild(opt);
+  });
+}
+
+function autocompletarMonto() {
+  const id = document.getElementById("na-socio").value;
+  const s  = DataHelper.getSocio(id);
+  if (s) document.getElementById("na-monto").value = s.aporte_mensual;
+}
+
+function guardarAporte() {
+  const socioId = document.getElementById("na-socio").value;
+  const monto   = parseFloat(document.getElementById("na-monto").value);
+  if (!socioId || !monto) { Toast.warn("Completa los campos requeridos."); return; }
+  const nuevo = {
+    id: "A" + String(DB.aportes.length + 1).padStart(3, "0"),
+    socio_id: socioId,
+    periodo:  document.getElementById("na-periodo").value,
+    monto,
+    fecha_pago: document.getElementById("na-fecha").value,
+    estado: "pagado",
+    metodo: document.getElementById("na-metodo").value
+  };
+  DB.aportes.push(nuevo);
+  /* Actualizar ahorro acumulado del socio */
+  const s = DataHelper.getSocio(socioId);
+  if (s) s.ahorro_acumulado += monto;
+  Modal.close("modalNuevoAporte");
+  renderTabla(filtroAporte);
+  renderKPIs();
+  Toast.success(`Aporte de ${DataHelper.formatCOP(monto)} registrado correctamente.`);
+}
+</script>
+</body>
+</html>

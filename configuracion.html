@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FONEVI — Configuración</title>
+  <link rel="stylesheet" href="main.css"/>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <!-- Favicon + PWA -->
+  <link rel="icon"             href="favicon.svg"            type="image/svg+xml"/>
+</head>
+<body>
+
+<div class="app-layout" id="app-layout">
+  <div class="main-content">
+    <div class="page-content">
+
+      <div class="page-header">
+        <h1>Configuración del Sistema</h1>
+        <p>Parámetros generales, roles y ajustes de FONEVI</p>
+      </div>
+
+      <!-- Tabs de configuración -->
+      <div class="tab-bar" id="configTabs" style="margin-bottom:22px;">
+        <button class="tab-btn active" data-tab="general">General</button>
+        <button class="tab-btn" data-tab="financiero">Parámetros Financieros</button>
+        <button class="tab-btn" data-tab="usuarios">Usuarios y Roles</button>
+        <button class="tab-btn" data-tab="sistema">Sistema</button>
+      </div>
+
+      <!-- Panel General -->
+      <div id="panel-general">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Información del Fondo</span></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Nombre del fondo</label>
+                <input type="text" class="form-control" id="cfg-nombre" value="FONEVI" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nombre completo</label>
+                <input type="text" class="form-control" id="cfg-nombre-completo"
+                  value="Fondo de Empleados Docentes FONEVI" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">NIT</label>
+                <input type="text" class="form-control" id="cfg-nit" value="800.123.456-7" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Representante legal</label>
+                <input type="text" class="form-control" id="cfg-rep" value="Carlos Alberto Muñoz" />
+              </div>
+              <div class="form-group form-full">
+                <label class="form-label">Período actual</label>
+                <input type="text" class="form-control" id="cfg-periodo" value="Marzo 2026" />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" onclick="guardarConfig('general')">Guardar Cambios</button>
+              <button class="btn btn-secondary" onclick="resetConfig('general')">Restablecer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel Financiero -->
+      <div id="panel-financiero" style="display:none;">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Parámetros de Ahorro</span></div>
+            <div class="card-body">
+              <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Aporte mínimo mensual ($)</label>
+                <input type="number" class="form-control" id="cfg-aporte-min"
+                  value="120000" step="10000" />
+                <span class="form-hint">Monto mínimo obligatorio para nuevos socios</span>
+              </div>
+              <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Aporte fondo solidaridad ($)</label>
+                <input type="number" class="form-control" id="cfg-solidaridad"
+                  value="30000" step="5000" />
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="guardarConfig('ahorro')">Guardar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span class="card-title">Parámetros de Crédito</span></div>
+            <div class="card-body">
+              <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Tasa mensual de interés (%)</label>
+                <input type="number" class="form-control" id="cfg-tasa"
+                  value="1.5" step="0.1" min="0" max="10" oninput="previsualizarTasa()" />
+              </div>
+              <div id="tasaPreview" style="margin-bottom:14px;"></div>
+              <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Tasa de mora diaria (%)</label>
+                <input type="number" class="form-control" id="cfg-mora"
+                  value="0.1" step="0.05" />
+              </div>
+              <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Máximo crédito (multiplicador del ahorro)</label>
+                <input type="number" class="form-control" id="cfg-mult"
+                  value="3" min="1" max="10" />
+                <span class="form-hint">Ej: 3 = hasta 3 veces el ahorro acumulado</span>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="guardarConfig('credito')">Guardar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulador de impacto -->
+        <div class="card" style="margin-top:16px;">
+          <div class="card-header"><span class="card-title">Impacto del cambio de tasa en la cartera</span></div>
+          <div class="card-body" id="impactoCartera"></div>
+        </div>
+      </div>
+
+      <!-- Panel Usuarios -->
+      <div id="panel-usuarios" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Usuarios del sistema</span>
+            <button class="btn btn-primary btn-sm" onclick="Modal.open('modalNuevoUsuario')">+ Nuevo usuario</button>
+          </div>
+          <table class="data-table" id="tablaUsuarios">
+            <thead>
+              <tr><th>ID</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr>
+            </thead>
+            <tbody id="usuariosTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel Sistema -->
+      <div id="panel-sistema" style="display:none;">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Estado del Sistema</span></div>
+            <div class="card-body">
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:13px;">Versión del sistema</span>
+                  <span class="pill pill-green">v1.0.0</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:13px;">Base de datos</span>
+                  <span class="pill pill-green">Conectada</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:13px;">Último backup</span>
+                  <span style="font-size:13px; color:var(--muted);">21/03/2026 02:00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:13px;">Último cierre de período</span>
+                  <span style="font-size:13px; color:var(--muted);">28/02/2026</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:13px;">Total socios en BD</span>
+                  <span style="font-size:13px; font-weight:500;">127</span>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="Toast.success('Backup iniciado correctamente.')">Hacer Backup</button>
+                <button class="btn btn-secondary" onclick="Toast.success('Sistema actualizado a la última versión.')">Actualizar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span class="card-title">Cierre de Período</span></div>
+            <div class="card-body">
+              <div class="alert warn" style="margin-bottom:16px;">
+                <div class="alert-icon">⚠️</div>
+                <div>
+                  <div class="alert-title">Acción irreversible</div>
+                  <div class="alert-body">El cierre de período consolida todos los movimientos y genera los extractos. Solo realízalo al final del mes.</div>
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label">Período a cerrar</label>
+                <select class="form-control" id="periodoACerrar">
+                  <option>Marzo 2026</option>
+                  <option>Febrero 2026</option>
+                </select>
+              </div>
+              <button class="btn btn-danger w-full"
+                onclick="confirmar('¿Estás seguro de cerrar el período? Esta acción no se puede deshacer.', () => Toast.success('Período cerrado correctamente. Extractos generados.'))">
+                Cerrar Período
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Usuario -->
+<div class="modal-overlay" id="modalNuevoUsuario">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nuevo Usuario del Sistema</span>
+      <button class="modal-close" onclick="Modal.close('modalNuevoUsuario')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nombre completo</label>
+          <input type="text" class="form-control" id="nu-nombre" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" id="nu-email" placeholder="usuario@fonevi.edu.co" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña temporal</label>
+          <input type="password" class="form-control" id="nu-pass" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rol</label>
+          <select class="form-control" id="nu-rol">
+            <option value="socio">Socio</option>
+            <option value="tesorero">Tesorero</option>
+            <option value="administrador">Administrador</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modalNuevoUsuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarUsuario()">Crear Usuario</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+
+<script src="data.js"></script>
+<script src="auth.js"></script>
+<script src="layout.js"></script>
+<script src="app.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  buildLayout("Configuración", "Parámetros del sistema FONEVI", "");
+  previsualizarTasa();
+  renderImpactoCartera();
+  renderUsuarios();
+  initTabs("configTabs", (tab) => {
+    ["general", "financiero", "usuarios", "sistema"].forEach(p => {
+      document.getElementById("panel-" + p).style.display = tab === p ? "block" : "none";
+    });
+  });
+});
+
+function guardarConfig(seccion) {
+  if (seccion === "general") {
+    DB.config.nombre          = document.getElementById("cfg-nombre").value;
+    DB.config.nombre_completo = document.getElementById("cfg-nombre-completo").value;
+    DB.config.nit             = document.getElementById("cfg-nit").value;
+    DB.config.representante   = document.getElementById("cfg-rep").value;
+    DB.config.periodo_actual  = document.getElementById("cfg-periodo").value;
+  }
+  if (seccion === "ahorro") {
+    DB.config.aporte_minimo         = parseFloat(document.getElementById("cfg-aporte-min").value);
+    DB.config.aporte_solidaridad    = parseFloat(document.getElementById("cfg-solidaridad").value);
+  }
+  if (seccion === "credito") {
+    DB.config.tasa_credito_mensual  = parseFloat(document.getElementById("cfg-tasa").value);
+    DB.config.tasa_mora_diaria      = parseFloat(document.getElementById("cfg-mora").value);
+    DB.config.max_credito_multiplicador = parseFloat(document.getElementById("cfg-mult").value);
+    renderImpactoCartera();
+  }
+  Toast.success("Configuración guardada correctamente.");
+}
+
+function resetConfig(seccion) {
+  if (seccion === "general") {
+    document.getElementById("cfg-nombre").value          = DB.config.nombre;
+    document.getElementById("cfg-nombre-completo").value = DB.config.nombre_completo;
+    document.getElementById("cfg-nit").value             = DB.config.nit;
+    document.getElementById("cfg-rep").value             = DB.config.representante;
+    document.getElementById("cfg-periodo").value         = DB.config.periodo_actual;
+  }
+  Toast.success("Valores restablecidos.");
+}
+
+function previsualizarTasa() {
+  const tasa = parseFloat(document.getElementById("cfg-tasa")?.value) || 1.5;
+  const ejemplo = 2000000;
+  const cuota = DataHelper.calcularCuota(ejemplo, tasa, 12);
+  document.getElementById("tasaPreview").innerHTML = `
+    <div style="background:var(--navy-light); border-radius:8px; padding:12px; font-size:12px; color:var(--navy);">
+      Ejemplo: crédito de ${DataHelper.formatCOP(ejemplo)} a 12 cuotas →
+      cuota mensual <strong>${DataHelper.formatCOP(Math.round(cuota))}</strong>
+    </div>
+  `;
+}
+
+function renderImpactoCartera() {
+  const tasa = DB.config.tasa_credito_mensual;
+  const variantes = [tasa - 0.5, tasa, tasa + 0.5].filter(t => t > 0);
+  document.getElementById("impactoCartera").innerHTML = `
+    <div class="grid-3">
+      ${variantes.map(t => {
+        const cuota = DataHelper.calcularCuota(2000000, t, 12);
+        const isCurrent = t === tasa;
+        return `
+          <div style="background:${isCurrent ? 'var(--navy-light)' : 'var(--surface2)'}; border-radius:10px; padding:14px; text-align:center; border:${isCurrent ? '1.5px solid var(--navy)' : '0.5px solid var(--border)'};">
+            <div style="font-size:11px; color:var(--muted);">Tasa ${t.toFixed(1)}% mensual</div>
+            <div style="font-family:var(--font-display); font-size:20px; color:${isCurrent ? 'var(--navy)' : 'var(--text)'}; margin-top:4px;">${t.toFixed(1)}%</div>
+            <div style="font-size:12px; color:var(--muted); margin-top:6px;">Cuota $2M / 12 meses</div>
+            <div style="font-size:14px; font-weight:500; color:${isCurrent ? 'var(--navy)' : 'var(--text)'}; margin-top:4px;">${DataHelper.formatCOP(Math.round(cuota))}</div>
+            ${isCurrent ? '<div style="font-size:10px; color:var(--navy); margin-top:6px; font-weight:500;">← Actual</div>' : ''}
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderUsuarios() {
+  document.getElementById("usuariosTbody").innerHTML = DB.usuarios.map(u => `
+    <tr>
+      <td class="mono muted">${u.id}</td>
+      <td style="font-weight:500;">${u.nombre}</td>
+      <td class="muted">${u.email}</td>
+      <td><span class="pill ${u.rol === 'administrador' ? 'pill-red' : u.rol === 'tesorero' ? 'pill-amber' : 'pill-blue'}">${u.rol}</span></td>
+      <td>${DataHelper.estadoPill(u.estado)}</td>
+      <td>
+        <button class="btn btn-link" onclick="toggleEstado('${u.id}')">
+          ${u.estado === 'activo' ? 'Desactivar' : 'Activar'}
+        </button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function guardarUsuario() {
+  const nombre = document.getElementById("nu-nombre").value.trim();
+  const email  = document.getElementById("nu-email").value.trim();
+  const pass   = document.getElementById("nu-pass").value;
+  if (!nombre || !email || !pass) { Toast.warn("Completa todos los campos."); return; }
+  DB.usuarios.push({
+    id: "U" + String(DB.usuarios.length + 1).padStart(3, "0"),
+    nombre, email, password: pass,
+    rol: document.getElementById("nu-rol").value,
+    estado: "activo",
+    avatar: nombre.split(" ").map(p => p[0]).slice(0, 2).join("")
+  });
+  Modal.close("modalNuevoUsuario");
+  renderUsuarios();
+  Toast.success(`Usuario ${nombre} creado correctamente.`);
+}
+
+function toggleEstado(id) {
+  const u = DB.usuarios.find(x => x.id === id);
+  if (!u) return;
+  u.estado = u.estado === "activo" ? "inactivo" : "activo";
+  renderUsuarios();
+  Toast.success(`Usuario ${u.nombre} ${u.estado === 'activo' ? 'activado' : 'desactivado'}.`);
+}
+</script>
+</body>
+</html>

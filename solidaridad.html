@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FONEVI — Fondo de Solidaridad</title>
+  <link rel="stylesheet" href="main.css"/>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <!-- Favicon + PWA -->
+  <link rel="icon"             href="favicon.svg"            type="image/svg+xml"/>
+</head>
+<body>
+
+<div class="app-layout" id="app-layout">
+  <div class="main-content">
+    <div class="page-content">
+
+      <div class="page-header">
+        <h1>Fondo de Solidaridad</h1>
+        <p>Gestión de aportes y ayudas del fondo solidario FONEVI</p>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr); margin-bottom:22px;" id="kpiSolidaridad"></div>
+
+      <!-- Grid principal -->
+      <div class="grid-main-aside" style="margin-bottom:20px;">
+
+        <!-- Historial de movimientos -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Historial de Movimientos</span>
+            <button class="btn btn-primary btn-sm" onclick="Modal.open('modalNuevaAyuda')" data-role-staff>
+              + Registrar Ayuda
+            </button>
+          </div>
+
+          <div class="tab-bar" style="margin:12px 20px 0;" id="tabsMov">
+            <button class="tab-btn active" data-tab="todos">Todos</button>
+            <button class="tab-btn" data-tab="ingreso">Ingresos</button>
+            <button class="tab-btn" data-tab="egreso">Egresos</button>
+          </div>
+
+          <div id="listaMovimientos"></div>
+        </div>
+
+        <!-- Panel lateral -->
+        <div style="display:flex; flex-direction:column; gap:16px;">
+
+          <!-- Saldo del fondo -->
+          <div class="card">
+            <div class="card-body" style="text-align:center; padding:28px 20px;">
+              <div style="font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">
+                Saldo Disponible
+              </div>
+              <div style="font-family:var(--font-display); font-size:36px; font-weight:400; color:var(--navy);" id="saldoFondo">
+                $0
+              </div>
+              <div style="font-size:12px; color:var(--muted); margin-top:8px;">
+                127 socios · $30.000/mes c/u
+              </div>
+              <div class="progress" style="margin-top:16px; height:6px;">
+                <div class="progress-fill green" style="width:72%"></div>
+              </div>
+              <div style="font-size:11px; color:var(--muted); margin-top:6px;">72% del objetivo mensual</div>
+            </div>
+          </div>
+
+          <!-- Tipos de ayuda -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">Ayudas por Categoría</span></div>
+            <div class="card-body" id="categoriaPanel"></div>
+          </div>
+
+          <!-- Registrar aporte solidaridad -->
+          <div class="card" data-role-staff>
+            <div class="card-header"><span class="card-title">Registrar Aporte</span></div>
+            <div class="card-body">
+              <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">Socio</label>
+                <select class="form-control" id="as-socio">
+                  <option value="">— Seleccionar —</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">Monto ($)</label>
+                <input type="number" class="form-control" id="as-monto" value="30000" />
+              </div>
+              <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label">Período</label>
+                <select class="form-control" id="as-periodo">
+                  <option>Marzo 2026</option>
+                  <option>Febrero 2026</option>
+                  <option>Enero 2026</option>
+                </select>
+              </div>
+              <button class="btn btn-primary w-full" onclick="registrarAporte()">Registrar</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nueva Ayuda -->
+<div class="modal-overlay" id="modalNuevaAyuda">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Registrar Ayuda del Fondo</span>
+      <button class="modal-close" onclick="Modal.close('modalNuevaAyuda')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Beneficiario</label>
+          <input type="text" class="form-control" id="ay-ben" placeholder="Nombre del beneficiario" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de ayuda</label>
+          <select class="form-control" id="ay-tipo">
+            <option value="medica">Ayuda médica</option>
+            <option value="funeraria">Auxilio funerario</option>
+            <option value="educativa">Apoyo educativo</option>
+            <option value="calamidad">Calamidad doméstica</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Monto de la ayuda ($)</label>
+          <input type="number" class="form-control" id="ay-monto" placeholder="500000" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input type="date" class="form-control" id="ay-fecha" />
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Descripción / Observaciones</label>
+          <textarea class="form-control" id="ay-desc" placeholder="Detalla el motivo de la ayuda..."></textarea>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Socio relacionado (opcional)</label>
+          <select class="form-control" id="ay-socio">
+            <option value="">— Ninguno —</option>
+          </select>
+        </div>
+      </div>
+      <div id="saldoWarning" style="margin-top:12px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modalNuevaAyuda')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarAyuda()">Registrar Ayuda</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+
+<script src="data.js"></script>
+<script src="auth.js"></script>
+<script src="layout.js"></script>
+<script src="app.js"></script>
+<script>
+let filtroMov = "todos";
+
+document.addEventListener("DOMContentLoaded", () => {
+  buildLayout(
+    "Fondo de Solidaridad",
+    "Saldo: " + DataHelper.formatCOP(DB.solidaridad.saldo_actual),
+    `<button class="btn btn-primary" onclick="Modal.open('modalNuevaAyuda')" data-role-staff>+ Registrar Ayuda</button>`
+  );
+
+  document.getElementById("saldoFondo").textContent =
+    DataHelper.formatCOP(DB.solidaridad.saldo_actual);
+
+  renderKPIs();
+  renderMovimientos("todos");
+  renderCategorias();
+  poblarSelects();
+
+  document.getElementById("ay-fecha").value = new Date().toISOString().split("T")[0];
+
+  initTabs("tabsMov", (tab) => { filtroMov = tab; renderMovimientos(tab); });
+});
+
+function renderKPIs() {
+  const movs     = DB.solidaridad.movimientos;
+  const ingresos = movs.filter(m => m.tipo === "ingreso").reduce((t, m) => t + m.monto, 0);
+  const egresos  = movs.filter(m => m.tipo === "egreso").reduce((t, m) => t + m.monto, 0);
+  const ayudas   = movs.filter(m => m.tipo === "egreso").length;
+
+  const kpis = [
+    { label: "Saldo Disponible",  value: DataHelper.formatCOP(DB.solidaridad.saldo_actual), cls: "green", icon: "🤝" },
+    { label: "Total Recaudado",   value: DataHelper.formatCOP(ingresos), cls: "blue",  icon: "💰" },
+    { label: "Ayudas Otorgadas",  value: ayudas + " ayudas — " + DataHelper.formatCOP(egresos), cls: "gold", icon: "❤" }
+  ];
+  document.getElementById("kpiSolidaridad").innerHTML = kpis.map(k => `
+    <div class="kpi-card ${k.cls}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value" style="font-size:${k.cls==='gold'?'18px':'26px'};">${k.value}</div>
+      <div class="kpi-bg-icon">${k.icon}</div>
+    </div>
+  `).join("");
+}
+
+function renderMovimientos(filtro) {
+  let lista = DB.solidaridad.movimientos;
+  if (filtro !== "todos") lista = lista.filter(m => m.tipo === filtro);
+
+  const iconos = { ingreso: { icon: "💰", cls: "green" }, egreso: { icon: "❤️", cls: "red" } };
+
+  document.getElementById("listaMovimientos").innerHTML = lista
+    .slice().reverse()
+    .map(m => {
+      const ic = iconos[m.tipo] || { icon: "•", cls: "navy" };
+      return `
+        <div class="activity-item">
+          <div class="activity-icon ${ic.cls}">${ic.icon}</div>
+          <div>
+            <div class="activity-title">${m.descripcion}</div>
+            <div class="activity-desc">${DataHelper.formatFecha(m.fecha)}</div>
+          </div>
+          <div class="activity-right">
+            <div class="activity-amount ${m.tipo === 'ingreso' ? 'pos' : 'neg'}">
+              ${m.tipo === "ingreso" ? "+" : "−"}${DataHelper.formatCOP(m.monto)}
+            </div>
+            <div class="activity-time">${m.tipo === "ingreso" ? "Ingreso" : "Egreso"}</div>
+          </div>
+        </div>
+      `;
+    }).join("") || `<div style="padding:24px; text-align:center; color:var(--muted);">Sin movimientos</div>`;
+}
+
+function renderCategorias() {
+  const cats = [
+    { label: "Médica",              icon: "🏥", monto: 500000,  color: "red" },
+    { label: "Funeraria",           icon: "⚰️", monto: 800000,  color: "navy" },
+    { label: "Educativa",           icon: "🎓", monto: 300000,  color: "blue" },
+    { label: "Calamidad doméstica", icon: "🏠", monto: 0,       color: "amber" }
+  ];
+  document.getElementById("categoriaPanel").innerHTML = cats.map(c => `
+    <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:0.5px solid var(--border);">
+      <span style="font-size:18px;">${c.icon}</span>
+      <span style="flex:1; font-size:13px;">${c.label}</span>
+      <span style="font-size:13px; font-weight:500; color:${c.monto > 0 ? 'var(--red)' : 'var(--muted)'};">
+        ${c.monto > 0 ? DataHelper.formatCOP(c.monto) : "—"}
+      </span>
+    </div>
+  `).join("") + `
+    <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:13px; font-weight:500;">
+      <span>Total ayudas</span>
+      <span style="color:var(--red);">${DataHelper.formatCOP(1600000)}</span>
+    </div>
+  `;
+}
+
+function poblarSelects() {
+  ["as-socio", "ay-socio"].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    DB.socios.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.nombre;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function registrarAporte() {
+  const socioId = document.getElementById("as-socio").value;
+  const monto   = parseFloat(document.getElementById("as-monto").value) || 0;
+  if (!socioId || !monto) { Toast.warn("Selecciona un socio y monto."); return; }
+  const nombre = DataHelper.getSocioNombre(socioId);
+  const periodo = document.getElementById("as-periodo").value;
+  DB.solidaridad.movimientos.push({
+    id: "FS" + String(DB.solidaridad.movimientos.length + 1).padStart(3, "0"),
+    tipo: "ingreso",
+    descripcion: `Aporte solidaridad — ${nombre} (${periodo})`,
+    monto,
+    fecha: new Date().toISOString().split("T")[0]
+  });
+  DB.solidaridad.saldo_actual += monto;
+  document.getElementById("saldoFondo").textContent = DataHelper.formatCOP(DB.solidaridad.saldo_actual);
+  renderMovimientos(filtroMov);
+  renderKPIs();
+  Toast.success(`Aporte de ${DataHelper.formatCOP(monto)} registrado.`);
+}
+
+function guardarAyuda() {
+  const monto = parseFloat(document.getElementById("ay-monto").value) || 0;
+  const ben   = document.getElementById("ay-ben").value.trim();
+  if (!ben || !monto) { Toast.warn("Completa los campos requeridos."); return; }
+
+  if (monto > DB.solidaridad.saldo_actual) {
+    document.getElementById("saldoWarning").innerHTML = `
+      <div class="alert danger">
+        <div class="alert-icon">⚠️</div>
+        <div><div class="alert-title">Saldo insuficiente</div>
+        <div class="alert-body">El fondo tiene ${DataHelper.formatCOP(DB.solidaridad.saldo_actual)} disponibles.</div></div>
+      </div>`;
+    return;
+  }
+
+  const tipoLabels = { medica: "Ayuda médica", funeraria: "Auxilio funerario", educativa: "Apoyo educativo", calamidad: "Calamidad doméstica", otro: "Ayuda" };
+  const tipo = document.getElementById("ay-tipo").value;
+
+  DB.solidaridad.movimientos.push({
+    id: "FS" + String(DB.solidaridad.movimientos.length + 1).padStart(3, "0"),
+    tipo: "egreso",
+    descripcion: `${tipoLabels[tipo]} — ${ben}`,
+    monto,
+    fecha: document.getElementById("ay-fecha").value,
+    beneficiario: document.getElementById("ay-socio").value || null
+  });
+  DB.solidaridad.saldo_actual -= monto;
+  document.getElementById("saldoFondo").textContent = DataHelper.formatCOP(DB.solidaridad.saldo_actual);
+  Modal.close("modalNuevaAyuda");
+  renderMovimientos(filtroMov);
+  renderKPIs();
+  Toast.success(`Ayuda de ${DataHelper.formatCOP(monto)} registrada para ${ben}.`);
+}
+</script>
+</body>
+</html>

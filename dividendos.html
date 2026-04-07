@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FONEVI — Dividendos</title>
+  <link rel="stylesheet" href="main.css"/>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <!-- Favicon + PWA -->
+  <link rel="icon"             href="favicon.svg"            type="image/svg+xml"/>
+</head>
+<body>
+
+<div class="app-layout" id="app-layout">
+  <div class="main-content">
+    <div class="page-content">
+
+      <div class="page-header">
+        <h1>Módulo de Dividendos</h1>
+        <p>Cálculo y distribución de utilidades anuales entre los socios</p>
+      </div>
+
+      <!-- Selector de año -->
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:22px; flex-wrap:wrap;">
+        <div class="tab-bar" id="anioTabs">
+          <button class="tab-btn active" data-tab="2025">2025</button>
+          <button class="tab-btn" data-tab="2024">2024</button>
+          <button class="tab-btn" data-tab="2026">2026 (proyección)</button>
+        </div>
+        <button class="btn btn-primary" onclick="Modal.open('modalCalcular')" data-role-admin>
+          🧮 Calcular Dividendos
+        </button>
+      </div>
+
+      <!-- KPIs del año -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="kpiDividendos"></div>
+
+      <!-- Grid principal -->
+      <div class="grid-main-aside" style="margin-bottom:20px;">
+
+        <!-- Tabla de distribución -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" id="tituloTabla">Distribución 2025</span>
+            <button class="btn btn-secondary btn-sm" onclick="exportarDividendos()">⬇ Exportar</button>
+          </div>
+          <table class="data-table" id="tablaDividendos">
+            <thead>
+              <tr>
+                <th>Socio</th>
+                <th>Ahorro base</th>
+                <th>% Participación</th>
+                <th>Dividendo</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="dividendosTbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Panel lateral -->
+        <div style="display:flex; flex-direction:column; gap:16px;">
+
+          <!-- Resumen del reparto -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">Resumen del Reparto</span></div>
+            <div class="card-body" id="resumenReparto">
+              <!-- llenado por JS -->
+            </div>
+          </div>
+
+          <!-- Historial de años -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">Historial</span></div>
+            <div class="card-body">
+              <div style="display:flex; flex-direction:column; gap:10px;" id="historialAnios"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Calcular Dividendos -->
+<div class="modal-overlay" id="modalCalcular">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Calcular Dividendos del Período</span>
+      <button class="modal-close" onclick="Modal.close('modalCalcular')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Año</label>
+          <input type="number" class="form-control" id="cd-anio" value="2026" min="2020" max="2030" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Total utilidades ($)</label>
+          <input type="number" class="form-control" id="cd-utilidades" placeholder="Ej: 15000000" oninput="previsualizarCalculo()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">% a distribuir entre socios</label>
+          <input type="number" class="form-control" id="cd-pct" value="80" min="1" max="100" oninput="previsualizarCalculo()" />
+          <span class="form-hint">El porcentaje restante queda como reserva del fondo</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de distribución</label>
+          <input type="date" class="form-control" id="cd-fecha" />
+        </div>
+      </div>
+      <div id="previstaCalculo" style="margin-top:16px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modalCalcular')">Cancelar</button>
+      <button class="btn btn-primary" onclick="aplicarDividendos()">Aplicar Distribución</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+
+<script src="data.js"></script>
+<script src="auth.js"></script>
+<script src="layout.js"></script>
+<script src="app.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  buildLayout("Dividendos", "Distribución de utilidades anuales", "");
+  document.getElementById("cd-fecha").value = new Date().toISOString().split("T")[0];
+  renderPagina("2025");
+  initTabs("anioTabs", (tab) => renderPagina(tab));
+});
+
+function renderPagina(anio) {
+  const div = DB.dividendos.find(d => String(d.anio) === anio);
+  document.getElementById("tituloTabla").textContent = `Distribución ${anio}`;
+
+  if (!div) {
+    // Proyección o sin datos
+    renderKPIsVacios(anio);
+    renderTablaVacia(anio);
+    return;
+  }
+  renderKPIs(div);
+  renderTabla(div);
+  renderResumen(div);
+  renderHistorial();
+}
+
+function renderKPIs(div) {
+  const sociosActivos = DB.socios.filter(s => s.estado === "activo").length;
+  const promedio = Math.round(div.total_distribuido / sociosActivos);
+
+  const kpis = [
+    { label: "Utilidades " + div.anio,  value: DataHelper.formatCOP(div.total_utilidades), cls: "green", icon: "📈" },
+    { label: "Total Distribuido",        value: DataHelper.formatCOP(div.total_distribuido), cls: "blue",  icon: "🎁" },
+    { label: "Reserva del Fondo",        value: DataHelper.formatCOP(div.total_utilidades - div.total_distribuido), cls: "gold", icon: "🏦" },
+    { label: "Promedio por Socio",       value: DataHelper.formatCOP(promedio), cls: "navy", icon: "👤" }
+  ];
+  document.getElementById("kpiDividendos").innerHTML = kpis.map(k => `
+    <div class="kpi-card ${k.cls}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value" style="font-size:18px;">${k.value}</div>
+      <div class="kpi-bg-icon">${k.icon}</div>
+    </div>
+  `).join("");
+}
+
+function renderKPIsVacios(anio) {
+  document.getElementById("kpiDividendos").innerHTML = `
+    <div class="kpi-card blue" style="grid-column: 1/-1;">
+      <div class="kpi-label">Dividendos ${anio}</div>
+      <div style="font-size:14px; color:var(--muted); margin-top:8px;">
+        ${anio === "2026" ? "Año en curso — usa el botón Calcular Dividendos para hacer la proyección." : "Sin datos registrados para este período."}
+      </div>
+    </div>
+  `;
+  document.getElementById("dividendosTbody").innerHTML = `
+    <tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted);">
+      Sin datos para el período seleccionado.
+    </td></tr>`;
+  document.getElementById("resumenReparto").innerHTML = `<p style="font-size:13px; color:var(--muted);">Sin datos.</p>`;
+}
+
+function renderTabla(div) {
+  const sociosActivos = DB.socios.filter(s => s.estado === "activo");
+  const totalAhorros  = sociosActivos.reduce((t, s) => t + s.ahorro_acumulado, 0);
+
+  document.getElementById("dividendosTbody").innerHTML = sociosActivos.map(s => {
+    const pct = (s.ahorro_acumulado / totalAhorros * 100).toFixed(2);
+    const dvd = Math.round(div.total_distribuido * s.ahorro_acumulado / totalAhorros);
+    const yaDistribuido = div.detalle?.find(d => d.socio_id === s.id);
+    return `<tr>
+      <td>${s.nombre}</td>
+      <td>${DataHelper.formatCOP(s.ahorro_acumulado)}</td>
+      <td style="color:var(--muted);">${pct}%</td>
+      <td style="font-weight:500; color:var(--gold);">${DataHelper.formatCOP(dvd)}</td>
+      <td>${yaDistribuido
+        ? '<span class="pill pill-green">Distribuido</span>'
+        : '<span class="pill pill-amber">Pendiente</span>'}</td>
+    </tr>`;
+  }).join("");
+}
+
+function renderTablaVacia(anio) {
+  if (anio !== "2026") {
+    document.getElementById("dividendosTbody").innerHTML = `
+      <tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted);">Sin datos.</td></tr>`;
+    document.getElementById("resumenReparto").innerHTML = "";
+    return;
+  }
+  // Proyección 2026
+  const totalAhorros = DB.socios.filter(s=>s.estado==="activo").reduce((t,s)=>t+s.ahorro_acumulado,0);
+  const proyUtilidades = 15000000;
+  const proyDistribuido = Math.round(proyUtilidades * 0.80);
+  const sociosActivos = DB.socios.filter(s => s.estado === "activo");
+
+  document.getElementById("dividendosTbody").innerHTML = sociosActivos.map(s => {
+    const pct = (s.ahorro_acumulado / totalAhorros * 100).toFixed(2);
+    const dvd = Math.round(proyDistribuido * s.ahorro_acumulado / totalAhorros);
+    return `<tr>
+      <td>${s.nombre}</td>
+      <td>${DataHelper.formatCOP(s.ahorro_acumulado)}</td>
+      <td style="color:var(--muted);">${pct}%</td>
+      <td style="font-weight:500; color:var(--amber);">${DataHelper.formatCOP(dvd)}</td>
+      <td><span class="pill pill-amber">Proyectado</span></td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("resumenReparto").innerHTML = `
+    <div class="alert info">
+      <div class="alert-icon">ℹ️</div>
+      <div><div class="alert-title">Proyección estimada 2026</div>
+      <div class="alert-body">Basada en utilidades estimadas de ${DataHelper.formatCOP(proyUtilidades)} y 80% de distribución.</div></div>
+    </div>`;
+}
+
+function renderResumen(div) {
+  const pctReserva = 100 - div.porcentaje_distribuido;
+  document.getElementById("resumenReparto").innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:0.5px solid var(--border);">
+        <span style="color:var(--muted);">Año</span><strong>${div.anio}</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:0.5px solid var(--border);">
+        <span style="color:var(--muted);">Total utilidades</span><strong>${DataHelper.formatCOP(div.total_utilidades)}</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:0.5px solid var(--border);">
+        <span style="color:var(--muted);">Distribuido (${div.porcentaje_distribuido}%)</span>
+        <strong style="color:var(--gold);">${DataHelper.formatCOP(div.total_distribuido)}</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:0.5px solid var(--border);">
+        <span style="color:var(--muted);">Reserva (${pctReserva}%)</span>
+        <strong>${DataHelper.formatCOP(div.total_utilidades - div.total_distribuido)}</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0;">
+        <span style="color:var(--muted);">Fecha distribución</span>
+        <span>${DataHelper.formatFecha(div.fecha_distribucion)}</span>
+      </div>
+      <div style="margin-top:4px;">
+        <span class="pill ${div.estado === 'distribuido' ? 'pill-green' : 'pill-amber'}">
+          ${div.estado === 'distribuido' ? 'Distribuido' : 'Pendiente'}
+        </span>
+      </div>
+    </div>
+  `;
+}
+
+function renderHistorial() {
+  document.getElementById("historialAnios").innerHTML = DB.dividendos.map(d => `
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:10px; background:var(--surface2); border-radius:8px;">
+      <div>
+        <div style="font-size:13px; font-weight:500;">Año ${d.anio}</div>
+        <div style="font-size:11px; color:var(--muted);">${DataHelper.formatCOP(d.total_distribuido)} distribuidos</div>
+      </div>
+      <span class="pill ${d.estado === 'distribuido' ? 'pill-green' : 'pill-amber'}">
+        ${d.estado === 'distribuido' ? 'Completado' : 'Pendiente'}
+      </span>
+    </div>
+  `).join("") || `<p style="font-size:13px; color:var(--muted);">Sin historial.</p>`;
+}
+
+function previsualizarCalculo() {
+  const utils  = parseFloat(document.getElementById("cd-utilidades").value) || 0;
+  const pct    = parseFloat(document.getElementById("cd-pct").value) || 80;
+  const total  = Math.round(utils * pct / 100);
+  const reserva = utils - total;
+  if (!utils) { document.getElementById("previstaCalculo").innerHTML = ""; return; }
+
+  document.getElementById("previstaCalculo").innerHTML = `
+    <div class="alert success">
+      <div class="alert-icon">✓</div>
+      <div>
+        <div class="alert-title">Vista previa</div>
+        <div class="alert-body">
+          Se distribuirán <strong>${DataHelper.formatCOP(total)}</strong> entre
+          ${DB.socios.filter(s=>s.estado==="activo").length} socios activos.
+          Reserva del fondo: ${DataHelper.formatCOP(reserva)}.
+        </div>
+      </div>
+    </div>`;
+}
+
+function aplicarDividendos() {
+  const anio  = parseInt(document.getElementById("cd-anio").value);
+  const utils = parseFloat(document.getElementById("cd-utilidades").value) || 0;
+  const pct   = parseFloat(document.getElementById("cd-pct").value) || 80;
+  if (!utils) { Toast.warn("Ingresa el total de utilidades."); return; }
+
+  const totalDist = Math.round(utils * pct / 100);
+  const totalAh   = DB.socios.filter(s=>s.estado==="activo").reduce((t,s)=>t+s.ahorro_acumulado,0);
+  const detalle   = DB.socios.filter(s=>s.estado==="activo").map(s => ({
+    socio_id: s.id,
+    monto: Math.round(totalDist * s.ahorro_acumulado / totalAh)
+  }));
+
+  const existing = DB.dividendos.findIndex(d => d.anio === anio);
+  const nuevo = {
+    id: "D" + anio, anio, total_utilidades: utils,
+    porcentaje_distribuido: pct, total_distribuido: totalDist,
+    fecha_distribucion: document.getElementById("cd-fecha").value,
+    estado: "distribuido", detalle
+  };
+  if (existing >= 0) DB.dividendos[existing] = nuevo;
+  else DB.dividendos.push(nuevo);
+
+  Modal.close("modalCalcular");
+  renderPagina(String(anio));
+  // Seleccionar el tab del año calculado
+  document.querySelectorAll("#anioTabs .tab-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.tab === String(anio));
+  });
+  Toast.success(`Dividendos ${anio} calculados y distribuidos correctamente.`);
+}
+
+function exportarDividendos() {
+  Toast.success("Exportando distribución de dividendos a CSV...");
+}
+</script>
+</body>
+</html>

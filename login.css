@@ -1,0 +1,127 @@
+/* ============================================================
+   FONEVI — css/login.css — Estilos exclusivos del login
+   ============================================================ */
+
+body.login-page {
+  background: var(--navy-900);
+  background-image:
+    radial-gradient(ellipse at 15% 50%, rgba(26,74,122,.7) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 20%, rgba(201,146,42,.12) 0%, transparent 45%),
+    radial-gradient(ellipse at 60% 90%, rgba(10,31,60,.8) 0%, transparent 50%);
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; position: relative; overflow: hidden;
+}
+body.login-page::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 0);
+  background-size: 40px 40px; pointer-events: none;
+}
+body.login-page::after {
+  content: ''; position: absolute;
+  width: 600px; height: 600px;
+  border: 1px solid rgba(201,146,42,.07); border-radius: 50%;
+  top: -150px; left: -150px; pointer-events: none;
+  animation: rotateRing 40s linear infinite;
+}
+@keyframes rotateRing { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+.login-wrapper {
+  display: grid; grid-template-columns: 1fr 1fr;
+  max-width: 920px; width: 100%;
+  border-radius: var(--r-2xl); overflow: hidden;
+  box-shadow: 0 32px 100px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.05), inset 0 1px 0 rgba(255,255,255,.08);
+  animation: wrapperIn .6s var(--ease) both; position: relative; z-index: 1;
+}
+@keyframes wrapperIn { from{opacity:0;transform:translateY(24px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+/* Panel Marca */
+.login-brand {
+  background: linear-gradient(160deg, var(--navy-800) 0%, var(--navy-950) 100%);
+  padding: 48px 44px; display: flex; flex-direction: column; justify-content: space-between;
+  position: relative; overflow: hidden;
+  border-right: 1px solid rgba(255,255,255,.06);
+}
+.login-brand::before {
+  content: ''; position: absolute;
+  width: 280px; height: 280px;
+  background: radial-gradient(circle, rgba(201,146,42,.10) 0%, transparent 70%);
+  border-radius: 50%; bottom: -60px; right: -60px; pointer-events: none;
+}
+
+.brand-logo { display: flex; align-items: center; gap: 14px; animation: fadeUp .5s var(--ease) .1s both; }
+.brand-icon {
+  width: 54px; height: 54px;
+  background: linear-gradient(135deg, var(--gold-300) 0%, var(--gold-500) 60%, var(--gold-700) 100%);
+  border-radius: var(--r-lg); display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 28px; font-weight: 600; color: #fff;
+  box-shadow: 0 8px 24px rgba(201,146,42,.45), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.brand-name { font-family: var(--font-display); font-size: 26px; font-weight: 600; color: #fff; letter-spacing: .5px; }
+.brand-sub  { font-size: 10px; color: rgba(255,255,255,.38); letter-spacing: 2px; text-transform: uppercase; margin-top: 3px; }
+
+.brand-tagline { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 36px 0; animation: fadeUp .5s var(--ease) .2s both; }
+.brand-tagline h2 { font-family: var(--font-display); font-size: 30px; font-weight: 400; color: #fff; line-height: 1.3; margin-bottom: 16px; letter-spacing: -.3px; }
+.brand-tagline h2 em { color: var(--gold-400); font-style: italic; }
+.brand-tagline p { font-size: 13.5px; color: rgba(255,255,255,.45); line-height: 1.75; }
+
+.brand-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; animation: fadeUp .5s var(--ease) .3s both; }
+.brand-stat {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  border-radius: var(--r-md); padding: 14px 16px;
+  transition: all var(--t-base) var(--ease);
+}
+.brand-stat:hover { background: rgba(255,255,255,.08); border-color: rgba(201,146,42,.2); }
+.brand-stat-num   { font-family: var(--font-display); font-size: 24px; color: var(--gold-400); font-weight: 400; }
+.brand-stat-label { font-size: 11px; color: rgba(255,255,255,.4); margin-top: 3px; }
+
+/* Panel Formulario */
+.login-form-panel {
+  background: var(--bg-surface); padding: 52px 48px;
+  display: flex; flex-direction: column; justify-content: center;
+  animation: fadeUp .5s var(--ease) .15s both;
+}
+.login-form-panel h3 { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: var(--text-primary); margin-bottom: 6px; letter-spacing: -.3px; }
+.welcome-sub { font-size: 13.5px; color: var(--text-muted); margin-bottom: 32px; }
+
+.login-error {
+  background: var(--red-50); color: var(--red-700); border: 1px solid var(--red-100);
+  border-radius: var(--r-sm); padding: 11px 15px; font-size: 13px; font-weight: 500;
+  margin-bottom: 18px; display: none; animation: shake .4s ease;
+}
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }
+
+.login-form .form-group { margin-bottom: 18px; }
+.login-btn {
+  width: 100%; padding: 12px;
+  background: linear-gradient(135deg, var(--navy-700) 0%, var(--navy-900) 100%);
+  color: #fff; border: none; border-radius: var(--r-md);
+  font-size: 14px; font-weight: 600; font-family: var(--font-body); cursor: pointer;
+  margin-top: 10px; transition: all var(--t-base) var(--ease);
+  box-shadow: 0 4px 14px rgba(9,30,66,.25), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.login-btn:hover { background: linear-gradient(135deg, var(--navy-600) 0%, var(--navy-800) 100%); box-shadow: 0 6px 20px rgba(9,30,66,.35); transform: translateY(-1px); }
+
+.login-hint { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border-faint); }
+.login-hint p { font-size: 11.5px; color: var(--text-muted); margin-bottom: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+.demo-users { display: flex; flex-direction: column; gap: 7px; }
+.demo-user {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 13px; background: var(--bg-subtle);
+  border: 1px solid var(--border-faint); border-radius: var(--r-sm);
+  cursor: pointer; transition: all var(--t-fast) var(--ease);
+}
+.demo-user:hover { border-color: var(--navy-200); background: var(--navy-50); transform: translateX(3px); }
+.demo-user-av { width: 28px; height: 28px; border-radius: var(--r-full); background: linear-gradient(135deg, var(--navy-200), var(--navy-400)); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--navy-800); flex-shrink: 0; }
+.demo-user-name  { font-size: 12.5px; font-weight: 500; color: var(--text-primary); }
+.demo-user-role  { font-size: 10.5px; color: var(--text-muted); }
+.demo-user-arrow { margin-left: auto; font-size: 13px; color: var(--text-faint); transition: transform var(--t-fast); }
+.demo-user:hover .demo-user-arrow { transform: translateX(3px); color: var(--navy-500); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+@media (max-width: 700px) {
+  .login-wrapper { grid-template-columns: 1fr; }
+  .login-brand { display: none; }
+  .login-form-panel { padding: 36px 28px; }
+}

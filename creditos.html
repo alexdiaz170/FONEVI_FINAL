@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FONEVI — Créditos</title>
+  <link rel="stylesheet" href="main.css"/>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <!-- Favicon + PWA -->
+  <link rel="icon"             href="favicon.svg"            type="image/svg+xml"/>
+</head>
+<body>
+
+<div class="app-layout" id="app-layout">
+  <div class="main-content">
+    <div class="page-content">
+      <div class="page-header">
+        <h1>Módulo de Créditos</h1>
+        <p>Solicitudes, aprobaciones y seguimiento de cartera</p>
+      </div>
+
+      <!-- Resumen cartera -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);" id="kpiCreditos"></div>
+
+      <!-- Tabs -->
+      <div class="tab-bar" id="creditoTabs" style="margin-bottom:16px;">
+        <button class="tab-btn active" data-tab="activos">Activos</button>
+        <button class="tab-btn" data-tab="mora">En mora</button>
+        <button class="tab-btn" data-tab="pagados">Pagados</button>
+        <button class="tab-btn" data-tab="simulador">Simulador</button>
+      </div>
+
+      <!-- Tabla de créditos -->
+      <div id="panelTabla">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <span class="card-title" id="tablaTitulo">Créditos Activos</span>
+            <button class="btn btn-primary" onclick="Modal.open('modalNuevoCredito')" data-role-staff>
+              + Solicitar Crédito
+            </button>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>N° Crédito</th>
+                <th>Socio</th>
+                <th>Monto</th>
+                <th>Cuotas</th>
+                <th>Saldo</th>
+                <th>Tasa</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="creditosTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Simulador (oculto por defecto) -->
+      <div id="panelSimulador" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Simulador de Crédito</span>
+          </div>
+          <div class="card-body">
+            <div class="form-grid cols-3" style="margin-bottom:20px;">
+              <div class="form-group">
+                <label class="form-label">Monto solicitado ($)</label>
+                <input type="number" id="simMonto"  class="form-control" value="2000000" oninput="simular()" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Número de cuotas</label>
+                <input type="number" id="simCuotas" class="form-control" value="12" min="1" max="60" oninput="simular()" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tasa mensual (%)</label>
+                <input type="number" id="simTasa"   class="form-control" value="1" step="0.1" oninput="simular()" />
+              </div>
+            </div>
+
+            <!-- Resultados -->
+            <div class="grid-3" style="margin-bottom:24px;" id="simResultados"></div>
+
+            <!-- Tabla de amortización -->
+            <div class="card-header" style="padding:0 0 12px;border:none;">
+              <span class="card-title">Tabla de amortización</span>
+            </div>
+            <div style="overflow-x:auto; max-height:340px; overflow-y:auto;">
+              <table class="data-table" id="tablaAmort">
+                <thead>
+                  <tr>
+                    <th>Cuota</th>
+                    <th>Capital</th>
+                    <th>Interés</th>
+                    <th>Cuota total</th>
+                    <th>Saldo</th>
+                  </tr>
+                </thead>
+                <tbody id="amortTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Crédito -->
+<div class="modal-overlay" id="modalNuevoCredito">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Solicitar Crédito</span>
+      <button class="modal-close" onclick="Modal.close('modalNuevoCredito')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Socio</label>
+          <select class="form-control" id="nc-socio" onchange="verificarCapacidad()">
+            <option value="">— Seleccionar —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Monto solicitado ($)</label>
+          <input type="number" class="form-control" id="nc-monto" placeholder="1000000" oninput="verificarCapacidad()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Número de cuotas</label>
+          <input type="number" class="form-control" id="nc-cuotas" value="12" min="1" max="60" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tasa mensual (%)</label>
+          <input type="number" class="form-control" id="nc-tasa" value="1" step="0.1" disabled />
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Propósito del crédito</label>
+          <select class="form-control" id="nc-proposito">
+            <option>Estudio / Educación</option>
+            <option>Salud / Médico</option>
+            <option>Vivienda / Remodelación</option>
+            <option>Vehículo</option>
+            <option>Gastos personales</option>
+            <option>Otro</option>
+          </select>
+        </div>
+      </div>
+      <div id="capacidadWarning" style="display:none; margin-top:12px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modalNuevoCredito')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCredito()">Solicitar Crédito</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal detalle cuotas -->
+<div class="modal-overlay" id="modalDetalle">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <span class="modal-title" id="detalleTitle">Plan de Pagos</span>
+      <button class="modal-close" onclick="Modal.close('modalDetalle')">×</button>
+    </div>
+    <div class="modal-body" id="detalleBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modalDetalle')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+
+<script src="data.js"></script>
+<script src="auth.js"></script>
+<script src="layout.js"></script>
+<script src="app.js"></script>
+<script>
+let filtroCredito = "activos";
+
+document.addEventListener("DOMContentLoaded", () => {
+  buildLayout("Créditos", "Cartera activa: " + DataHelper.formatCOP(DataHelper.getTotalCartera()), "");
+  renderKPIs();
+  renderTabla("activos");
+  simular();
+  poblarSelectSocios();
+  initTabs("creditoTabs", (tab) => {
+    if (tab === "simulador") {
+      document.getElementById("panelTabla").style.display = "none";
+      document.getElementById("panelSimulador").style.display = "block";
+    } else {
+      document.getElementById("panelTabla").style.display = "block";
+      document.getElementById("panelSimulador").style.display = "none";
+      renderTabla(tab);
+    }
+  });
+});
+
+function renderKPIs() {
+  const activos  = DB.creditos.filter(c => c.estado === "activo").length;
+  const enMora   = DB.creditos.filter(c => c.estado === "mora").length;
+  const cartera  = DataHelper.getTotalCartera();
+  const kpis = [
+    { label: "Créditos Activos", value: activos, cls: "blue",  icon: "💳" },
+    { label: "En Mora",          value: enMora,  cls: "red",   icon: "⚠" },
+    { label: "Total Cartera",    value: DataHelper.formatCOP(cartera), cls: "gold", icon: "💰" }
+  ];
+  document.getElementById("kpiCreditos").innerHTML = kpis.map(k => `
+    <div class="kpi-card ${k.cls}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-bg-icon">${k.icon}</div>
+    </div>
+  `).join("");
+}
+
+function renderTabla(filtro) {
+  filtroCredito = filtro;
+  const map = { activos: "activo", mora: "mora", pagados: "pagado" };
+  const estado = map[filtro];
+  const lista  = estado ? DB.creditos.filter(c => c.estado === estado) : DB.creditos;
+  const titulos = { activos: "Créditos Activos", mora: "Créditos en Mora", pagados: "Créditos Pagados" };
+  document.getElementById("tablaTitulo").textContent = titulos[filtro] || "Créditos";
+
+  document.getElementById("creditosTbody").innerHTML = lista.map(c => `
+    <tr>
+      <td class="mono muted">#${c.id}</td>
+      <td>${DataHelper.getSocioNombre(c.socio_id)}</td>
+      <td>${DataHelper.formatCOP(c.monto)}</td>
+      <td>${c.cuotas_pagadas}/${c.cuotas}</td>
+      <td style="font-weight:500;">${DataHelper.formatCOP(c.saldo_capital)}</td>
+      <td class="muted">${c.tasa_mensual}% m.</td>
+      <td>${DataHelper.estadoPill(c.estado)}</td>
+      <td><button class="btn btn-link" onclick="verDetalle('${c.id}')">Ver plan →</button></td>
+    </tr>
+  `).join("");
+}
+
+function simular() {
+  const monto  = parseFloat(document.getElementById("simMonto").value)  || 0;
+  const cuotas = parseInt(document.getElementById("simCuotas").value)   || 1;
+  const tasa   = (parseFloat(document.getElementById("simTasa").value)  || 0) / 100;
+  const cuota  = DataHelper.calcularCuota(monto, tasa * 100, cuotas);
+  const total  = cuota * cuotas;
+  const interes = total - monto;
+
+  document.getElementById("simResultados").innerHTML = `
+    <div style="background:var(--navy-light);border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:11px;color:var(--muted);">Cuota mensual</div>
+      <div style="font-size:22px;font-weight:500;color:var(--navy);font-family:var(--font-display);">${DataHelper.formatCOP(Math.round(cuota))}</div>
+    </div>
+    <div style="background:var(--amber-light);border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:11px;color:var(--muted);">Total a pagar</div>
+      <div style="font-size:22px;font-weight:500;color:var(--amber);font-family:var(--font-display);">${DataHelper.formatCOP(Math.round(total))}</div>
+    </div>
+    <div style="background:var(--green-light);border-radius:10px;padding:14px;text-align:center;">
+      <div style="font-size:11px;color:var(--muted);">Total intereses</div>
+      <div style="font-size:22px;font-weight:500;color:var(--green-dark);font-family:var(--font-display);">${DataHelper.formatCOP(Math.round(interes))}</div>
+    </div>
+  `;
+
+  /* Tabla de amortización */
+  let saldo = monto;
+  let filas = "";
+  for (let i = 1; i <= cuotas; i++) {
+    const intPeriodo = saldo * tasa;
+    const capital    = cuota - intPeriodo;
+    saldo -= capital;
+    filas += `<tr>
+      <td class="muted">${i}</td>
+      <td>${DataHelper.formatCOP(Math.round(capital))}</td>
+      <td>${DataHelper.formatCOP(Math.round(intPeriodo))}</td>
+      <td style="font-weight:500;">${DataHelper.formatCOP(Math.round(cuota))}</td>
+      <td>${DataHelper.formatCOP(Math.max(0, Math.round(saldo)))}</td>
+    </tr>`;
+  }
+  document.getElementById("amortTbody").innerHTML = filas;
+}
+
+function verDetalle(id) {
+  const c = DB.creditos.find(x => x.id === id);
+  if (!c) return;
+  const socio = DataHelper.getSocioNombre(c.socio_id);
+  const cuota = DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas);
+  document.getElementById("detalleTitle").textContent = `Plan de Pagos — Crédito #${c.id}`;
+
+  let saldo = c.monto;
+  let filas = "";
+  for (let i = 1; i <= c.cuotas; i++) {
+    const r   = c.tasa_mensual / 100;
+    const int = saldo * r;
+    const cap = cuota - int;
+    saldo -= cap;
+    const pagada = i <= c.cuotas_pagadas;
+    filas += `<tr style="${pagada ? 'opacity:0.5;' : ''}">
+      <td class="muted">${i}</td>
+      <td>${DataHelper.formatCOP(Math.round(cap))}</td>
+      <td>${DataHelper.formatCOP(Math.round(int))}</td>
+      <td style="font-weight:500;">${DataHelper.formatCOP(Math.round(cuota))}</td>
+      <td>${DataHelper.formatCOP(Math.max(0, Math.round(saldo)))}</td>
+      <td>${pagada ? '<span class="pill pill-green">Pagada</span>' : '<span class="pill pill-amber">Pendiente</span>'}</td>
+    </tr>`;
+  }
+
+  document.getElementById("detalleBody").innerHTML = `
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div><div class="form-label">Socio</div><div style="margin-top:4px;font-weight:500;">${socio}</div></div>
+      <div><div class="form-label">Monto</div><div style="margin-top:4px;">${DataHelper.formatCOP(c.monto)}</div></div>
+      <div><div class="form-label">Progreso</div>
+        <div style="margin-top:4px;">${c.cuotas_pagadas}/${c.cuotas} cuotas
+        <div class="progress" style="margin-top:4px;"><div class="progress-fill green" style="width:${Math.round(c.cuotas_pagadas/c.cuotas*100)}%"></div></div></div>
+      </div>
+      <div><div class="form-label">Saldo pendiente</div><div style="margin-top:4px;font-weight:500;">${DataHelper.formatCOP(c.saldo_capital)}</div></div>
+    </div>
+    <div style="overflow-x:auto;max-height:320px;overflow-y:auto;">
+      <table class="data-table">
+        <thead><tr><th>N°</th><th>Capital</th><th>Interés</th><th>Cuota</th><th>Saldo</th><th>Estado</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+  `;
+  Modal.open("modalDetalle");
+}
+
+function poblarSelectSocios() {
+  const sel = document.getElementById("nc-socio");
+  DB.socios.filter(s => s.estado === "activo").forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.id;
+    opt.textContent = `${s.nombre} — Ahorro: ${DataHelper.formatCOP(s.ahorro_acumulado)}`;
+    sel.appendChild(opt);
+  });
+}
+
+function verificarCapacidad() {
+  const socioId = document.getElementById("nc-socio").value;
+  const monto   = parseFloat(document.getElementById("nc-monto").value) || 0;
+  const warn    = document.getElementById("capacidadWarning");
+  if (!socioId || !monto) { warn.style.display = "none"; return; }
+  const socio   = DataHelper.getSocio(socioId);
+  const maximo  = socio.ahorro_acumulado * DB.config.max_credito_multiplicador;
+  if (monto > maximo) {
+    warn.style.display = "block";
+    warn.innerHTML = `<div class="alert warn"><div class="alert-icon">⚠️</div><div><div class="alert-title">Monto excede el límite</div><div class="alert-body">El máximo para este socio es ${DataHelper.formatCOP(maximo)} (3× su ahorro).</div></div></div>`;
+  } else {
+    warn.style.display = "block";
+    warn.innerHTML = `<div class="alert success"><div class="alert-icon">✓</div><div><div class="alert-title">Monto dentro del límite</div><div class="alert-body">Cuota estimada: ${DataHelper.formatCOP(Math.round(DataHelper.calcularCuota(monto, DB.config.tasa_credito_mensual, parseInt(document.getElementById("nc-cuotas").value)||12)))} / mes.</div></div></div>`;
+  }
+}
+
+function guardarCredito() {
+  const socioId = document.getElementById("nc-socio").value;
+  const monto   = parseFloat(document.getElementById("nc-monto").value);
+  if (!socioId || !monto) { Toast.warn("Completa todos los campos."); return; }
+  const id = "C0" + (40 + DB.creditos.length);
+  DB.creditos.push({
+    id, socio_id: socioId, monto,
+    tasa_mensual: DB.config.tasa_credito_mensual,
+    cuotas: parseInt(document.getElementById("nc-cuotas").value) || 12,
+    cuotas_pagadas: 0,
+    fecha_desembolso: new Date().toISOString().split("T")[0],
+    estado: "activo",
+    proposito: document.getElementById("nc-proposito").value,
+    aprobado_por: Auth.getSession()?.id || "U001",
+    saldo_capital: monto
+  });
+  Modal.close("modalNuevoCredito");
+  renderTabla(filtroCredito);
+  renderKPIs();
+  Toast.success("Crédito registrado y aprobado correctamente.");
+}
+</script>
+</body>
+</html>

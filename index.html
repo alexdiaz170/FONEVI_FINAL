@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FONEVI — Iniciar Sesión</title>
+  <link rel="stylesheet" href="main.css"/>
+  <link rel="stylesheet" href="login.css"/>
+  <!-- Favicon + PWA -->
+  <link rel="icon"             href="favicon.svg"            type="image/svg+xml"/>
+  <link rel="icon"             href="icon-32x32.svg"   sizes="32x32" type="image/svg+xml"/>
+  <link rel="icon"             href="icon-16x16.svg"   sizes="16x16" type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="icon-180x180.svg" sizes="180x180"/>
+  <link rel="apple-touch-icon" href="icon-152x152.svg" sizes="152x152"/>
+  <link rel="manifest"         href="manifest.json"/>
+  <meta name="mobile-web-app-capable"                content="yes"/>
+  <meta name="apple-mobile-web-app-capable"          content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title"            content="FONEVI"/>
+  <meta name="application-name"                      content="FONEVI"/>
+  <meta name="theme-color"                           content="#0f2d52"/>
+  <meta name="msapplication-TileColor"               content="#0f2d52"/>
+  <meta name="msapplication-TileImage"               content="icons/icon-144x144.svg"/>
+  <meta name="description" content="Sistema de gestión del Fondo de Empleados Docentes FONEVI"/>
+  <meta property="og:title"       content="FONEVI — Fondo de Empleados Docentes"/>
+  <meta property="og:description" content="Gestión de aportes, créditos y beneficios del fondo"/>
+  <meta property="og:type"        content="website"/>
+  <meta property="og:image"       content="icons/icon-512x512.svg"/>
+  <link rel="stylesheet" href="transitions.css"/>
+</head>
+<body class="login-page">
+
+<div class="login-wrapper">
+
+  <!-- Panel Marca -->
+  <div class="login-brand">
+    <div class="brand-logo">
+      <div class="brand-icon">F</div>
+      <div>
+        <div class="brand-name">FONEVI</div>
+        <div class="brand-sub">Fondo de Empleados Docentes</div>
+      </div>
+    </div>
+    <div class="brand-tagline">
+      <h2>Tu ahorro,<br>tu <em>bienestar</em>,<br>tu fondo.</h2>
+      <p>Administra aportes, créditos y beneficios del fondo de empleados docentes con total transparencia.</p>
+    </div>
+    <div class="brand-stats">
+      <div class="brand-stat">
+        <div class="brand-stat-num">127</div>
+        <div class="brand-stat-label">Socios activos</div>
+      </div>
+      <div class="brand-stat">
+        <div class="brand-stat-num">$84M</div>
+        <div class="brand-stat-label">En ahorros</div>
+      </div>
+      <div class="brand-stat">
+        <div class="brand-stat-num">38</div>
+        <div class="brand-stat-label">Créditos activos</div>
+      </div>
+      <div class="brand-stat">
+        <div class="brand-stat-num">2020</div>
+        <div class="brand-stat-label">Año de fundación</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel Formulario -->
+  <div class="login-form-panel">
+    <h3>Bienvenido de nuevo</h3>
+    <p class="welcome-sub">Ingresa tus credenciales para acceder al sistema.</p>
+
+    <div id="loginError" class="login-error">
+      ⚠ Correo o contraseña incorrectos. Intenta de nuevo.
+    </div>
+
+    <div class="login-form">
+      <div class="form-group">
+        <label class="form-label" for="email">Correo electrónico</label>
+        <input type="email" id="email" class="form-control"
+          placeholder="usuario@fonevi.edu.co" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Contraseña</label>
+        <input type="password" id="password" class="form-control"
+          placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') doLogin()"/>
+      </div>
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">
+        Ingresar al sistema
+      </button>
+    </div>
+
+    <div class="login-hint">
+      <p>Acceso de demostración — clic para entrar:</p>
+      <div class="demo-users">
+        <div class="demo-user" onclick="fillDemo('admin@fonevi.edu.co','admin123')">
+          <div class="demo-user-av">CM</div>
+          <div>
+            <div class="demo-user-name">Carlos Muñoz</div>
+            <div class="demo-user-role">Administrador</div>
+          </div>
+          <span class="demo-user-arrow">→</span>
+        </div>
+        <div class="demo-user" onclick="fillDemo('tesorero@fonevi.edu.co','tesorer123')">
+          <div class="demo-user-av">LJ</div>
+          <div>
+            <div class="demo-user-name">Laura Jiménez</div>
+            <div class="demo-user-role">Tesorero</div>
+          </div>
+          <span class="demo-user-arrow">→</span>
+        </div>
+        <div class="demo-user" onclick="fillDemo('ana.torres@fonevi.edu.co','socio123')">
+          <div class="demo-user-av">AT</div>
+          <div>
+            <div class="demo-user-name">Ana Torres</div>
+            <div class="demo-user-role">Socio</div>
+          </div>
+          <span class="demo-user-arrow">→</span>
+        </div>
+      </div>
+    </div>
+      <div style="text-align:center;margin-top:14px;">
+        <span id="modoLabel" style="font-size:11px;color:var(--text-muted);">Verificando conexión...</span>
+      </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script src="transitions.js"></script>
+<script>
+  // Si ya hay sesión, ir directo al dashboard
+  if (Auth.getSession()) {
+    window.location.href = "dashboard.html";
+  }
+
+  function fillDemo(email, pw) {
+    document.getElementById("email").value    = email;
+    document.getElementById("password").value = pw;
+    doLogin();
+  }
+
+  async function doLogin() {
+    var btn   = document.getElementById("loginBtn");
+    var err   = document.getElementById("loginError");
+    var email = document.getElementById("email").value.trim();
+    var pass  = document.getElementById("password").value;
+
+    if (!email || !pass) {
+      err.textContent   = "⚠ Por favor ingresa tu correo y contraseña.";
+      err.style.display = "block";
+      return;
+    }
+
+    btn.textContent   = "Verificando...";
+    btn.disabled      = true;
+    err.style.display = "none";
+
+    function resetBtn() {
+      btn.textContent      = "Ingresar al sistema";
+      btn.disabled         = false;
+      btn.style.background = "";
+    }
+
+    try {
+      // Verificar conexión al servidor (1.5s max)
+      var hayServidor = false;
+      try { hayServidor = await API.ping(); } catch(pe) { hayServidor = false; }
+
+      var modoLabel = document.getElementById("modoLabel");
+      if (modoLabel) {
+        modoLabel.textContent = hayServidor
+          ? "🟢 Conectado al servidor"
+          : "🟡 Modo offline — usando datos locales";
+        modoLabel.style.color = hayServidor ? "#1d9e75" : "#ba7517";
+      }
+
+      var result = null;
+      try { result = await Auth.login(email, pass); } catch(le) { result = null; }
+
+      if (result && result.ok) {
+        btn.textContent      = "✓ Acceso concedido";
+        btn.style.background = "linear-gradient(135deg,#1d9e75,#085041)";
+        setTimeout(function() {
+          window.location.href = "dashboard.html";
+        }, 500);
+      } else {
+        err.textContent   = "⚠ " + ((result && result.mensaje) || "Correo o contraseña incorrectos.");
+        err.style.display = "block";
+        resetBtn();
+      }
+    } catch(e) {
+      err.textContent   = "⚠ Error inesperado. Intenta de nuevo.";
+      err.style.display = "block";
+      resetBtn();
+    }
+  }
+</script>
+</body>
+</html>
