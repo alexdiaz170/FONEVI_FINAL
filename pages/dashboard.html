@@ -4,23 +4,23 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>FONEVI — Dashboard</title>
-  <link rel="stylesheet" href="main.css"/>
-  <link rel="stylesheet" href="dashboard.css"/>
-  <link rel="stylesheet" href="loading.css"/>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <link rel="stylesheet" href="../css/dashboard.css"/>
+  <link rel="stylesheet" href="../css/loading.css"/>
   <!-- Favicon + PWA -->
-  <link rel="icon"             href="favicon.svg"            type="image/svg+xml"/>
-  <link rel="icon"             href="icon-32x32.svg"   sizes="32x32" type="image/svg+xml"/>
-  <link rel="icon"             href="icon-16x16.svg"   sizes="16x16" type="image/svg+xml"/>
-  <link rel="apple-touch-icon" href="icon-180x180.svg" sizes="180x180"/>
-  <link rel="apple-touch-icon" href="icon-152x152.svg" sizes="152x152"/>
-  <link rel="manifest"         href="manifest.json"/>
+  <link rel="icon"             href="../favicon.svg"            type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-32x32.svg"   sizes="32x32" type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-16x16.svg"   sizes="16x16" type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="../icons/icon-180x180.svg" sizes="180x180"/>
+  <link rel="apple-touch-icon" href="../icons/icon-152x152.svg" sizes="152x152"/>
+  <link rel="manifest"         href="../app/manifest.json"/>
   <meta name="mobile-web-app-capable"                content="yes"/>
   <meta name="apple-mobile-web-app-capable"          content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title"            content="FONEVI"/>
   <meta name="theme-color"                           content="#0f2d52"/>
-  <link rel="stylesheet" href="transitions.css"/>
-  <link rel="stylesheet" href="darkmode.css"/>
+  <link rel="stylesheet" href="../css/transitions.css"/>
+  <link rel="stylesheet" href="../css/darkmode.css"/>
 </head>
 <body>
 <div class="app-layout" id="app-layout">
@@ -51,7 +51,7 @@
         <div class="card">
           <div class="card-header">
             <span class="card-title">Tendencia de ahorro acumulado</span>
-            <a href="reportes.html" class="btn-link">Ver reporte →</a>
+            <a href="../pages/reportes.html" class="btn-link">Ver reporte →</a>
           </div>
           <div class="card-body">
             <div style="position:relative;height:220px;">
@@ -68,7 +68,7 @@
         <div class="card">
           <div class="card-header">
             <span class="card-title">Actividad reciente</span>
-            <a href="contabilidad.html" class="btn-link">Ver todo →</a>
+            <a href="../pages/contabilidad.html" class="btn-link">Ver todo →</a>
           </div>
           <div id="actividadReciente"></div>
         </div>
@@ -91,14 +91,14 @@
         <div class="card">
           <div class="card-header">
             <span class="card-title">Estado de socios</span>
-            <a href="socios.html" class="btn-link">Ver todos →</a>
+            <a href="../pages/socios.html" class="btn-link">Ver todos →</a>
           </div>
           <table class="data-table" id="sociosResumen"></table>
         </div>
         <div class="card">
           <div class="card-header">
             <span class="card-title">Alertas del sistema</span>
-            <a href="notificaciones.html" class="btn-link">Gestionar →</a>
+            <a href="../pages/notificaciones.html" class="btn-link">Gestionar →</a>
           </div>
           <div class="card-body" id="alertasPanel"></div>
         </div>
@@ -119,24 +119,37 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- Chart.js 4 — CDN -->
-<script src="darkmode.js"></script>
-<script src="transitions.js"></script>
+<script src="../js/darkmode.js"></script>
+<script src="../js/transitions.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <!-- FONEVI JS -->
-<script src="data.js"></script>
-<script src="api.js"></script>
-<script src="auth.js"></script>
-<script src="layout.js"></script>
-<script src="app.js"></script>
-<script src="charts.js"></script>
-<script src="loading.js"></script>
+<script src="../js/data.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/roles.js"></script>
+<script src="../js/layout.js"></script>
+<script src="../js/app.js"></script>
+<script src="../js/charts.js"></script>
+<script src="../js/loading.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
   var s = Auth.getSession();
+  // Redirigir socio a su vista personal
+  if (s && s.rol === "socio") {
+      window.location.href = "../pages/mi-cuenta.html";
+      return;
+  }
+  var s = Auth.getSession();
+  // Socio: redirigir a su página personal
+  var _sess = Auth.getSession();
+  if (_sess && _sess.rol === "socio") {
+    window.location.href = "../pages/mi-cuenta.html";
+    return;
+  }
   buildLayout(
     "Panel de Control",
     "Bienvenido, " + (s ? s.nombre.split(" ")[0] : "") + " \u2014 " + DB.config.periodo_actual,
-    '<a href="socios.html" class="btn btn-primary">+ Nuevo socio</a>'
+    '<a href="pages/socios.html" class="btn btn-primary">+ Nuevo socio</a>'
   );
 
   initChartDefaults();
@@ -327,10 +340,10 @@ function renderAlertas() {
 
 function renderAccesoRapido() {
   var mod = [
-    { icon:"\uD83D\uDCB0", nombre:"Registrar Aporte", info:"127 socios activos",  href:"aportes.html" },
-    { icon:"\uD83D\uDCB3", nombre:"Nuevo Cr\u00e9dito",    info:"38 activos",          href:"creditos.html" },
-    { icon:"\uD83D\uDC64", nombre:"Agregar Socio",    info:"127 registrados",     href:"socios.html" },
-    { icon:"\uD83D\uDCC4", nombre:"Generar Reporte",  info:"9 tipos disponibles", href:"reportes.html" }
+    { icon:"\uD83D\uDCB0", nombre:"Registrar Aporte", info:"127 socios activos",  href:"pages/aportes.html" },
+    { icon:"\uD83D\uDCB3", nombre:"Nuevo Cr\u00e9dito",    info:"38 activos",     href:"pages/creditos.html" },
+    { icon:"\uD83D\uDC64", nombre:"Agregar Socio",    info:"127 registrados",     href:"pages/socios.html" },
+    { icon:"\uD83D\uDCC4", nombre:"Generar Reporte",  info:"9 tipos disponibles", href:"pages/Sreportes.html" }
   ];
   document.getElementById("accesoRapido").innerHTML = mod.map(function(m){
     return '<a href="'+m.href+'" class="module-card">' +

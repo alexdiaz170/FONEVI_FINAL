@@ -134,6 +134,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const dot = document.getElementById("topNotifDot");
   if (dot) dot.style.display = DataHelper.getNotificacionesNoLeidas() > 0 ? "block" : "none";
 
+  // Listener directo en el botón (si ya existe en el DOM)
+  const logoutBtnEl = document.getElementById("logoutBtn");
+  if (logoutBtnEl && !logoutBtnEl.dataset.listenerAdded) {
+    logoutBtnEl.addEventListener("click", doLogout);
+    logoutBtnEl.dataset.listenerAdded = "1";
+  }
+
+  // Event delegation como respaldo — captura clics aunque el botón
+  // se haya creado después del DOMContentLoaded
+  document.addEventListener("click", function(e) {
+    if (e.target && (e.target.id === "logoutBtn" ||
+        e.target.closest("#logoutBtn"))) {
+      doLogout();
+    }
+  }, { once: false });
   document.getElementById("logoutBtn")?.addEventListener("click", () => {
     confirmar("¿Deseas cerrar sesión?", () => Auth.logout());
   });

@@ -2,7 +2,7 @@
   "name": "FONEVI — Fondo de Empleados Docentes",
   "short_name": "FONEVI",
   "description": "Sistema de gestión del Fondo de Empleados Docentes: aportes, créditos, dividendos y más.",
-  "start_url": "/index.html",
+  "start_url": "index.html",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "browser"],
@@ -74,28 +74,28 @@
       "name": "Panel de Control",
       "short_name": "Dashboard",
       "description": "Ver resumen general del fondo",
-      "url": "dashboard.html",
+      "url": "pages/dashboard.html",
       "icons": [{ "src": "icon-96x96.svg", "sizes": "96x96" }]
     },
     {
       "name": "Gestión de Socios",
       "short_name": "Socios",
       "description": "Administrar socios del fondo",
-      "url": "socios.html",
+      "url": "pages/socios.html",
       "icons": [{ "src": "icon-96x96.svg", "sizes": "96x96" }]
     },
     {
       "name": "Módulo de Créditos",
       "short_name": "Créditos",
       "description": "Ver y gestionar créditos",
-      "url": "creditos.html",
+      "url": "pages/creditos.html",
       "icons": [{ "src": "icon-96x96.svg", "sizes": "96x96" }]
     },
     {
       "name": "Módulo de Aportes",
       "short_name": "Aportes",
       "description": "Registrar y ver aportes",
-      "url": "aportes.html",
+      "url": "pages/aportes.html",
       "icons": [{ "src": "icon-96x96.svg", "sizes": "96x96" }]
     }
   ]

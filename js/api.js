@@ -90,7 +90,7 @@ const API = {
       if (err.name === "AbortError" || err.message === "Failed to fetch" ||
           err.message.includes("NetworkError") || err.message.includes("net::")) {
 
-        console.warn("API: servidor no disponible → modo offline (data.js)");
+        console.warn("API: servidor no disponible → modo offline (js/data.js)");
         this.MODO_OFFLINE = true;
 
         // Mostrar banner si existe
