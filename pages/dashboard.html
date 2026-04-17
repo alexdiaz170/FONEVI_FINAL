@@ -149,7 +149,7 @@ document.addEventListener("DOMContentLoaded", function() {
   buildLayout(
     "Panel de Control",
     "Bienvenido, " + (s ? s.nombre.split(" ")[0] : "") + " \u2014 " + DB.config.periodo_actual,
-    '<a href="pages/socios.html" class="btn btn-primary">+ Nuevo socio</a>'
+    '<a href="../pages/socios.html" class="btn btn-primary">+ Nuevo socio</a>'
   );
 
   initChartDefaults();
@@ -340,10 +340,10 @@ function renderAlertas() {
 
 function renderAccesoRapido() {
   var mod = [
-    { icon:"\uD83D\uDCB0", nombre:"Registrar Aporte", info:"127 socios activos",  href:"pages/aportes.html" },
-    { icon:"\uD83D\uDCB3", nombre:"Nuevo Cr\u00e9dito",    info:"38 activos",     href:"pages/creditos.html" },
-    { icon:"\uD83D\uDC64", nombre:"Agregar Socio",    info:"127 registrados",     href:"pages/socios.html" },
-    { icon:"\uD83D\uDCC4", nombre:"Generar Reporte",  info:"9 tipos disponibles", href:"pages/Sreportes.html" }
+    { icon:"\uD83D\uDCB0", nombre:"Registrar Aporte", info:"127 socios activos",  href:"../pages/aportes.html" },
+    { icon:"\uD83D\uDCB3", nombre:"Nuevo Cr\u00e9dito",    info:"38 activos",     href:"../pages/creditos.html" },
+    { icon:"\uD83D\uDC64", nombre:"Agregar Socio",    info:"127 registrados",     href:"../pages/socios.html" },
+    { icon:"\uD83D\uDCC4", nombre:"Generar Reporte",  info:"9 tipos disponibles", href:"../pages/reportes.html" }
   ];
   document.getElementById("accesoRapido").innerHTML = mod.map(function(m){
     return '<a href="'+m.href+'" class="module-card">' +

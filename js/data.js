@@ -42,7 +42,7 @@ const DB = {
   socios: [
     {
       id: "S001", nombre: "Ana María Torres", documento: "12345678",
-      email: "ana.torres@edu.co", telefono: "3001234567",
+      email: "ana.torres@fonevi.edu.co", telefono: "3001234567",
       fecha_ingreso: "2020-01-15", aporte_mensual: 120000,
       ahorro_acumulado: 3600000, estado: "activo",
       cargo: "Docente de Matemáticas", sede: "Sede Central"

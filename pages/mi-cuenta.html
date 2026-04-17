@@ -228,7 +228,18 @@
       </div>
 
     </div>
-    <div style="padding:0 0 24px;">
+    <div style="padding:0 0 24px; display:flex; flex-direction:column; gap:10px;">
+    <a href="../pages/cambiar-password.html"
+      style="display:block;width:100%;padding:13px;
+             background:var(--navy-50);color:var(--navy-800);
+             border:1.5px solid var(--border-light);border-radius:var(--r-lg);
+             font-size:14px;font-weight:600;cursor:pointer;
+             font-family:var(--font-body);text-align:center;text-decoration:none;
+             transition:all .2s ease;"
+      onmouseover="this.style.background='var(--navy-100)'"
+      onmouseout="this.style.background='var(--navy-50)'">
+      🔑 Cambiar contraseña
+    </a>
     <button onclick="doLogout()"
       style="width:100%;padding:13px;background:var(--red-50);color:var(--red-700);
              border:1.5px solid rgba(163,45,45,.2);border-radius:var(--r-lg);
@@ -260,10 +271,27 @@ document.addEventListener("DOMContentLoaded", function() {
   buildLayout("Mi Cuenta", "Bienvenido — " + DB.config.periodo_actual, "");
 
   // Buscar el socio correspondiente al usuario logueado
-  var socio = DB.socios.find(function(s) {
-    return s.email === session.email ||
-           (session.rol === "socio" && s.id === "S001"); // fallback demo
-  }) || DB.socios[0];
+  // Estrategia múltiple para garantizar que siempre se encuentra el socio
+  var socio = (function() {
+    var s = session;
+    // 1. Email exacto
+    var por_email = DB.socios.find(function(x) { return x.email === s.email; });
+    if (por_email) return por_email;
+    // 2. Email sin dominio (ana.torres@fonevi.edu.co → ana.torres)
+    var usuario = s.email.split("@")[0];
+    var por_usuario = DB.socios.find(function(x) {
+      return x.email && x.email.split("@")[0] === usuario;
+    });
+    if (por_usuario) return por_usuario;
+    // 3. Nombre (Ana Torres → ana torres)
+    var nombreNorm = s.nombre ? s.nombre.toLowerCase().trim() : "";
+    var por_nombre = DB.socios.find(function(x) {
+      return x.nombre && x.nombre.toLowerCase().trim() === nombreNorm;
+    });
+    if (por_nombre) return por_nombre;
+    // 4. Primer socio activo como último recurso
+    return DB.socios.find(function(x) { return x.estado === "activo"; }) || DB.socios[0];
+  })();
 
   if (!socio) {
     document.querySelector(".page-content").innerHTML =
@@ -272,7 +300,6 @@ document.addEventListener("DOMContentLoaded", function() {
       '<div class="empty-desc">No se encontró información de tu cuenta.</div></div>';
     return;
   }
-
   Roles.checkDeniedMessage();
 
   renderHero(socio, session);
@@ -419,7 +446,7 @@ function renderRendimientos(s) {
   var maxRend = ahorro * tasa;
 
   // Calcular el header con la tasa
-  document.querySelector("[href='pages/mi-cuenta.html'] ~ *") // no-op, solo placeholder
+  document.querySelector("[href='mi-cuenta.html'] ~ *") // no-op, solo placeholder
 
   var rows = meses.slice(0,6).map(function(mes, i) {
     var base = ahorro + (s.aporte_mensual * i);

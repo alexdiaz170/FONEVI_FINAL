@@ -1,3 +1,16 @@
+/* ── doLogout — disponible desde el momento en que carga layout.js ── */
+function doLogout() {
+  if (!confirm("¿Deseas cerrar sesión?")) return;
+  try { sessionStorage.clear(); } catch(e) {}
+  try {
+    if (typeof API !== "undefined") API.clearSession();
+  } catch(e) {}
+  if (typeof PageTransition !== "undefined") PageTransition._navigating = false;
+  var enPages = window.location.pathname.includes("/pages/") ||
+                window.location.pathname.includes("/app/");
+  window.location.href = enPages ? "../index.html" : "index.html";
+}
+
 /* ============================================================
    FONEVI — js/layout.js
    Inyecta sidebar + topbar. Todas las páginas viven en /pages/
@@ -6,36 +19,23 @@ function buildLayout(titulo, subtitulo, accionHTML) {
   const s = Auth.getSession();
   if (!s) return;
 
+  // Construir nav según el rol del usuario
+  const navHTML = (typeof Roles !== "undefined")
+    ? Roles.buildSidebar(s)
+    : _navFallback();
+  function _navFallback() {
+    return `<div class="nav-section"><span class="nav-section-label">Principal</span>
+      <a href="../pages/dashboard.html" class="nav-link" data-page="dashboard"><span class="nav-icon">⊞</span> Dashboard</a></div>`;
+  }
+
   document.getElementById("app-layout").insertAdjacentHTML("afterbegin", `
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <div class="logo-icon">F</div>
         <div><div class="logo-text-main">FONEVI</div><div class="logo-text-sub">Fondo de Empleados</div></div>
       </div>
-      <div class="nav-wrapper">
-        <div class="nav-section">
-          <span class="nav-section-label">Principal</span>
-          <a href="dashboard.html"     class="nav-link" data-page="dashboard"    ><span class="nav-icon">⊞</span> Dashboard</a>
-          <a href="socios.html"        class="nav-link" data-page="socios"       ><span class="nav-icon">👥</span> Socios</a>
-        </div>
-        <div class="nav-section">
-          <span class="nav-section-label">Finanzas</span>
-          <a href="aportes.html"       class="nav-link" data-page="aportes"      ><span class="nav-icon">💰</span> Aportes <span class="nav-badge" id="notifBadge" style="display:none">!</span></a>
-          <a href="creditos.html"      class="nav-link" data-page="creditos"     ><span class="nav-icon">💳</span> Créditos</a>
-          <a href="solidaridad.html"   class="nav-link" data-page="solidaridad"  ><span class="nav-icon">🤝</span> Solidaridad</a>
-          <a href="dividendos.html"    class="nav-link" data-page="dividendos"   ><span class="nav-icon">🎁</span> Dividendos</a>
-        </div>
-        <div class="nav-section">
-          <span class="nav-section-label">Gestión</span>
-          <a href="contabilidad.html"   class="nav-link" data-page="contabilidad" ><span class="nav-icon">📊</span> Contabilidad</a>
-          <a href="reportes.html"       class="nav-link" data-page="reportes"     ><span class="nav-icon">📈</span> Reportes</a>
-          <a href="notificaciones.html" class="nav-link" data-page="notificaciones"><span class="nav-icon">🔔</span> Notificaciones</a>
-        </div>
-        <div class="nav-section" data-role-admin>
-          <span class="nav-section-label">Sistema</span>
-          <a href="auditoria.html"      class="nav-link" data-page="auditoria"    ><span class="nav-icon">🔐</span> Auditoría</a>
-          <a href="configuracion.html"  class="nav-link" data-page="configuracion"><span class="nav-icon">⚙️</span> Configuración</a>
-        </div>
+      <div class="nav-wrapper" id="sidebarNav">
+        ${navHTML}
       </div>
       <div class="sidebar-user">
         <div class="user-avatar" id="sidebarUserAvatar">${s.avatar||"U"}</div>
@@ -43,7 +43,7 @@ function buildLayout(titulo, subtitulo, accionHTML) {
           <div class="user-name" id="sidebarUserName">${s.nombre}</div>
           <div class="user-role" id="sidebarUserRole">${s.rol}</div>
         </div>
-        <button class="user-logout" id="logoutBtn" title="Cerrar sesión">⏻</button>
+        <button class="user-logout" id="logoutBtn" title="Cerrar sesión" onclick="doLogout()">⏻</button>
       </div>
     </nav>
     <div class="overlay-backdrop" id="sidebarBackdrop"></div>
@@ -76,5 +76,28 @@ function buildLayout(titulo, subtitulo, accionHTML) {
   // Inyectar toggle de modo oscuro en el topbar
   if (typeof DarkMode !== "undefined") {
     DarkMode.injectToggle();
+  }
+
+  // Inicializar el sidebar (menuBtn y backdrop) — debe llamarse
+  // DESPUÉS de que buildLayout inyecte el HTML del sidebar
+  if (typeof Sidebar !== "undefined") {
+    Sidebar.init();
+  } else {
+    // Fallback: registrar el click del menú hamburguesa directamente
+    var menuBtn = document.getElementById("menuBtn");
+    var backdrop = document.getElementById("sidebarBackdrop");
+    var sidebar  = document.getElementById("sidebar");
+    if (menuBtn && sidebar) {
+      menuBtn.addEventListener("click", function() {
+        sidebar.classList.toggle("open");
+        if (backdrop) backdrop.classList.toggle("show");
+      });
+    }
+    if (backdrop && sidebar) {
+      backdrop.addEventListener("click", function() {
+        sidebar.classList.remove("open");
+        backdrop.classList.remove("show");
+      });
+    }
   }
 }

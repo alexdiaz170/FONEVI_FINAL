@@ -4,205 +4,850 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>FONEVI — Iniciar Sesión</title>
-  <link rel="stylesheet" href="../css/main.css"/>
-  <link rel="stylesheet" href="../css/login.css"/>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+
+  <!-- CSS del sistema -->
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/transitions.css"/>
+  <link rel="stylesheet" href="css/darkmode.css"/>
+
   <!-- Favicon + PWA -->
-  <link rel="icon"             href="../favicon.svg"            type="image/svg+xml"/>
-  <link rel="icon"             href="../icons/icon-32x32.svg"   sizes="32x32" type="image/svg+xml"/>
-  <link rel="icon"             href="../icons/icon-16x16.svg"   sizes="16x16" type="image/svg+xml"/>
-  <link rel="apple-touch-icon" href="../icons/icons/icon-180x180.svg" sizes="180x180"/>
-  <link rel="apple-touch-icon" href="../icons/icon-152x152.svg" sizes="152x152"/>
-  <link rel="manifest"         href="../app/manifest.json"/>
+  <link rel="icon"             href="favicon.svg"            type="image/svg+xml"/>
+  <link rel="icon"             href="icons/icon-32x32.svg"   sizes="32x32" type="image/svg+xml"/>
+  <link rel="icon"             href="icons/icon-16x16.svg"   sizes="16x16" type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="icons/icon-180x180.svg" sizes="180x180"/>
+  <link rel="apple-touch-icon" href="icons/icon-152x152.svg" sizes="152x152"/>
+  <link rel="manifest"         href="app/manifest.json"/>
   <meta name="mobile-web-app-capable"                content="yes"/>
   <meta name="apple-mobile-web-app-capable"          content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title"            content="FONEVI"/>
-  <meta name="application-name"                      content="FONEVI"/>
-  <meta name="theme-color"                           content="#0f2d52"/>
-  <meta name="msapplication-TileColor"               content="#0f2d52"/>
-  <meta name="msapplication-TileImage"               content="icons/icon-144x144.svg"/>
+  <meta name="theme-color"                           content="#0a1f3c"/>
   <meta name="description" content="Sistema de gestión del Fondo de Empleados Docentes FONEVI"/>
-  <meta property="og:title"       content="FONEVI — Fondo de Empleados Docentes"/>
-  <meta property="og:description" content="Gestión de aportes, créditos y beneficios del fondo"/>
-  <meta property="og:type"        content="website"/>
-  <meta property="og:image"       content="icons/icon-512x512.svg"/>
-  <link rel="stylesheet" href="../css/transitions.css"/>
+
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       BASE
+    ═══════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-font-smoothing: antialiased; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: #050f1e;
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       FONDO ANIMADO — capas de profundidad
+    ═══════════════════════════════════════════════════════ */
+    .bg-scene {
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 50%, rgba(21,61,110,.55) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 20%, rgba(201,146,42,.08) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 50% at 50% 100%, rgba(5,15,30,.9) 0%, transparent 60%);
+      background-color: #050f1e;
+    }
+
+    /* Cuadrícula animada */
+    .bg-grid {
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridDrift 20s ease-in-out infinite alternate;
+    }
+    @keyframes gridDrift {
+      from { transform: translateY(0) translateX(0); }
+      to   { transform: translateY(-20px) translateX(-10px); }
+    }
+
+    /* Orbes flotantes */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(60px); pointer-events: none; will-change: transform;
+    }
+    .orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(21,61,110,.45) 0%, transparent 70%);
+      top: -100px; left: -100px;
+      animation: orbFloat1 18s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 350px; height: 350px;
+      background: radial-gradient(circle, rgba(201,146,42,.12) 0%, transparent 70%);
+      bottom: 0; right: 10%;
+      animation: orbFloat2 22s ease-in-out infinite;
+    }
+    .orb-3 {
+      width: 250px; height: 250px;
+      background: radial-gradient(circle, rgba(29,158,117,.10) 0%, transparent 70%);
+      top: 40%; right: 30%;
+      animation: orbFloat3 15s ease-in-out infinite;
+    }
+    @keyframes orbFloat1 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33%     { transform: translate(60px,40px) scale(1.1); }
+      66%     { transform: translate(-30px,70px) scale(.95); }
+    }
+    @keyframes orbFloat2 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50%     { transform: translate(-80px,-60px) scale(1.15); }
+    }
+    @keyframes orbFloat3 {
+      0%,100% { transform: translate(0,0); }
+      50%     { transform: translate(50px,-40px); }
+    }
+
+    /* Partículas flotantes */
+    .particles { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+    .particle {
+      position: absolute; border-radius: 50%;
+      background: rgba(201,146,42,.5);
+      animation: particleRise linear infinite;
+    }
+    @keyframes particleRise {
+      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: .6; }
+      100% { transform: translateY(-20vh) scale(1); opacity: 0; }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       LAYOUT PRINCIPAL
+    ═══════════════════════════════════════════════════════ */
+    .login-scene {
+      position: relative; z-index: 10;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+
+    .login-card {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      max-width: 980px; width: 100%;
+      border-radius: 28px;
+      overflow: hidden;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.09);
+      box-shadow:
+        0 40px 100px rgba(0,0,0,.55),
+        0 0 0 1px rgba(255,255,255,.05),
+        inset 0 1px 0 rgba(255,255,255,.08);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      animation: cardIn .7s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(32px) scale(.97); filter: blur(4px); }
+      to   { opacity: 1; transform: translateY(0)    scale(1);   filter: blur(0); }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       PANEL IZQUIERDO — MARCA
+    ═══════════════════════════════════════════════════════ */
+    .brand-panel {
+      padding: 52px 48px;
+      display: flex; flex-direction: column;
+      justify-content: space-between;
+      position: relative; overflow: hidden;
+      background: linear-gradient(145deg, rgba(15,45,82,.9) 0%, rgba(5,15,30,.95) 100%);
+      border-right: 1px solid rgba(255,255,255,.07);
+    }
+
+    /* Brillo superior izquierdo */
+    .brand-panel::before {
+      content: ''; position: absolute;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(201,146,42,.12) 0%, transparent 65%);
+      top: -80px; left: -80px; pointer-events: none;
+    }
+    /* Líneas decorativas */
+    .brand-panel::after {
+      content: ''; position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        -45deg,
+        transparent, transparent 40px,
+        rgba(255,255,255,.012) 40px, rgba(255,255,255,.012) 41px
+      );
+      pointer-events: none;
+    }
+
+    /* Logo */
+    .brand-logo {
+      display: flex; align-items: center; gap: 16px;
+      position: relative; z-index: 1;
+      animation: slideRight .6s cubic-bezier(0.16,1,0.3,1) .1s both;
+    }
+    @keyframes slideRight {
+      from { opacity: 0; transform: translateX(-20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .brand-emblem {
+      width: 58px; height: 58px;
+      background: linear-gradient(135deg, #e0af50 0%, #c9922a 55%, #9a6200 100%);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 30px; font-weight: 700; color: #fff;
+      box-shadow: 0 8px 28px rgba(201,146,42,.5), inset 0 1px 0 rgba(255,255,255,.3);
+      flex-shrink: 0;
+      position: relative;
+    }
+    .brand-emblem::after {
+      content: '';
+      position: absolute; inset: 2px;
+      border-radius: 13px;
+      border: 1px solid rgba(255,255,255,.15);
+    }
+
+    .brand-id { line-height: 1.2; }
+    .brand-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px; font-weight: 700; color: #fff;
+      letter-spacing: .5px;
+    }
+    .brand-tagline-short {
+      font-size: 10px; color: rgba(255,255,255,.35);
+      letter-spacing: 2.5px; text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    /* Titular central */
+    .brand-headline {
+      flex: 1; display: flex; flex-direction: column;
+      justify-content: center; padding: 40px 0;
+      position: relative; z-index: 1;
+      animation: slideRight .6s cubic-bezier(0.16,1,0.3,1) .2s both;
+    }
+    .brand-headline h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px; font-weight: 400; color: #fff;
+      line-height: 1.25; letter-spacing: -.5px;
+      margin-bottom: 18px;
+    }
+    .brand-headline h2 em {
+      color: #e0af50; font-style: italic;
+    }
+    .brand-headline p {
+      font-size: 13.5px; color: rgba(255,255,255,.42);
+      line-height: 1.8; max-width: 300px;
+    }
+
+    /* Separador dorado */
+    .brand-divider {
+      width: 48px; height: 3px;
+      background: linear-gradient(90deg, #c9922a, #e0af50);
+      border-radius: 2px; margin: 20px 0;
+    }
+
+    /* Estadísticas */
+    .brand-stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; position: relative; z-index: 1;
+      animation: slideRight .6s cubic-bezier(0.16,1,0.3,1) .3s both;
+    }
+    .stat-chip {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 14px; padding: 14px 16px;
+      transition: all .25s ease; cursor: default;
+      position: relative; overflow: hidden;
+    }
+    .stat-chip::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(201,146,42,.3), transparent);
+      opacity: 0; transition: opacity .25s;
+    }
+    .stat-chip:hover {
+      background: rgba(255,255,255,.09);
+      border-color: rgba(201,146,42,.22);
+      transform: translateY(-2px);
+    }
+    .stat-chip:hover::before { opacity: 1; }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px; font-weight: 600;
+      color: #e0af50; line-height: 1;
+    }
+    .stat-lbl {
+      font-size: 10.5px; color: rgba(255,255,255,.38);
+      margin-top: 5px; letter-spacing: .3px;
+    }
+
+    /* Indicador online */
+    .online-badge {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; gap: 7px;
+      margin-top: 20px;
+      animation: slideRight .6s cubic-bezier(0.16,1,0.3,1) .4s both;
+    }
+    .online-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #1d9e75;
+      box-shadow: 0 0 8px rgba(29,158,117,.7);
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+    .online-text { font-size: 11px; color: rgba(255,255,255,.35); letter-spacing: .3px; }
+
+    /* ═══════════════════════════════════════════════════════
+       PANEL DERECHO — FORMULARIO
+    ═══════════════════════════════════════════════════════ */
+    .form-panel {
+      padding: 52px 48px;
+      background: rgba(255,255,255,.97);
+      display: flex; flex-direction: column; justify-content: center;
+      animation: fadeUp .6s cubic-bezier(0.16,1,0.3,1) .15s both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    [data-theme="dark"] .form-panel {
+      background: rgba(22,27,36,.97);
+    }
+
+    /* Saludo */
+    .form-greeting {
+      font-size: 11px; font-weight: 600; color: #c9922a;
+      text-transform: uppercase; letter-spacing: 2px;
+      margin-bottom: 8px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .form-greeting::before {
+      content: ''; display: block;
+      width: 20px; height: 2px;
+      background: #c9922a; border-radius: 1px;
+    }
+
+    .form-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 30px; font-weight: 600; color: #0d1f35;
+      letter-spacing: -.5px; line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    [data-theme="dark"] .form-title { color: #e2e8f0; }
+
+    .form-subtitle {
+      font-size: 13.5px; color: #7a95b0;
+      margin-bottom: 32px; line-height: 1.6;
+    }
+
+    /* Error */
+    .form-error {
+      background: #fef2f2; color: #7a1f1f;
+      border: 1px solid #f7d0d0; border-left: 3px solid #a32d2d;
+      border-radius: 10px; padding: 11px 15px;
+      font-size: 12.5px; font-weight: 500;
+      margin-bottom: 18px; display: none;
+      animation: shakeIt .4s ease;
+    }
+    @keyframes shakeIt {
+      0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)}
+    }
+    [data-theme="dark"] .form-error {
+      background: rgba(163,45,45,.15); color: #f87171;
+      border-color: rgba(163,45,45,.3); border-left-color: #a32d2d;
+    }
+
+    /* Campos */
+    .field { margin-bottom: 18px; }
+    .field-label {
+      display: block; font-size: 11.5px; font-weight: 600;
+      color: #4a6080; text-transform: uppercase;
+      letter-spacing: .8px; margin-bottom: 8px;
+    }
+    [data-theme="dark"] .field-label { color: #94a3b8; }
+
+    .field-wrap {
+      position: relative;
+    }
+    .field-icon {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 15px; pointer-events: none;
+      opacity: .45;
+    }
+    .field-input {
+      width: 100%; padding: 13px 14px 13px 42px;
+      background: #f7fafd;
+      border: 1.5px solid rgba(15,45,82,.1);
+      border-radius: 12px;
+      font-size: 14px; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      color: #0d1f35; outline: none;
+      transition: all .2s ease;
+      
+    }
+    .field-input:hover {
+      border-color: rgba(15,45,82,.2);
+      background: #fff;
+    }
+    .field-input:focus {
+      border-color: #c9922a;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(201,146,42,.12);
+    }
+    [data-theme="dark"] .field-input {
+      background: rgba(30,40,55,.8);
+      border-color: rgba(148,163,184,.12);
+      color: #e2e8f0;
+    }
+    [data-theme="dark"] .field-input:focus {
+      border-color: #c9922a;
+      background: rgba(30,40,55,.95);
+    }
+
+    /* Mostrar/ocultar contraseña */
+    .toggle-pass {
+      position: absolute; right: 13px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      font-size: 15px; opacity: .4; padding: 4px;
+      transition: opacity .15s;
+    }
+    .toggle-pass:hover { opacity: .8; }
+
+    /* Botón principal */
+    .btn-login {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, #153d6e 0%, #0a1f3c 100%);
+      color: #fff; border: none; border-radius: 12px;
+      font-size: 14.5px; font-weight: 600;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      cursor: pointer; margin-top: 6px;
+      position: relative; overflow: hidden;
+      transition: all .25s ease;
+      box-shadow: 0 6px 20px rgba(10,31,60,.35), inset 0 1px 0 rgba(255,255,255,.08);
+      letter-spacing: .2px;
+    }
+    .btn-login::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .btn-login:hover {
+      background: linear-gradient(135deg, #1a4a7a 0%, #0f2d52 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 28px rgba(10,31,60,.45);
+    }
+    .btn-login:active {
+      transform: translateY(0) scale(.99);
+      box-shadow: 0 4px 14px rgba(10,31,60,.3);
+    }
+    .btn-login:disabled {
+      opacity: .7; cursor: not-allowed; transform: none;
+    }
+
+    /* Ripple del botón */
+    .btn-login .ripple {
+      position: absolute; border-radius: 50%;
+      background: rgba(255,255,255,.2);
+      transform: scale(0);
+      animation: btnRipple .5s linear;
+      pointer-events: none;
+    }
+    @keyframes btnRipple {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    /* Separador */
+    .form-sep {
+      display: flex; align-items: center; gap: 12px;
+      margin: 22px 0 16px;
+    }
+    .form-sep::before, .form-sep::after {
+      content: ''; flex: 1; height: 1px;
+      background: rgba(15,45,82,.1);
+    }
+    [data-theme="dark"] .form-sep::before,
+    [data-theme="dark"] .form-sep::after { background: rgba(148,163,184,.12); }
+    .form-sep span {
+      font-size: 11px; color: #b0c4d8; font-weight: 500;
+      text-transform: uppercase; letter-spacing: .8px; white-space: nowrap;
+    }
+
+    /* Accesos demo */
+    .demo-section p {
+      font-size: 10.5px; color: #b0c4d8; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .demo-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .demo-card {
+      background: #f7fafd;
+      border: 1.5px solid rgba(15,45,82,.08);
+      border-radius: 12px; padding: 11px 10px;
+      cursor: pointer; text-align: center;
+      transition: all .2s ease; position: relative;
+      overflow: hidden;
+    }
+    .demo-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2.5px;
+      border-radius: 12px 12px 0 0; opacity: 0;
+      transition: opacity .2s;
+    }
+    .demo-card.admin::before  { background: linear-gradient(90deg,#0a1f3c,#2563a8); }
+    .demo-card.tesorero::before{ background: linear-gradient(90deg,#9a6200,#e0af50); }
+    .demo-card.socio::before  { background: linear-gradient(90deg,#085041,#1d9e75); }
+
+    .demo-card:hover { border-color: rgba(15,45,82,.2); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(9,30,66,.1); }
+    .demo-card:hover::before { opacity: 1; }
+    .demo-card:active { transform: translateY(0) scale(.98); }
+
+    [data-theme="dark"] .demo-card {
+      background: rgba(30,40,55,.6);
+      border-color: rgba(148,163,184,.1);
+    }
+    [data-theme="dark"] .demo-card:hover { border-color: rgba(201,146,42,.25); }
+
+    .dc-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #fff;
+      margin: 0 auto 8px;
+    }
+    .admin   .dc-avatar { background: linear-gradient(135deg,#153d6e,#2563a8); }
+    .tesorero.dc-avatar,
+    .tesorero .dc-avatar{ background: linear-gradient(135deg,#9a6200,#c9922a); }
+    .socio   .dc-avatar { background: linear-gradient(135deg,#085041,#1d9e75); }
+
+    .dc-name { font-size: 11.5px; font-weight: 600; color: #0d1f35; }
+    .dc-role {
+      font-size: 10px; color: #7a95b0; margin-top: 2px;
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    [data-theme="dark"] .dc-name { color: #e2e8f0; }
+    [data-theme="dark"] .dc-role { color: #64748b; }
+
+    /* Estado de conexión */
+    .conn-status {
+      margin-top: 18px; text-align: center;
+      font-size: 11px; color: #b0c4d8;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: #b0c4d8; }
+    .conn-dot.online  { background: #1d9e75; box-shadow: 0 0 5px rgba(29,158,117,.5); animation: blink 2s infinite; }
+    .conn-dot.offline { background: #ba7517; }
+
+    /* ═══════════════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════════════ */
+    @media (max-width: 720px) {
+      body { overflow-y: auto; }
+      .login-card { grid-template-columns: 1fr; max-width: 440px; border-radius: 24px; }
+      .brand-panel { display: none; }
+      .form-panel  { padding: 40px 32px; }
+    }
+    @media (max-width: 420px) {
+      .form-panel  { padding: 32px 22px; }
+      .demo-cards  { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
-<body class="login-page">
+<body>
 
-<div class="login-wrapper">
+  <!-- Fondo -->
+  <div class="bg-scene"></div>
+  <div class="bg-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
 
-  <!-- Panel Marca -->
-  <div class="login-brand">
-    <div class="brand-logo">
-      <div class="brand-icon">F</div>
-      <div>
-        <div class="brand-name">FONEVI</div>
-        <div class="brand-sub">Fondo de Empleados Docentes</div>
+  <!-- Partículas -->
+  <div class="particles" id="particles"></div>
+
+  <!-- Contenido -->
+  <div class="login-scene">
+    <div class="login-card">
+
+      <!-- ── PANEL MARCA ────────────────────────────── -->
+      <div class="brand-panel">
+
+        <div class="brand-logo">
+          <div class="brand-emblem">F</div>
+          <div class="brand-id">
+            <div class="brand-name">FONEVI</div>
+            <div class="brand-tagline-short">Fondo de Empleados Docentes</div>
+          </div>
+        </div>
+
+        <div class="brand-headline">
+          <h2>Tu ahorro,<br>tu <em>bienestar</em>,<br>tu fondo.</h2>
+          <div class="brand-divider"></div>
+          <p>Administra aportes, créditos y beneficios con total transparencia y seguridad.</p>
+        </div>
+
+        <div>
+          <div class="brand-stats">
+            <div class="stat-chip">
+              <div class="stat-num" id="animSocios">0</div>
+              <div class="stat-lbl">Socios activos</div>
+            </div>
+            <div class="stat-chip">
+              <div class="stat-num" id="animAhorros">$0</div>
+              <div class="stat-lbl">En ahorros</div>
+            </div>
+            <div class="stat-chip">
+              <div class="stat-num" id="animCreditos">0</div>
+              <div class="stat-lbl">Créditos activos</div>
+            </div>
+            <div class="stat-chip">
+              <div class="stat-num" id="animFund">0</div>
+              <div class="stat-lbl">Año de fundación</div>
+            </div>
+          </div>
+
+          <div class="online-badge">
+            <div class="online-dot"></div>
+            <span class="online-text">Sistema operativo &nbsp;·&nbsp; NIT 800.123.456-7</span>
+          </div>
+        </div>
+
       </div>
-    </div>
-    <div class="brand-tagline">
-      <h2>Tu ahorro,<br>tu <em>bienestar</em>,<br>tu fondo.</h2>
-      <p>Administra aportes, créditos y beneficios del fondo de empleados docentes con total transparencia.</p>
-    </div>
-    <div class="brand-stats">
-      <div class="brand-stat">
-        <div class="brand-stat-num">127</div>
-        <div class="brand-stat-label">Socios activos</div>
-      </div>
-      <div class="brand-stat">
-        <div class="brand-stat-num">$84M</div>
-        <div class="brand-stat-label">En ahorros</div>
-      </div>
-      <div class="brand-stat">
-        <div class="brand-stat-num">38</div>
-        <div class="brand-stat-label">Créditos activos</div>
-      </div>
-      <div class="brand-stat">
-        <div class="brand-stat-num">2020</div>
-        <div class="brand-stat-label">Año de fundación</div>
+
+      <!-- ── PANEL FORMULARIO ────────────────────────── -->
+      <div class="form-panel">
+
+        <div class="form-greeting">Acceso seguro</div>
+        <h1 class="form-title">Bienvenido de nuevo</h1>
+        <p class="form-subtitle">Ingresa tus credenciales para acceder a FONEVI.</p>
+
+        <div class="form-error" id="loginError"></div>
+
+        <!-- Email -->
+        <div class="field">
+          <label class="field-label" for="email">Correo electrónico</label>
+          <div class="field-wrap">
+            <span class="field-icon">✉</span>
+            <input type="email" id="email" class="field-input"
+              placeholder="usuario@fonevi.edu.co"
+              autocomplete="email"/>
+          </div>
+        </div>
+
+        <!-- Contraseña -->
+        <div class="field">
+          <label class="field-label" for="password">Contraseña</label>
+          <div class="field-wrap">
+            <span class="field-icon">🔒</span>
+            <input type="password" id="password" class="field-input"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              onkeydown="if(event.key==='Enter') doLogin()"/>
+            <button class="toggle-pass" onclick="togglePassword()" title="Mostrar contraseña">
+              👁
+            </button>
+          </div>
+        </div>
+
+        <!-- Botón -->
+        <button class="btn-login" id="loginBtn" onclick="doLogin()">
+          Ingresar al sistema
+        </button>
+
+        <!-- Separador -->
+        <div class="form-sep"><span>Accesos de demostración</span></div>
+
+        <!-- Demo cards -->
+        <div class="demo-section">
+          <div class="demo-cards">
+            <div class="demo-card admin"
+              onclick="fillDemo('admin@fonevi.edu.co','admin123')">
+              <div class="dc-avatar">CM</div>
+              <div class="dc-name">Carlos Muñoz</div>
+              <div class="dc-role">Administrador</div>
+            </div>
+            <div class="demo-card tesorero"
+              onclick="fillDemo('tesorero@fonevi.edu.co','tesorer123')">
+              <div class="dc-avatar">LJ</div>
+              <div class="dc-name">Laura Jiménez</div>
+              <div class="dc-role">Tesorero</div>
+            </div>
+            <div class="demo-card socio"
+              onclick="fillDemo('ana.torres@fonevi.edu.co','socio123')">
+              <div class="dc-avatar">AT</div>
+              <div class="dc-name">Ana Torres</div>
+              <div class="dc-role">Socio</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado conexión -->
+        <div class="conn-status">
+          <div class="conn-dot" id="connDot"></div>
+          <span id="modoLabel">Verificando conexión...</span>
+        </div>
+
       </div>
     </div>
   </div>
 
-  <!-- Panel Formulario -->
-  <div class="login-form-panel">
-    <h3>Bienvenido de nuevo</h3>
-    <p class="welcome-sub">Ingresa tus credenciales para acceder al sistema.</p>
+  <!-- Scripts -->
+  <script src="../js/darkmode.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/transitions.js"></script>
 
-    <div id="loginError" class="login-error">
-      ⚠ Correo o contraseña incorrectos. Intenta de nuevo.
-    </div>
-
-    <div class="login-form">
-      <div class="form-group">
-        <label class="form-label" for="email">Correo electrónico</label>
-        <input type="email" id="email" class="form-control"
-          placeholder="usuario@fonevi.edu.co" autocomplete="email"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="password">Contraseña</label>
-        <input type="password" id="password" class="form-control"
-          placeholder="••••••••" autocomplete="current-password"
-          onkeydown="if(event.key==='Enter') doLogin()"/>
-      </div>
-      <button class="login-btn" id="loginBtn" onclick="doLogin()">
-        Ingresar al sistema
-      </button>
-    </div>
-
-    <div class="login-hint">
-      <p>Acceso de demostración — clic para entrar:</p>
-      <div class="demo-users">
-        <div class="demo-user" onclick="fillDemo('admin@fonevi.edu.co','admin123')">
-          <div class="demo-user-av">CM</div>
-          <div>
-            <div class="demo-user-name">Carlos Muñoz</div>
-            <div class="demo-user-role">Administrador</div>
-          </div>
-          <span class="demo-user-arrow">→</span>
-        </div>
-        <div class="demo-user" onclick="fillDemo('tesorero@fonevi.edu.co','tesorer123')">
-          <div class="demo-user-av">LJ</div>
-          <div>
-            <div class="demo-user-name">Laura Jiménez</div>
-            <div class="demo-user-role">Tesorero</div>
-          </div>
-          <span class="demo-user-arrow">→</span>
-        </div>
-        <div class="demo-user" onclick="fillDemo('ana.torres@fonevi.edu.co','socio123')">
-          <div class="demo-user-av">AT</div>
-          <div>
-            <div class="demo-user-name">Ana Torres</div>
-            <div class="demo-user-role">Socio</div>
-          </div>
-          <span class="demo-user-arrow">→</span>
-        </div>
-      </div>
-    </div>
-      <div style="text-align:center;margin-top:14px;">
-        <span id="modoLabel" style="font-size:11px;color:var(--text-muted);">Verificando conexión...</span>
-      </div>
-  </div>
-</div>
-
-<script src="../js/darkmode.js"></script>
-<script src="../js/transitions.js"></script>
-<script src="../js/data.js"></script>
-<script src="../js/api.js"></script>
-<script src="../js/auth.js"></script>
-<script src="../js/roles.js"></script>
-<script src="../js/layout.js"></script>
-<script src="../js/app.js"></script>
-<script src="../js/loading.js"></script>
-<script src="../js/export.js"></script>
-<script>
-  // Si ya hay sesión, ir directo al dashboard
-  if (Auth.getSession()) {
-    window.location.href = "pages/dashboard.html";
-  }
-
-  function fillDemo(email, pw) {
-    document.getElementById("email").value    = email;
-    document.getElementById("password").value = pw;
-    doLogin();
-  }
-
-  async function doLogin() {
-    var btn   = document.getElementById("loginBtn");
-    var err   = document.getElementById("loginError");
-    var email = document.getElementById("email").value.trim();
-    var pass  = document.getElementById("password").value;
-
-    if (!email || !pass) {
-      err.textContent   = "⚠ Por favor ingresa tu correo y contraseña.";
-      err.style.display = "block";
-      return;
+  <script>
+    /* ── Redirigir si ya hay sesión ─────────────────── */
+    if (Auth.getSession()) {
+      window.location.href = "pages/dashboard.html";
     }
 
-    btn.textContent   = "Verificando...";
-    btn.disabled      = true;
-    err.style.display = "none";
+    /* ── Partículas ─────────────────────────────────── */
+    (function() {
+      var container = document.getElementById("particles");
+      var sizes = [2, 3, 2, 4, 2, 3];
+      var delays = [0, 3, 6, 10, 14, 18, 22, 26, 7, 12];
+      var durations = [12, 16, 20, 14, 18, 22];
+      var lefts = [5,12,22,35,48,58,68,78,88,95];
 
-    function resetBtn() {
-      btn.textContent      = "Ingresar al sistema";
-      btn.disabled         = false;
-      btn.style.background = "";
+      for (var i = 0; i < 10; i++) {
+        var p = document.createElement("div");
+        p.className = "particle";
+        var sz = sizes[i % sizes.length];
+        p.style.cssText = [
+          "width:"     + sz + "px",
+          "height:"    + sz + "px",
+          "left:"      + lefts[i] + "%",
+          "animation-duration:" + durations[i % durations.length] + "s",
+          "animation-delay:"    + delays[i % delays.length] + "s",
+          "opacity:" + (0.3 + (i % 4) * 0.15)
+        ].join(";");
+        container.appendChild(p);
+      }
+    })();
+
+    /* ── Contadores animados en stats ───────────────── */
+    function animCount(id, from, to, duration, formatter) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var start = performance.now();
+      var ease  = function(t) { return t < .5 ? 2*t*t : -1+(4-2*t)*t; };
+      function tick(now) {
+        var p = Math.min((now - start) / duration, 1);
+        var v = Math.round(from + (to - from) * ease(p));
+        el.textContent = formatter ? formatter(v) : v;
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
     }
 
-    try {
-      // Verificar conexión al servidor (1.5s max)
-      var hayServidor = false;
-      try { hayServidor = await API.ping(); } catch(pe) { hayServidor = false; }
+    /* Iniciar contadores con delay para que se vean en la animación de entrada */
+    setTimeout(function() {
+      animCount("animSocios",   0, 127, 1400);
+      animCount("animCreditos", 0, 38,  1200);
+      animCount("animFund",     2015, 2020, 900);
+      animCount("animAhorros",  0, 84,  1600, function(v) { return "$" + v + "M"; });
+    }, 600);
 
-      var modoLabel = document.getElementById("modoLabel");
-      if (modoLabel) {
-        modoLabel.textContent = hayServidor
-          ? "🟢 Conectado al servidor"
-          : "🟡 Modo offline — usando datos locales";
-        modoLabel.style.color = hayServidor ? "#1d9e75" : "#ba7517";
+    /* ── Toggle contraseña ──────────────────────────── */
+    function togglePassword() {
+      var inp = document.getElementById("password");
+      inp.type = inp.type === "password" ? "text" : "password";
+    }
+
+    /* ── Ripple en botón ────────────────────────────── */
+    document.getElementById("loginBtn").addEventListener("click", function(e) {
+      var btn  = this;
+      var r    = btn.getBoundingClientRect();
+      var size = Math.max(r.width, r.height) * 1.5;
+      var x    = e.clientX - r.left - size / 2;
+      var y    = e.clientY - r.top  - size / 2;
+      var wave = document.createElement("span");
+      wave.className = "ripple";
+      wave.style.cssText = "width:"+size+"px;height:"+size+"px;left:"+x+"px;top:"+y+"px";
+      btn.appendChild(wave);
+      setTimeout(function() { wave.remove(); }, 500);
+    });
+
+    /* ── fillDemo ───────────────────────────────────── */
+    function fillDemo(email, pw) {
+      document.getElementById("email").value    = email;
+      document.getElementById("password").value = pw;
+      doLogin();
+    }
+
+    /* ── doLogin ────────────────────────────────────── */
+    async function doLogin() {
+      var btn  = document.getElementById("loginBtn");
+      var err  = document.getElementById("loginError");
+      var email= document.getElementById("email").value.trim();
+      var pass = document.getElementById("password").value;
+
+      if (!email || !pass) {
+        showError("Por favor ingresa tu correo y contraseña.");
+        return;
       }
 
-      var result = null;
-      try { result = await Auth.login(email, pass); } catch(le) { result = null; }
+      btn.textContent = "Verificando...";
+      btn.disabled    = true;
+      err.style.display = "none";
 
-      if (result && result.ok) {
-        btn.textContent      = "✓ Acceso concedido";
-        btn.style.background = "linear-gradient(135deg,#1d9e75,#085041)";
-        setTimeout(function() {
-          window.location.href = "pages/dashboard.html";
-        }, 500);
-      } else {
-        err.textContent   = "⚠ " + ((result && result.mensaje) || "Correo o contraseña incorrectos.");
+      function resetBtn() {
+        btn.textContent = "Ingresar al sistema";
+        btn.disabled    = false;
+        btn.style.background = "";
+      }
+
+      function showError(msg) {
+        err.textContent   = "⚠  " + msg;
         err.style.display = "block";
+        err.style.animation = "none";
+        err.offsetHeight;
+        err.style.animation = "";
+      }
+
+      try {
+        var hayServidor = false;
+        try { hayServidor = await API.ping(); } catch(e) {}
+
+        var connDot   = document.getElementById("connDot");
+        var modoLabel = document.getElementById("modoLabel");
+        if (hayServidor) {
+          connDot.className = "conn-dot online";
+          modoLabel.textContent = "Conectado al servidor";
+        } else {
+          connDot.className = "conn-dot offline";
+          modoLabel.textContent = "Modo offline — datos locales";
+        }
+
+        var result = null;
+        try { result = await Auth.login(email, pass); } catch(e) {}
+
+        if (result && result.ok) {
+          btn.textContent = "✓  Acceso concedido";
+          btn.style.background = "linear-gradient(135deg,#1d9e75,#085041)";
+          btn.style.boxShadow  = "0 8px 24px rgba(29,158,117,.4)";
+          setTimeout(function() {
+            window.location.href = "../pages/dashboard.html";
+          }, 600);
+        } else {
+          showError((result && result.mensaje) || "Correo o contraseña incorrectos.");
+          resetBtn();
+        }
+      } catch(e) {
+        showError("Error inesperado. Intenta de nuevo.");
         resetBtn();
       }
-    } catch(e) {
-      err.textContent   = "⚠ Error inesperado. Intenta de nuevo.";
-      err.style.display = "block";
-      resetBtn();
     }
-  }
-</script>
+  </script>
 </body>
 </html>

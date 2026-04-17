@@ -92,6 +92,27 @@ function filterTable(inputId, tableId) {
 
 function confirmar(msg, cb) { if (confirm(msg)) cb(); }
 
+/* ── Logout global — funciona desde onclick o desde listener ── */
+function doLogout() {
+  if (confirm("¿Deseas cerrar sesión?")) {
+    // Limpiar sesión
+    try { API.clearSession(); } catch(e) {}
+    try {
+      sessionStorage.removeItem("fonevi_token");
+      sessionStorage.removeItem("fonevi_session");
+      sessionStorage.removeItem("fonevi_theme");
+    } catch(e) {}
+    // Resetear flag de navegación si transitions.js está cargado
+    if (typeof PageTransition !== "undefined") {
+      PageTransition._navigating = false;
+    }
+    // Navegar al login
+    var enPages = window.location.pathname.includes("/pages/") ||
+                  window.location.pathname.includes("/app/");
+    window.location.href = enPages ? "../index.html" : "index.html";
+  }
+}
+
 function fmtCOP(v) {
   return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",minimumFractionDigits:0}).format(v);
 }
@@ -122,7 +143,13 @@ document.addEventListener("DOMContentLoaded", () => {
   if (page !== "index.html" && page !== "") {
     if (!Auth.requireAuth()) return;
   }
-  Sidebar.init();
+  // Sidebar.init() ahora se llama desde buildLayout() en layout.js
+  // para garantizar que el DOM del sidebar ya existe cuando se registran
+  // los listeners del menuBtn y del backdrop.
+  // Solo llamar aquí si buildLayout no fue invocado (páginas sin sidebar).
+  if (!document.getElementById("sidebar")) {
+    Sidebar.init();
+  }
   Auth.applyRoleUI();
 
   const badge = document.getElementById("notifBadge");
@@ -149,7 +176,4 @@ document.addEventListener("DOMContentLoaded", () => {
       doLogout();
     }
   }, { once: false });
-  document.getElementById("logoutBtn")?.addEventListener("click", () => {
-    confirmar("¿Deseas cerrar sesión?", () => Auth.logout());
-  });
 });
