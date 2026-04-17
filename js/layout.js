@@ -20,12 +20,14 @@ function buildLayout(titulo, subtitulo, accionHTML) {
   if (!s) return;
 
   // Construir nav según el rol del usuario
-  const navHTML = (typeof Roles !== "undefined")
-    ? Roles.buildSidebar(s)
-    : _navFallback();
+  // Buscar Roles en scope local o en window (compatibilidad con const/var)
+  var _Roles = (typeof Roles !== "undefined") ? Roles
+             : (typeof window !== "undefined" && window.Roles) ? window.Roles
+             : null;
+  const navHTML = _Roles ? _Roles.buildSidebar(s) : _navFallback();
   function _navFallback() {
     return `<div class="nav-section"><span class="nav-section-label">Principal</span>
-      <a href="../pages/dashboard.html" class="nav-link" data-page="dashboard"><span class="nav-icon">⊞</span> Dashboard</a></div>`;
+      <a href="dashboard.html" class="nav-link" data-page="dashboard"><span class="nav-icon">⊞</span> Dashboard</a></div>`;
   }
 
   document.getElementById("app-layout").insertAdjacentHTML("afterbegin", `
