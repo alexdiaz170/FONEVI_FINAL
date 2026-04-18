@@ -6,98 +6,250 @@
   <title>FONEVI — Créditos</title>
   <link rel="stylesheet" href="../css/main.css"/>
   <link rel="stylesheet" href="../css/dashboard.css"/>
+  <link rel="stylesheet" href="../css/loading.css"/>
+  <link rel="stylesheet" href="../css/transitions.css"/>
   <link rel="stylesheet" href="../css/darkmode.css"/>
-  <!-- Favicon + PWA -->
   <link rel="icon"             href="../favicon.svg"            type="image/svg+xml"/>
-</head>
-<body>
+  <link rel="icon"             href="../icons/icon-32x32.svg"   sizes="32x32"  type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-16x16.svg"   sizes="16x16"  type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="../icons/icon-180x180.svg" sizes="180x180"/>
+  <link rel="manifest"         href="../manifest.json"/>
+  <meta name="mobile-web-app-capable"      content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color"                 content="#0f2d52"/>
 
+  <style>
+    /* ── Tarjeta de crédito visual ───────────────────────── */
+    .credito-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-faint);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      transition: all var(--t-base) var(--ease);
+    }
+    .credito-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .credito-card.mora  { border-left: 3px solid var(--red-500); }
+    .credito-card.activo{ border-left: 3px solid var(--green-500); }
+    .credito-card.pagado{ border-left: 3px solid var(--text-faint); opacity: .75; }
+
+    .cc-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-faint);
+    }
+    .cc-avatar {
+      width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--navy-200), var(--navy-400));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: var(--navy-800);
+    }
+    .cc-nombre   { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .cc-proposito{ font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .cc-codigo   { font-size: 11px; color: var(--text-faint); font-family: var(--font-mono); }
+    .cc-badge    { margin-left: auto; flex-shrink: 0; }
+
+    .cc-body { padding: 16px 20px; }
+
+    /* Grid de métricas dentro de la card */
+    .cc-metrics {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-bottom: 14px;
+    }
+    .cc-metric {}
+    .cc-metric-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .7px; color: var(--text-muted); margin-bottom: 4px;
+    }
+    .cc-metric-val {
+      font-size: 15px; font-weight: 600; color: var(--text-primary);
+    }
+    .cc-metric-val.red   { color: var(--red-500); }
+    .cc-metric-val.green { color: var(--green-500); }
+    .cc-metric-val.gold  { color: var(--gold-600); }
+
+    /* Barra de progreso */
+    .prog-wrap { margin-bottom: 14px; }
+    .prog-info  {
+      display: flex; justify-content: space-between;
+      font-size: 11.5px; color: var(--text-muted); margin-bottom: 5px;
+    }
+    .prog-track {
+      height: 8px; background: var(--bg-muted); border-radius: var(--r-full);
+      overflow: hidden;
+    }
+    .prog-fill {
+      height: 100%; border-radius: var(--r-full);
+      transition: width .8s var(--ease);
+    }
+    .prog-fill.green { background: linear-gradient(90deg, var(--green-500), var(--green-300)); }
+    .prog-fill.gold  { background: linear-gradient(90deg, var(--gold-500), var(--gold-300)); }
+    .prog-fill.red   { background: linear-gradient(90deg, var(--red-500),   var(--red-300)); }
+
+    .cc-actions {
+      display: flex; gap: 8px; padding: 12px 20px;
+      border-top: 1px solid var(--border-faint);
+      background: var(--bg-subtle);
+    }
+    .cc-actions .btn { font-size: 12px; padding: 6px 14px; }
+
+    /* ── Alerta de mora ──────────────────────────────────── */
+    .mora-banner {
+      background: var(--red-50); border: 1px solid var(--red-100);
+      border-radius: var(--r-lg); padding: 16px 20px;
+      display: flex; gap: 14px; align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    .mora-icon  { font-size: 22px; flex-shrink: 0; }
+    .mora-title { font-size: 14px; font-weight: 600; color: var(--red-700); margin-bottom: 4px; }
+    .mora-desc  { font-size: 13px; color: var(--red-500); }
+    .mora-list  { margin-top: 8px; }
+    .mora-item  {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid var(--red-100);
+      font-size: 12.5px; color: var(--red-700);
+    }
+    .mora-item:last-child { border: none; }
+
+    /* ── Panel pago de cuota ─────────────────────────────── */
+    .pago-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      margin-bottom: 16px;
+    }
+    .pago-stat {
+      background: var(--bg-subtle); border-radius: var(--r-md);
+      padding: 12px 14px;
+    }
+    .pago-stat-label { font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+    .pago-stat-val   { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+
+    /* ── Tabla amortización en modal ─────────────────────── */
+    .cuota-row-pagada { opacity: .5; }
+    .cuota-row-actual { background: var(--gold-50) !important; }
+    .cuota-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; font-family: var(--font-mono);
+    }
+    .cuota-num.pagada  { background: var(--green-50);  color: var(--green-700); }
+    .cuota-num.actual  { background: var(--gold-100);   color: var(--gold-700); }
+    .cuota-num.futura  { background: var(--bg-muted);   color: var(--text-muted); }
+
+    /* ── Simulador ───────────────────────────────────────── */
+    .sim-result {
+      background: var(--bg-subtle); border: 1px solid var(--border-faint);
+      border-radius: var(--r-lg); padding: 16px 20px; text-align: center;
+    }
+    .sim-result-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text-muted); margin-bottom: 6px; }
+    .sim-result-val   { font-family: var(--font-display); font-size: 26px; font-weight: 400; letter-spacing: -.5px; }
+    .sim-result-val.cuota { color: var(--navy-700); }
+    .sim-result-val.total { color: var(--gold-600); }
+    .sim-result-val.int   { color: var(--green-500); }
+
+    /* ── Búsqueda en tabla ───────────────────────────────── */
+    .search-row {
+      display: flex; gap: 10px; align-items: center;
+      padding: 12px 20px; border-bottom: 1px solid var(--border-faint);
+    }
+    .search-input {
+      flex: 1; padding: 8px 12px; border: 1.5px solid var(--border-light);
+      border-radius: var(--r-md); font-size: 13px; background: var(--bg-subtle);
+      font-family: var(--font-body); color: var(--text-primary); outline: none;
+    }
+    .search-input:focus { border-color: var(--gold-500); box-shadow: var(--glow-gold); }
+  </style>
+</head>
+
+<body>
 <div class="app-layout" id="app-layout">
   <div class="main-content">
     <div class="page-content">
-      <div class="page-header">
-        <h1>Módulo de Créditos</h1>
-        <p>Solicitudes, aprobaciones y seguimiento de cartera</p>
-      </div>
 
-      <!-- Resumen cartera -->
-      <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);" id="kpiCreditos"></div>
+      <!-- ── KPIs ────────────────────────────────────────── -->
+      <div class="kpi-grid" id="kpiCreditos" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;"></div>
 
-      <!-- Tabs -->
+      <!-- ── Alerta de mora (si hay) ───────────────────────── -->
+      <div id="moraPanel"></div>
+
+      <!-- ── Tabs ─────────────────────────────────────────── -->
       <div class="tab-bar" id="creditoTabs" style="margin-bottom:16px;">
         <button class="tab-btn active" data-tab="activos">Activos</button>
         <button class="tab-btn" data-tab="mora">En mora</button>
         <button class="tab-btn" data-tab="pagados">Pagados</button>
+        <button class="tab-btn" data-tab="todos">Todos</button>
         <button class="tab-btn" data-tab="simulador">Simulador</button>
       </div>
 
-      <!-- Tabla de créditos -->
+      <!-- ── Panel tabla / cards ───────────────────────────── -->
       <div id="panelTabla">
         <div class="card" style="margin-bottom:16px;">
           <div class="card-header">
             <span class="card-title" id="tablaTitulo">Créditos Activos</span>
-            <button class="btn btn-primary" onclick="Modal.open('modalNuevoCredito')" data-role-staff>
-              + Solicitar Crédito
-            </button>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-secondary btn-sm" onclick="exportarCreditos()">⬇ Excel</button>
+              <button class="btn btn-primary" onclick="Modal.open('modalNuevoCredito')">
+                + Nuevo Crédito
+              </button>
+            </div>
           </div>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>N° Crédito</th>
-                <th>Socio</th>
-                <th>Monto</th>
-                <th>Cuotas</th>
-                <th>Saldo</th>
-                <th>Tasa</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="creditosTbody"></tbody>
-          </table>
+
+          <!-- Búsqueda -->
+          <div class="search-row">
+            <input type="text" id="buscarCredito" class="search-input"
+              placeholder="Buscar por socio, código o propósito..."
+              oninput="filtrarBusqueda()"/>
+            <span id="contadorResultados" style="font-size:12px;color:var(--text-muted);white-space:nowrap;"></span>
+          </div>
+
+          <!-- Cards de crédito -->
+          <div style="padding:16px;" id="creditosGrid"></div>
+
+          <!-- Empty state -->
+          <div id="creditosEmpty" style="display:none;">
+            <div class="empty-state">
+              <div class="empty-icon">💳</div>
+              <div class="empty-title">Sin créditos</div>
+              <div class="empty-desc">No hay créditos en esta categoría.</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Simulador (oculto por defecto) -->
+      <!-- ── Panel Simulador ───────────────────────────────── -->
       <div id="panelSimulador" style="display:none;">
         <div class="card">
           <div class="card-header">
             <span class="card-title">Simulador de Crédito</span>
           </div>
           <div class="card-body">
-            <div class="form-grid cols-3" style="margin-bottom:20px;">
+            <div class="form-grid cols-3" style="margin-bottom:24px;">
               <div class="form-group">
-                <label class="form-label">Monto solicitado ($)</label>
-                <input type="number" id="simMonto"  class="form-control" value="2000000" oninput="simular()" />
+                <label class="form-label">Monto solicitado</label>
+                <input type="number" id="simMonto"  class="form-control"
+                  value="2000000" min="100000" step="50000" oninput="simular()"/>
               </div>
               <div class="form-group">
                 <label class="form-label">Número de cuotas</label>
-                <input type="number" id="simCuotas" class="form-control" value="12" min="1" max="60" oninput="simular()" />
+                <input type="number" id="simCuotas" class="form-control"
+                  value="12" min="1" max="60" oninput="simular()"/>
               </div>
               <div class="form-group">
                 <label class="form-label">Tasa mensual (%)</label>
-                <input type="number" id="simTasa"   class="form-control" value="1" step="0.1" oninput="simular()" />
+                <input type="number" id="simTasa"   class="form-control"
+                  value="1.5" step="0.1" min="0.1" max="5" oninput="simular()"/>
               </div>
             </div>
 
-            <!-- Resultados -->
             <div class="grid-3" style="margin-bottom:24px;" id="simResultados"></div>
 
-            <!-- Tabla de amortización -->
             <div class="card-header" style="padding:0 0 12px;border:none;">
               <span class="card-title">Tabla de amortización</span>
             </div>
-            <div style="overflow-x:auto; max-height:340px; overflow-y:auto;">
-              <table class="data-table" id="tablaAmort">
-                <thead>
-                  <tr>
-                    <th>Cuota</th>
-                    <th>Capital</th>
-                    <th>Interés</th>
-                    <th>Cuota total</th>
-                    <th>Saldo</th>
-                  </tr>
-                </thead>
+            <div style="overflow-x:auto;max-height:360px;overflow-y:auto;">
+              <table class="data-table">
+                <thead><tr>
+                  <th>#</th><th>Capital</th><th>Interés</th>
+                  <th>Cuota total</th><th>Saldo</th>
+                </tr></thead>
                 <tbody id="amortTbody"></tbody>
               </table>
             </div>
@@ -109,32 +261,44 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════
+     MODALES
+═══════════════════════════════════════════════════════ -->
+
 <!-- Modal Nuevo Crédito -->
 <div class="modal-overlay" id="modalNuevoCredito">
-  <div class="modal">
+  <div class="modal" style="max-width:540px;">
     <div class="modal-header">
-      <span class="modal-title">Solicitar Crédito</span>
+      <span class="modal-title">💳 Solicitar Crédito</span>
       <button class="modal-close" onclick="Modal.close('modalNuevoCredito')">×</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group">
+        <div class="form-group form-full">
           <label class="form-label">Socio</label>
           <select class="form-control" id="nc-socio" onchange="verificarCapacidad()">
-            <option value="">— Seleccionar —</option>
+            <option value="">— Seleccionar socio —</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Monto solicitado ($)</label>
-          <input type="number" class="form-control" id="nc-monto" placeholder="1000000" oninput="verificarCapacidad()" />
+          <input type="number" class="form-control" id="nc-monto"
+            placeholder="1.000.000" min="100000" step="50000"
+            oninput="verificarCapacidad()"/>
         </div>
         <div class="form-group">
-          <label class="form-label">Número de cuotas</label>
-          <input type="number" class="form-control" id="nc-cuotas" value="12" min="1" max="60" />
+          <label class="form-label">N° de cuotas (meses)</label>
+          <input type="number" class="form-control" id="nc-cuotas"
+            value="12" min="1" max="60" oninput="verificarCapacidad()"/>
         </div>
         <div class="form-group">
           <label class="form-label">Tasa mensual (%)</label>
-          <input type="number" class="form-control" id="nc-tasa" value="1" step="0.1" disabled />
+          <input type="number" class="form-control" id="nc-tasa"
+            value="1.5" step="0.1" disabled/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha desembolso</label>
+          <input type="date" class="form-control" id="nc-fecha"/>
         </div>
         <div class="form-group form-full">
           <label class="form-label">Propósito del crédito</label>
@@ -148,32 +312,78 @@
           </select>
         </div>
       </div>
-      <div id="capacidadWarning" style="display:none; margin-top:12px;"></div>
+
+      <!-- Cuadro de capacidad -->
+      <div id="capacidadBox" style="display:none;margin-top:12px;"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="Modal.close('modalNuevoCredito')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarCredito()">Solicitar Crédito</button>
+      <button class="btn btn-primary" id="btnGuardarCredito" onclick="guardarCredito()">
+        Aprobar y desembolsar
+      </button>
     </div>
   </div>
 </div>
 
-<!-- Modal detalle cuotas -->
+<!-- Modal Pagar Cuota -->
+<div class="modal-overlay" id="modalPago">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <span class="modal-title">💰 Registrar Pago de Cuota</span>
+      <button class="modal-close" onclick="Modal.close('modalPago')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="pago-grid" id="pagoResumen"></div>
+
+      <div class="form-group">
+        <label class="form-label">Fecha de pago</label>
+        <input type="date" class="form-control" id="pg-fecha"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Método de pago</label>
+        <select class="form-control" id="pg-metodo">
+          <option value="efectivo">Efectivo</option>
+          <option value="transferencia">Transferencia bancaria</option>
+          <option value="descuento_nomina">Descuento de nómina</option>
+          <option value="cheque">Cheque</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observación (opcional)</label>
+        <input type="text" class="form-control" id="pg-obs"
+          placeholder="Nota del pago..."/>
+      </div>
+
+      <div id="pagoAlerta" style="display:none;margin-top:12px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modalPago')">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmarPago" onclick="confirmarPago()">
+        ✓ Confirmar pago
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalle / Amortización -->
 <div class="modal-overlay" id="modalDetalle">
-  <div class="modal" style="max-width:680px;">
+  <div class="modal" style="max-width:700px;">
     <div class="modal-header">
       <span class="modal-title" id="detalleTitle">Plan de Pagos</span>
       <button class="modal-close" onclick="Modal.close('modalDetalle')">×</button>
     </div>
-    <div class="modal-body" id="detalleBody"></div>
+    <div class="modal-body" id="detalleBody" style="max-height:70vh;overflow-y:auto;"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="Modal.close('modalDetalle')">Cerrar</button>
+      <button class="btn btn-primary" onclick="imprimirDetalle()">🖨 Imprimir</button>
     </div>
   </div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
 
-
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
 <script src="../js/data.js"></script>
@@ -186,198 +396,645 @@
 <script src="../js/export.js"></script>
 
 <script>
-let filtroCredito = "activos";
+/* ═══════════════════════════════════════════════════════════
+   ESTADO GLOBAL
+═══════════════════════════════════════════════════════════ */
+var filtroActual = "activos";
+var creditoPagoActual = null;  // id del crédito en el modal de pago
+var busquedaActual = "";
 
-document.addEventListener("DOMContentLoaded", () => {
-  buildLayout("Créditos", "Cartera activa: " + DataHelper.formatCOP(DataHelper.getTotalCartera()), "");
+/* ═══════════════════════════════════════════════════════════
+   INICIO
+═══════════════════════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded", function() {
+  if (!Roles.proteger("creditos")) return;
+
+  buildLayout(
+    "Créditos",
+    "Cartera activa: " + DataHelper.formatCOP(DataHelper.getTotalCartera()),
+    ""
+  );
+
+  // Fecha de hoy por defecto en modales
+  var hoy = new Date().toISOString().split("T")[0];
+  document.getElementById("nc-fecha").value  = hoy;
+  document.getElementById("pg-fecha").value  = hoy;
+  document.getElementById("nc-tasa").value   = DB.config.tasa_credito_mensual;
+
   renderKPIs();
-  renderTabla("activos");
+  renderMoraPanel();
+  renderCreditos("activos");
   simular();
   poblarSelectSocios();
-  initTabs("creditoTabs", (tab) => {
+
+  initTabs("creditoTabs", function(tab) {
     if (tab === "simulador") {
-      document.getElementById("panelTabla").style.display = "none";
+      document.getElementById("panelTabla").style.display    = "none";
       document.getElementById("panelSimulador").style.display = "block";
     } else {
-      document.getElementById("panelTabla").style.display = "block";
+      document.getElementById("panelTabla").style.display    = "block";
       document.getElementById("panelSimulador").style.display = "none";
-      renderTabla(tab);
+      renderCreditos(tab);
     }
   });
 });
 
+/* ═══════════════════════════════════════════════════════════
+   KPIs
+═══════════════════════════════════════════════════════════ */
 function renderKPIs() {
-  const activos  = DB.creditos.filter(c => c.estado === "activo").length;
-  const enMora   = DB.creditos.filter(c => c.estado === "mora").length;
-  const cartera  = DataHelper.getTotalCartera();
-  const kpis = [
-    { label: "Créditos Activos", value: activos, cls: "blue",  icon: "💳" },
-    { label: "En Mora",          value: enMora,  cls: "red",   icon: "⚠" },
-    { label: "Total Cartera",    value: DataHelper.formatCOP(cartera), cls: "gold", icon: "💰" }
-  ];
-  document.getElementById("kpiCreditos").innerHTML = kpis.map(k => `
-    <div class="kpi-card ${k.cls}">
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-value">${k.value}</div>
-      <div class="kpi-bg-icon">${k.icon}</div>
-    </div>
-  `).join("");
+  var activos   = DB.creditos.filter(function(c) { return c.estado === "activo"; }).length;
+  var mora      = DB.creditos.filter(function(c) { return c.estado === "mora"; }).length;
+  var cartera   = DataHelper.getTotalCartera();
+  var pagados   = DB.creditos.filter(function(c) { return c.estado === "pagado"; }).length;
+  var cuotaMes  = DB.creditos
+    .filter(function(c) { return c.estado === "activo" || c.estado === "mora"; })
+    .reduce(function(t, c) {
+      return t + Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas));
+    }, 0);
+
+  document.getElementById("kpiCreditos").innerHTML = [
+    { label:"Créditos activos",   value: activos,                           cls:"blue",  icon:"💳" },
+    { label:"En mora",            value: mora + (mora > 0 ? " ⚠" : ""),    cls: mora > 0 ? "red" : "green", icon:"⚠" },
+    { label:"Cartera total",      value: DataHelper.formatCOP(cartera),     cls:"gold",  icon:"💰" },
+    { label:"Recaudo mensual est.",value: DataHelper.formatCOP(cuotaMes),   cls:"green", icon:"📅" },
+  ].map(function(k) {
+    return '<div class="kpi-card ' + k.cls + '">' +
+      '<div class="kpi-label">' + k.label + '</div>' +
+      '<div class="kpi-value">' + k.value + '</div>' +
+      '<div class="kpi-bg-icon">' + k.icon + '</div>' +
+    '</div>';
+  }).join("");
 }
 
-function renderTabla(filtro) {
-  filtroCredito = filtro;
-  const map = { activos: "activo", mora: "mora", pagados: "pagado" };
-  const estado = map[filtro];
-  const lista  = estado ? DB.creditos.filter(c => c.estado === estado) : DB.creditos;
-  const titulos = { activos: "Créditos Activos", mora: "Créditos en Mora", pagados: "Créditos Pagados" };
+/* ═══════════════════════════════════════════════════════════
+   PANEL DE ALERTAS DE MORA
+═══════════════════════════════════════════════════════════ */
+function renderMoraPanel() {
+  var morosos = DB.creditos.filter(function(c) { return c.estado === "mora"; });
+  var panel   = document.getElementById("moraPanel");
+
+  if (!morosos.length) { panel.innerHTML = ""; return; }
+
+  var lista = morosos.map(function(c) {
+    var socio = DataHelper.getSocioNombre(c.socio_id);
+    var dias  = calcularDiasMora(c.fecha_desembolso, c.cuotas_pagadas);
+    var intMora = Math.round(c.saldo_capital * (DB.config.tasa_mora_diaria / 100) * dias);
+    return '<div class="mora-item">' +
+      '<div><strong>' + socio + '</strong> — Crédito #' + c.id + '</div>' +
+      '<div style="display:flex;gap:12px;align-items:center;">' +
+        '<span style="color:var(--red-700);font-weight:500;">' + DataHelper.formatCOP(c.saldo_capital) + '</span>' +
+        '<span class="pill pill-red">' + dias + ' días</span>' +
+        '<span style="font-size:11px;color:var(--red-500);">+' + DataHelper.formatCOP(intMora) + ' mora</span>' +
+        '<button class="btn btn-sm" style="background:var(--red-500);color:#fff;padding:3px 10px;font-size:11px;border:none;border-radius:var(--r-full);cursor:pointer;" ' +
+          'onclick="abrirPago(\'' + c.id + '\')">Registrar pago</button>' +
+      '</div>' +
+    '</div>';
+  }).join("");
+
+  panel.innerHTML = '<div class="mora-banner">' +
+    '<div class="mora-icon">🚨</div>' +
+    '<div style="flex:1;">' +
+      '<div class="mora-title">Créditos en mora — ' + morosos.length + ' socio' + (morosos.length>1?"s":"") + '</div>' +
+      '<div class="mora-desc">Los siguientes créditos tienen cuotas vencidas. Se están acumulando intereses de mora al ' + DB.config.tasa_mora_diaria + '% diario.</div>' +
+      '<div class="mora-list">' + lista + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function calcularDiasMora(fechaDesembolso, cuotasPagadas) {
+  var fechaUltima = new Date(fechaDesembolso);
+  fechaUltima.setMonth(fechaUltima.getMonth() + cuotasPagadas + 1);
+  var hoy = new Date();
+  var diff = Math.floor((hoy - fechaUltima) / (1000*60*60*24));
+  return Math.max(1, diff);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER CARDS DE CRÉDITOS
+═══════════════════════════════════════════════════════════ */
+function renderCreditos(filtro) {
+  filtroActual = filtro;
+  var mapa = { activos:"activo", mora:"mora", pagados:"pagado" };
+  var estado = mapa[filtro];
+  var lista  = estado
+    ? DB.creditos.filter(function(c) { return c.estado === estado; })
+    : DB.creditos;
+
+  // Aplicar búsqueda
+  if (busquedaActual) {
+    var q = busquedaActual.toLowerCase();
+    lista = lista.filter(function(c) {
+      var nombre = DataHelper.getSocioNombre(c.socio_id).toLowerCase();
+      return nombre.includes(q) || c.id.toLowerCase().includes(q) ||
+             (c.proposito || "").toLowerCase().includes(q);
+    });
+  }
+
+  var titulos = {
+    activos:"Créditos Activos", mora:"Créditos en Mora",
+    pagados:"Créditos Pagados", todos:"Todos los Créditos"
+  };
   document.getElementById("tablaTitulo").textContent = titulos[filtro] || "Créditos";
 
-  document.getElementById("creditosTbody").innerHTML = lista.map(c => `
-    <tr>
-      <td class="mono muted">#${c.id}</td>
-      <td>${DataHelper.getSocioNombre(c.socio_id)}</td>
-      <td>${DataHelper.formatCOP(c.monto)}</td>
-      <td>${c.cuotas_pagadas}/${c.cuotas}</td>
-      <td style="font-weight:500;">${DataHelper.formatCOP(c.saldo_capital)}</td>
-      <td class="muted">${c.tasa_mensual}% m.</td>
-      <td>${DataHelper.estadoPill(c.estado)}</td>
-      <td><button class="btn btn-link" onclick="verDetalle('${c.id}')">Ver plan →</button></td>
-    </tr>
-  `).join("");
-}
+  var grid  = document.getElementById("creditosGrid");
+  var empty = document.getElementById("creditosEmpty");
+  var cont  = document.getElementById("contadorResultados");
+  cont.textContent = lista.length + " crédito" + (lista.length !== 1 ? "s" : "");
 
-function simular() {
-  const monto  = parseFloat(document.getElementById("simMonto").value)  || 0;
-  const cuotas = parseInt(document.getElementById("simCuotas").value)   || 1;
-  const tasa   = (parseFloat(document.getElementById("simTasa").value)  || 0) / 100;
-  const cuota  = DataHelper.calcularCuota(monto, tasa * 100, cuotas);
-  const total  = cuota * cuotas;
-  const interes = total - monto;
-
-  document.getElementById("simResultados").innerHTML = `
-    <div style="background:var(--navy-light);border-radius:10px;padding:14px;text-align:center;">
-      <div style="font-size:11px;color:var(--muted);">Cuota mensual</div>
-      <div style="font-size:22px;font-weight:500;color:var(--navy);font-family:var(--font-display);">${DataHelper.formatCOP(Math.round(cuota))}</div>
-    </div>
-    <div style="background:var(--amber-light);border-radius:10px;padding:14px;text-align:center;">
-      <div style="font-size:11px;color:var(--muted);">Total a pagar</div>
-      <div style="font-size:22px;font-weight:500;color:var(--amber);font-family:var(--font-display);">${DataHelper.formatCOP(Math.round(total))}</div>
-    </div>
-    <div style="background:var(--green-light);border-radius:10px;padding:14px;text-align:center;">
-      <div style="font-size:11px;color:var(--muted);">Total intereses</div>
-      <div style="font-size:22px;font-weight:500;color:var(--green-dark);font-family:var(--font-display);">${DataHelper.formatCOP(Math.round(interes))}</div>
-    </div>
-  `;
-
-  /* Tabla de amortización */
-  let saldo = monto;
-  let filas = "";
-  for (let i = 1; i <= cuotas; i++) {
-    const intPeriodo = saldo * tasa;
-    const capital    = cuota - intPeriodo;
-    saldo -= capital;
-    filas += `<tr>
-      <td class="muted">${i}</td>
-      <td>${DataHelper.formatCOP(Math.round(capital))}</td>
-      <td>${DataHelper.formatCOP(Math.round(intPeriodo))}</td>
-      <td style="font-weight:500;">${DataHelper.formatCOP(Math.round(cuota))}</td>
-      <td>${DataHelper.formatCOP(Math.max(0, Math.round(saldo)))}</td>
-    </tr>`;
+  if (!lista.length) {
+    grid.style.display  = "none";
+    empty.style.display = "block";
+    return;
   }
-  document.getElementById("amortTbody").innerHTML = filas;
+  grid.style.display  = "grid";
+  empty.style.display = "none";
+
+  // Grid de 2 columnas
+  grid.style.gridTemplateColumns = "repeat(auto-fill,minmax(440px,1fr))";
+  grid.style.gap = "14px";
+
+  grid.innerHTML = lista.map(function(c) {
+    return buildCreditoCard(c);
+  }).join("");
 }
 
-function verDetalle(id) {
-  const c = DB.creditos.find(x => x.id === id);
+function buildCreditoCard(c) {
+  var socio     = DataHelper.getSocio(c.socio_id) || {};
+  var nombre    = socio.nombre || "Socio desconocido";
+  var iniciales = nombre.split(" ").map(function(p){return p[0];}).slice(0,2).join("");
+  var cuota     = Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas));
+  var pct       = Math.round((c.cuotas_pagadas / c.cuotas) * 100);
+  var progCls   = c.estado === "mora" ? "red" : c.estado === "pagado" ? "gold" : "green";
+  var cuotaProx = c.cuotas_pagadas + 1;
+
+  // Interés de mora si aplica
+  var moraExtra = "";
+  if (c.estado === "mora") {
+    var dias = calcularDiasMora(c.fecha_desembolso, c.cuotas_pagadas);
+    var int  = Math.round(c.saldo_capital * (DB.config.tasa_mora_diaria / 100) * dias);
+    moraExtra = '<div style="background:var(--red-50);border:1px solid var(--red-100);' +
+      'border-radius:var(--r-sm);padding:8px 12px;font-size:12px;color:var(--red-700);margin-bottom:12px;">' +
+      '⚠ <strong>' + dias + ' días en mora</strong> — Interés acumulado: ' +
+      DataHelper.formatCOP(int) + '</div>';
+  }
+
+  var btnPago = c.estado !== "pagado"
+    ? '<button class="btn btn-primary cc-actions" style="flex:1;justify-content:center;" ' +
+        'onclick="abrirPago(\'' + c.id + '\')">💰 Registrar cuota ' + cuotaProx + '</button>'
+    : '<button class="btn btn-secondary" style="flex:1;cursor:default;" disabled>✓ Crédito liquidado</button>';
+
+  return '<div class="credito-card ' + c.estado + '">' +
+    // Header
+    '<div class="cc-header">' +
+      '<div class="cc-avatar">' + iniciales + '</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div class="cc-nombre">' + nombre + '</div>' +
+        '<div class="cc-proposito">' + (c.proposito || "Sin propósito") + '</div>' +
+        '<div class="cc-codigo">Crédito #' + c.id + ' · ' + DataHelper.formatFecha(c.fecha_desembolso) + '</div>' +
+      '</div>' +
+      '<div class="cc-badge">' + DataHelper.estadoPill(c.estado) + '</div>' +
+    '</div>' +
+
+    // Body
+    '<div class="cc-body">' +
+      moraExtra +
+
+      '<div class="cc-metrics">' +
+        metrica("Monto original",   DataHelper.formatCOP(c.monto)) +
+        metrica("Saldo pendiente",  DataHelper.formatCOP(c.saldo_capital), c.estado === "mora" ? "red" : "") +
+        metrica("Cuota mensual",    DataHelper.formatCOP(cuota), "gold") +
+      '</div>' +
+
+      // Barra de progreso
+      '<div class="prog-wrap">' +
+        '<div class="prog-info">' +
+          '<span>' + c.cuotas_pagadas + ' de ' + c.cuotas + ' cuotas pagadas</span>' +
+          '<span style="font-weight:600;">' + pct + '%</span>' +
+        '</div>' +
+        '<div class="prog-track">' +
+          '<div class="prog-fill ' + progCls + '" style="width:' + pct + '%;"></div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div style="display:flex;gap:6px;font-size:11px;color:var(--text-muted);">' +
+        '<span>Tasa: <strong>' + c.tasa_mensual + '% m.e.a.</strong></span>' +
+        '<span style="margin:0 4px;">·</span>' +
+        '<span>Restantes: <strong>' + (c.cuotas - c.cuotas_pagadas) + ' cuotas</strong></span>' +
+        '<span style="margin:0 4px;">·</span>' +
+        '<span>Aprobado por: <strong>' + (c.aprobado_por || "U001") + '</strong></span>' +
+      '</div>' +
+    '</div>' +
+
+    // Footer acciones
+    '<div class="cc-actions">' +
+      btnPago +
+      '<button class="btn btn-secondary" onclick="verDetalle(\'' + c.id + '\')" style="white-space:nowrap;">📋 Ver plan</button>' +
+      (c.estado === "mora"
+        ? '<button class="btn btn-secondary" onclick="pasarActivo(\'' + c.id + '\')" style="white-space:nowrap;font-size:11px;">✓ Quitar mora</button>'
+        : "") +
+    '</div>' +
+  '</div>';
+}
+
+function metrica(label, valor, cls) {
+  return '<div class="cc-metric">' +
+    '<div class="cc-metric-label">' + label + '</div>' +
+    '<div class="cc-metric-val ' + (cls||"") + '">' + valor + '</div>' +
+  '</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REGISTRAR PAGO DE CUOTA
+═══════════════════════════════════════════════════════════ */
+function abrirPago(creditoId) {
+  var c = DB.creditos.find(function(x) { return x.id === creditoId; });
   if (!c) return;
-  const socio = DataHelper.getSocioNombre(c.socio_id);
-  const cuota = DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas);
-  document.getElementById("detalleTitle").textContent = `Plan de Pagos — Crédito #${c.id}`;
+  creditoPagoActual = creditoId;
 
-  let saldo = c.monto;
-  let filas = "";
-  for (let i = 1; i <= c.cuotas; i++) {
-    const r   = c.tasa_mensual / 100;
-    const int = saldo * r;
-    const cap = cuota - int;
-    saldo -= cap;
-    const pagada = i <= c.cuotas_pagadas;
-    filas += `<tr style="${pagada ? 'opacity:0.5;' : ''}">
-      <td class="muted">${i}</td>
-      <td>${DataHelper.formatCOP(Math.round(cap))}</td>
-      <td>${DataHelper.formatCOP(Math.round(int))}</td>
-      <td style="font-weight:500;">${DataHelper.formatCOP(Math.round(cuota))}</td>
-      <td>${DataHelper.formatCOP(Math.max(0, Math.round(saldo)))}</td>
-      <td>${pagada ? '<span class="pill pill-green">Pagada</span>' : '<span class="pill pill-amber">Pendiente</span>'}</td>
-    </tr>`;
+  var cuota    = Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas));
+  var numCuota = c.cuotas_pagadas + 1;
+  var r        = c.tasa_mensual / 100;
+  var interes  = Math.round(c.saldo_capital * r);
+  var capital  = Math.round(cuota - interes);
+
+  // Alerta si está en mora
+  var alerta = "";
+  if (c.estado === "mora") {
+    var dias    = calcularDiasMora(c.fecha_desembolso, c.cuotas_pagadas);
+    var intMora = Math.round(c.saldo_capital * (DB.config.tasa_mora_diaria / 100) * dias);
+    alerta = '<div style="background:var(--red-50);border:1px solid var(--red-100);' +
+      'border-radius:var(--r-md);padding:12px;font-size:12.5px;color:var(--red-700);">' +
+      '⚠ Este crédito tiene <strong>' + dias + ' días en mora</strong>.<br>' +
+      'Interés de mora acumulado: <strong>' + DataHelper.formatCOP(intMora) + '</strong><br>' +
+      'Total a recaudar: <strong>' + DataHelper.formatCOP(cuota + intMora) + '</strong>' +
+    '</div>';
   }
 
-  document.getElementById("detalleBody").innerHTML = `
-    <div class="grid-2" style="margin-bottom:16px;">
-      <div><div class="form-label">Socio</div><div style="margin-top:4px;font-weight:500;">${socio}</div></div>
-      <div><div class="form-label">Monto</div><div style="margin-top:4px;">${DataHelper.formatCOP(c.monto)}</div></div>
-      <div><div class="form-label">Progreso</div>
-        <div style="margin-top:4px;">${c.cuotas_pagadas}/${c.cuotas} cuotas
-        <div class="progress" style="margin-top:4px;"><div class="progress-fill green" style="width:${Math.round(c.cuotas_pagadas/c.cuotas*100)}%"></div></div></div>
-      </div>
-      <div><div class="form-label">Saldo pendiente</div><div style="margin-top:4px;font-weight:500;">${DataHelper.formatCOP(c.saldo_capital)}</div></div>
-    </div>
-    <div style="overflow-x:auto;max-height:320px;overflow-y:auto;">
-      <table class="data-table">
-        <thead><tr><th>N°</th><th>Capital</th><th>Interés</th><th>Cuota</th><th>Saldo</th><th>Estado</th></tr></thead>
-        <tbody>${filas}</tbody>
-      </table>
-    </div>
-  `;
+  document.getElementById("pagoResumen").innerHTML =
+    statPago("Socio", DataHelper.getSocioNombre(c.socio_id)) +
+    statPago("Cuota N°", numCuota + " de " + c.cuotas) +
+    statPago("Cuota total", DataHelper.formatCOP(cuota)) +
+    statPago("Capital", DataHelper.formatCOP(capital)) +
+    statPago("Interés", DataHelper.formatCOP(interes)) +
+    statPago("Saldo tras pago", DataHelper.formatCOP(Math.max(0, c.saldo_capital - capital)));
+
+  document.getElementById("pagoAlerta").innerHTML  = alerta;
+  document.getElementById("pagoAlerta").style.display = alerta ? "block" : "none";
+
+  // Fecha hoy
+  document.getElementById("pg-fecha").value = new Date().toISOString().split("T")[0];
+  document.getElementById("pg-obs").value   = "";
+
+  Modal.open("modalPago");
+}
+
+function statPago(label, val) {
+  return '<div class="pago-stat">' +
+    '<div class="pago-stat-label">' + label + '</div>' +
+    '<div class="pago-stat-val">'   + val   + '</div>' +
+  '</div>';
+}
+
+function confirmarPago() {
+  var c = DB.creditos.find(function(x) { return x.id === creditoPagoActual; });
+  if (!c) return;
+
+  var btn = document.getElementById("btnConfirmarPago");
+  btn.textContent = "Procesando...";
+  btn.disabled    = true;
+
+  // Calcular cuota y capital a abono
+  var cuota   = Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas));
+  var r       = c.tasa_mensual / 100;
+  var interes = Math.round(c.saldo_capital * r);
+  var capital = Math.round(cuota - interes);
+
+  // Actualizar el crédito en data
+  c.cuotas_pagadas += 1;
+  c.saldo_capital   = Math.max(0, c.saldo_capital - capital);
+
+  // Si se terminaron las cuotas → pagado
+  if (c.cuotas_pagadas >= c.cuotas || c.saldo_capital <= 0) {
+    c.estado        = "pagado";
+    c.saldo_capital = 0;
+  } else if (c.estado === "mora") {
+    // Volver a activo al registrar pago
+    c.estado = "activo";
+  }
+
+  // Registrar en movimientos contables
+  if (DB.movimientos) {
+    DB.movimientos.push({
+      id:           "M" + Date.now(),
+      tipo:         "ingreso",
+      categoria:    "Abono Crédito",
+      descripcion:  "Cuota " + c.cuotas_pagadas + "/" + c.cuotas + " — Crédito #" + c.id,
+      monto:        cuota,
+      fecha:        document.getElementById("pg-fecha").value,
+      referencia:   c.id,
+      ref_tabla:    "creditos",
+      registrado_por: Auth.getSession()?.id || "U001"
+    });
+  }
+
+  // Notificar
+  setTimeout(function() {
+    btn.textContent = "✓ Confirmar pago";
+    btn.disabled    = false;
+    Modal.close("modalPago");
+
+    var mensaje = c.estado === "pagado"
+      ? "🎉 Crédito #" + c.id + " liquidado completamente."
+      : "✓ Cuota " + c.cuotas_pagadas + "/" + c.cuotas + " registrada correctamente.";
+    Toast.success(mensaje);
+
+    renderKPIs();
+    renderMoraPanel();
+    renderCreditos(filtroActual);
+  }, 600);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VER DETALLE / AMORTIZACIÓN
+═══════════════════════════════════════════════════════════ */
+function verDetalle(creditoId) {
+  var c = DB.creditos.find(function(x) { return x.id === creditoId; });
+  if (!c) return;
+
+  var socio = DataHelper.getSocioNombre(c.socio_id);
+  var cuota = DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas);
+  var pct   = Math.round((c.cuotas_pagadas / c.cuotas) * 100);
+
+  document.getElementById("detalleTitle").textContent =
+    "Plan de Pagos — Crédito #" + c.id + " · " + socio;
+
+  // Generar tabla de amortización
+  var saldo = c.monto;
+  var filas = "";
+  for (var i = 1; i <= c.cuotas; i++) {
+    var r   = c.tasa_mensual / 100;
+    var int = saldo * r;
+    var cap = cuota - int;
+    saldo  -= cap;
+
+    var pagada = i <= c.cuotas_pagadas;
+    var actual = i === c.cuotas_pagadas + 1 && c.estado !== "pagado";
+    var numCls = pagada ? "pagada" : actual ? "actual" : "futura";
+    var trCls  = pagada ? "cuota-row-pagada" : actual ? "cuota-row-actual" : "";
+    var est    = pagada
+      ? '<span class="pill pill-green">Pagada</span>'
+      : actual
+        ? '<span class="pill pill-amber">Próxima</span>'
+        : '<span style="font-size:11px;color:var(--text-muted);">Pendiente</span>';
+
+    filas += '<tr class="' + trCls + '">' +
+      '<td><span class="cuota-num ' + numCls + '">' + i + '</span></td>' +
+      '<td>' + DataHelper.formatCOP(Math.round(cap))    + '</td>' +
+      '<td>' + DataHelper.formatCOP(Math.round(int))    + '</td>' +
+      '<td style="font-weight:500;">' + DataHelper.formatCOP(Math.round(cuota)) + '</td>' +
+      '<td>' + DataHelper.formatCOP(Math.max(0,Math.round(saldo))) + '</td>' +
+      '<td>' + est + '</td>' +
+    '</tr>';
+  }
+
+  document.getElementById("detalleBody").innerHTML =
+    // Resumen del crédito
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">' +
+      resCard("Socio",       socio) +
+      resCard("Monto",       DataHelper.formatCOP(c.monto)) +
+      resCard("Saldo actual",DataHelper.formatCOP(c.saldo_capital)) +
+      resCard("Estado",      DataHelper.estadoPill(c.estado)) +
+    '</div>' +
+
+    // Progreso
+    '<div style="margin-bottom:16px;">' +
+      '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:5px;">' +
+        '<span>' + c.cuotas_pagadas + ' de ' + c.cuotas + ' cuotas pagadas</span>' +
+        '<span style="font-weight:600;">' + pct + '%</span>' +
+      '</div>' +
+      '<div class="prog-track">' +
+        '<div class="prog-fill ' + (c.estado==="mora"?"red":"green") + '" style="width:' + pct + '%;"></div>' +
+      '</div>' +
+    '</div>' +
+
+    // Tabla
+    '<div style="overflow-x:auto;">' +
+      '<table class="data-table table-animated">' +
+        '<thead><tr>' +
+          '<th>N°</th><th>Capital</th><th>Interés</th>' +
+          '<th>Cuota total</th><th>Saldo</th><th>Estado</th>' +
+        '</tr></thead>' +
+        '<tbody>' + filas + '</tbody>' +
+      '</table>' +
+    '</div>';
+
   Modal.open("modalDetalle");
 }
 
+function resCard(label, val) {
+  return '<div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:10px 14px;">' +
+    '<div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">' + label + '</div>' +
+    '<div style="font-size:14px;font-weight:500;">' + val + '</div>' +
+  '</div>';
+}
+
+function imprimirDetalle() {
+  window.print();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CREAR NUEVO CRÉDITO
+═══════════════════════════════════════════════════════════ */
 function poblarSelectSocios() {
-  const sel = document.getElementById("nc-socio");
-  DB.socios.filter(s => s.estado === "activo").forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s.id;
-    opt.textContent = `${s.nombre} — Ahorro: ${DataHelper.formatCOP(s.ahorro_acumulado)}`;
-    sel.appendChild(opt);
-  });
+  var sel = document.getElementById("nc-socio");
+  DB.socios.filter(function(s) { return s.estado === "activo"; })
+    .forEach(function(s) {
+      var opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.nombre + " · Ahorro: " + DataHelper.formatCOP(s.ahorro_acumulado);
+      sel.appendChild(opt);
+    });
 }
 
 function verificarCapacidad() {
-  const socioId = document.getElementById("nc-socio").value;
-  const monto   = parseFloat(document.getElementById("nc-monto").value) || 0;
-  const warn    = document.getElementById("capacidadWarning");
-  if (!socioId || !monto) { warn.style.display = "none"; return; }
-  const socio   = DataHelper.getSocio(socioId);
-  const maximo  = socio.ahorro_acumulado * DB.config.max_credito_multiplicador;
-  if (monto > maximo) {
-    warn.style.display = "block";
-    warn.innerHTML = `<div class="alert warn"><div class="alert-icon">⚠️</div><div><div class="alert-title">Monto excede el límite</div><div class="alert-body">El máximo para este socio es ${DataHelper.formatCOP(maximo)} (3× su ahorro).</div></div></div>`;
+  var socioId = document.getElementById("nc-socio").value;
+  var monto   = parseFloat(document.getElementById("nc-monto").value)  || 0;
+  var cuotas  = parseInt(document.getElementById("nc-cuotas").value)   || 12;
+  var box     = document.getElementById("capacidadBox");
+  var btn     = document.getElementById("btnGuardarCredito");
+
+  if (!socioId || !monto) { box.style.display = "none"; return; }
+
+  var socio    = DataHelper.getSocio(socioId);
+  var maximo   = socio.ahorro_acumulado * DB.config.max_credito_multiplicador;
+  var cuotaEst = Math.round(DataHelper.calcularCuota(monto, DB.config.tasa_credito_mensual, cuotas));
+  var ok       = monto <= maximo;
+
+  box.style.display = "block";
+  btn.disabled      = !ok;
+
+  if (ok) {
+    box.innerHTML =
+      '<div style="background:var(--green-50);border:1px solid var(--green-100);' +
+      'border-radius:var(--r-md);padding:12px 14px;font-size:12.5px;color:var(--green-700);">' +
+      '✓ Monto dentro del límite. Cuota mensual estimada: <strong>' + DataHelper.formatCOP(cuotaEst) +
+      '</strong> · Total a pagar: <strong>' + DataHelper.formatCOP(cuotaEst * cuotas) + '</strong>' +
+      '</div>';
   } else {
-    warn.style.display = "block";
-    warn.innerHTML = `<div class="alert success"><div class="alert-icon">✓</div><div><div class="alert-title">Monto dentro del límite</div><div class="alert-body">Cuota estimada: ${DataHelper.formatCOP(Math.round(DataHelper.calcularCuota(monto, DB.config.tasa_credito_mensual, parseInt(document.getElementById("nc-cuotas").value)||12)))} / mes.</div></div></div>`;
+    box.innerHTML =
+      '<div style="background:var(--red-50);border:1px solid var(--red-100);' +
+      'border-radius:var(--r-md);padding:12px 14px;font-size:12.5px;color:var(--red-700);">' +
+      '⚠ Monto excede el límite. El máximo para este socio es <strong>' +
+      DataHelper.formatCOP(maximo) + '</strong> (3× su ahorro acumulado).' +
+      '</div>';
   }
 }
 
 function guardarCredito() {
-  const socioId = document.getElementById("nc-socio").value;
-  const monto   = parseFloat(document.getElementById("nc-monto").value);
-  if (!socioId || !monto) { Toast.warn("Completa todos los campos."); return; }
-  const id = "C0" + (40 + DB.creditos.length);
+  var socioId  = document.getElementById("nc-socio").value;
+  var monto    = parseFloat(document.getElementById("nc-monto").value);
+  var cuotas   = parseInt(document.getElementById("nc-cuotas").value)   || 12;
+  var proposito = document.getElementById("nc-proposito").value;
+  var fecha    = document.getElementById("nc-fecha").value;
+
+  if (!socioId || !monto) { Toast.warn("Completa todos los campos requeridos."); return; }
+
+  var btn = document.getElementById("btnGuardarCredito");
+  btn.textContent = "Procesando...";
+  btn.disabled    = true;
+
+  var nuevoId = "C" + (100 + DB.creditos.length);
   DB.creditos.push({
-    id, socio_id: socioId, monto,
-    tasa_mensual: DB.config.tasa_credito_mensual,
-    cuotas: parseInt(document.getElementById("nc-cuotas").value) || 12,
-    cuotas_pagadas: 0,
-    fecha_desembolso: new Date().toISOString().split("T")[0],
-    estado: "activo",
-    proposito: document.getElementById("nc-proposito").value,
-    aprobado_por: Auth.getSession()?.id || "U001",
-    saldo_capital: monto
+    id:              nuevoId,
+    socio_id:        socioId,
+    monto:           monto,
+    tasa_mensual:    DB.config.tasa_credito_mensual,
+    cuotas:          cuotas,
+    cuotas_pagadas:  0,
+    fecha_desembolso: fecha || new Date().toISOString().split("T")[0],
+    estado:          "activo",
+    proposito:       proposito,
+    aprobado_por:    Auth.getSession()?.id || "U001",
+    saldo_capital:   monto
   });
-  Modal.close("modalNuevoCredito");
-  renderTabla(filtroCredito);
+
+  setTimeout(function() {
+    btn.textContent = "Aprobar y desembolsar";
+    btn.disabled    = false;
+    Modal.close("modalNuevoCredito");
+    renderKPIs();
+    renderCreditos(filtroActual);
+    Toast.success("✓ Crédito " + nuevoId + " aprobado y desembolsado.");
+  }, 500);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ESTADO DE MORA
+═══════════════════════════════════════════════════════════ */
+function pasarActivo(creditoId) {
+  var c = DB.creditos.find(function(x) { return x.id === creditoId; });
+  if (!c) return;
+  c.estado = "activo";
   renderKPIs();
-  Toast.success("Crédito registrado y aprobado correctamente.");
+  renderMoraPanel();
+  renderCreditos(filtroActual);
+  Toast.success("Crédito #" + creditoId + " marcado como activo.");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BÚSQUEDA
+═══════════════════════════════════════════════════════════ */
+function filtrarBusqueda() {
+  busquedaActual = document.getElementById("buscarCredito").value.trim();
+  renderCreditos(filtroActual);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SIMULADOR
+═══════════════════════════════════════════════════════════ */
+function simular() {
+  var monto  = parseFloat(document.getElementById("simMonto").value)  || 0;
+  var cuotas = parseInt(document.getElementById("simCuotas").value)   || 1;
+  var tasa   = parseFloat(document.getElementById("simTasa").value)   || 0;
+  var cuota  = DataHelper.calcularCuota(monto, tasa, cuotas);
+  var total  = cuota * cuotas;
+  var int    = total - monto;
+
+  document.getElementById("simResultados").innerHTML =
+    simRes("Cuota mensual", DataHelper.formatCOP(Math.round(cuota)), "cuota") +
+    simRes("Total a pagar", DataHelper.formatCOP(Math.round(total)), "total") +
+    simRes("Total intereses", DataHelper.formatCOP(Math.round(int)), "int");
+
+  var saldo = monto;
+  var filas = "";
+  for (var i = 1; i <= cuotas; i++) {
+    var r   = tasa / 100;
+    var iv  = saldo * r;
+    var cap = cuota - iv;
+    saldo  -= cap;
+    filas  += '<tr>' +
+      '<td class="muted">' + i + '</td>' +
+      '<td>' + DataHelper.formatCOP(Math.round(cap))  + '</td>' +
+      '<td>' + DataHelper.formatCOP(Math.round(iv))   + '</td>' +
+      '<td style="font-weight:500;">' + DataHelper.formatCOP(Math.round(cuota)) + '</td>' +
+      '<td>' + DataHelper.formatCOP(Math.max(0,Math.round(saldo))) + '</td>' +
+    '</tr>';
+  }
+  document.getElementById("amortTbody").innerHTML = filas;
+}
+
+function simRes(label, val, cls) {
+  return '<div class="sim-result">' +
+    '<div class="sim-result-label">' + label + '</div>' +
+    '<div class="sim-result-val ' + cls + '">' + val + '</div>' +
+  '</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORTAR A EXCEL
+═══════════════════════════════════════════════════════════ */
+function exportarCreditos() {
+  if (typeof XLSX === "undefined") { Toast.warn("Cargando exportador..."); return; }
+
+  var mapa = { activos:"activo", mora:"mora", pagados:"pagado" };
+  var estado = mapa[filtroActual];
+  var lista  = estado
+    ? DB.creditos.filter(function(c) { return c.estado === estado; })
+    : DB.creditos;
+
+  var datos = [["Código","Socio","Monto","Cuotas","Pagadas","Saldo","Tasa","Estado","Propósito","Fecha"]];
+  lista.forEach(function(c) {
+    datos.push([
+      c.id,
+      DataHelper.getSocioNombre(c.socio_id),
+      c.monto, c.cuotas, c.cuotas_pagadas,
+      c.saldo_capital, c.tasa_mensual + "%",
+      c.estado, c.proposito || "",
+      DataHelper.formatFecha(c.fecha_desembolso)
+    ]);
+  });
+
+  var wb  = XLSX.utils.book_new();
+  var ws  = XLSX.utils.aoa_to_sheet(datos);
+  XLSX.utils.book_append_sheet(wb, ws, "Créditos");
+  XLSX.writeFile(wb, "FONEVI_Creditos_" + new Date().toISOString().split("T")[0] + ".xlsx");
+  Toast.success("Archivo Excel generado.");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILIDADES
+═══════════════════════════════════════════════════════════ */
+function initTabs(containerId, onChange) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  container.querySelectorAll(".tab-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      container.querySelectorAll(".tab-btn").forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      onChange(btn.dataset.tab);
+    });
+  });
 }
 </script>
 </body>

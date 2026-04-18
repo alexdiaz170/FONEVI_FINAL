@@ -6,84 +6,204 @@
   <title>FONEVI — Perfil del Socio</title>
   <link rel="stylesheet" href="../css/main.css"/>
   <link rel="stylesheet" href="../css/dashboard.css"/>
+  <link rel="stylesheet" href="../css/loading.css"/>
+  <link rel="stylesheet" href="../css/transitions.css"/>
   <link rel="stylesheet" href="../css/darkmode.css"/>
-  <!-- Favicon + PWA -->
   <link rel="icon"             href="../favicon.svg"            type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-32x32.svg"   sizes="32x32"  type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-16x16.svg"   sizes="16x16"  type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="../icons/icon-180x180.svg" sizes="180x180"/>
+  <link rel="manifest"         href="../manifest.json"/>
+  <meta name="mobile-web-app-capable"      content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color"                 content="#0f2d52"/>
+
   <style>
+    /* ── Hero ──────────────────────────────────────────────── */
     .perfil-hero {
-      background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 50%, var(--navy-950) 100%);
-      border-radius: var(--r-xl); padding: 32px 36px; margin-bottom: 22px;
-      display: flex; align-items: center; gap: 28px;
+      background: linear-gradient(135deg,var(--navy-900) 0%,var(--navy-800) 55%,var(--navy-950) 100%);
+      border-radius: var(--r-xl); padding: 32px 36px;
+      margin-bottom: 22px; display: flex; align-items: center; gap: 28px;
       position: relative; overflow: hidden; box-shadow: var(--shadow-lg);
     }
     .perfil-hero::before {
-      content: ''; position: absolute; inset: 0;
-      background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.025) 1px, transparent 0);
-      background-size: 28px 28px; pointer-events: none;
+      content:''; position:absolute; inset:0;
+      background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.025) 1px,transparent 0);
+      background-size:28px 28px; pointer-events:none;
     }
     .perfil-hero::after {
-      content: ''; position: absolute; width: 280px; height: 280px;
-      background: radial-gradient(circle, rgba(201,146,42,.15) 0%, transparent 70%);
-      border-radius: 50%; right: -40px; bottom: -80px; pointer-events: none;
+      content:''; position:absolute; width:280px; height:280px;
+      background:radial-gradient(circle,rgba(201,146,42,.15) 0%,transparent 70%);
+      border-radius:50%; right:-40px; bottom:-80px; pointer-events:none;
+    }
+
+    /* Avatar editable */
+    .avatar-wrap {
+      position: relative; flex-shrink: 0; z-index: 1;
     }
     .perfil-avatar {
-      width: 88px; height: 88px; border-radius: 50%; flex-shrink: 0;
-      background: linear-gradient(135deg, var(--gold-300), var(--gold-600));
+      width: 88px; height: 88px; border-radius: 50%;
+      background: linear-gradient(135deg,var(--gold-300),var(--gold-600));
       display: flex; align-items: center; justify-content: center;
       font-family: var(--font-display); font-size: 32px; font-weight: 600; color: #fff;
       box-shadow: 0 4px 20px rgba(201,146,42,.4); border: 4px solid rgba(255,255,255,.2);
-      position: relative; z-index: 1;
+      cursor: default; user-select: none;
+      transition: all .25s ease;
     }
+    .avatar-color-btn {
+      position: absolute; bottom: 2px; right: 2px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #fff; border: 2px solid rgba(0,0,0,.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,.2);
+      transition: transform .2s ease;
+    }
+    .avatar-color-btn:hover { transform: scale(1.15); }
+
+    /* Popover de colores del avatar */
+    .avatar-colors {
+      position: absolute; top: 100px; left: 0;
+      background: var(--bg-surface); border: 1px solid var(--border-light);
+      border-radius: var(--r-lg); padding: 10px; z-index: 100;
+      display: none; gap: 6px; flex-wrap: wrap; width: 130px;
+      box-shadow: var(--shadow-lg);
+    }
+    .avatar-colors.open { display: flex; }
+    .avatar-color-swatch {
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      border: 2.5px solid transparent; transition: all .15s ease;
+    }
+    .avatar-color-swatch:hover  { transform: scale(1.15); }
+    .avatar-color-swatch.active { border-color: var(--text-primary); }
+
     .perfil-info { flex: 1; position: relative; z-index: 1; }
-    .perfil-nombre { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: #fff; letter-spacing: -.3px; margin-bottom: 6px; }
-    .perfil-cargo  { font-size: 14px; color: rgba(255,255,255,.6); margin-bottom: 12px; }
+    .perfil-nombre {
+      font-family: var(--font-display); font-size: 26px;
+      font-weight: 400; color: #fff; letter-spacing: -.3px; margin-bottom: 5px;
+    }
+    .perfil-cargo  { font-size: 14px; color: rgba(255,255,255,.55); margin-bottom: 12px; }
     .perfil-badges { display: flex; gap: 8px; flex-wrap: wrap; }
     .perfil-badge  { padding: 4px 12px; border-radius: var(--r-full); font-size: 11px; font-weight: 600; border: 1px solid rgba(255,255,255,.15); }
-    .badge-activo  { background: rgba(29,158,117,.25); color: #5dcaa5; border-color: rgba(93,202,165,.3); }
-    .badge-mora    { background: rgba(163,45,45,.3); color: #e07070; border-color: rgba(224,112,112,.3); }
-    .badge-pendiente { background: rgba(186,117,23,.25); color: #e0a84a; border-color: rgba(224,168,74,.3); }
-    .badge-codigo  { background: rgba(255,255,255,.1); color: rgba(255,255,255,.7); }
-    .badge-sede    { background: rgba(74,138,212,.2); color: #85b7eb; border-color: rgba(133,183,235,.3); }
+    .badge-activo  { background: rgba(29,158,117,.25);  color: #5dcaa5; border-color: rgba(93,202,165,.3); }
+    .badge-mora    { background: rgba(163,45,45,.3);    color: #e07070; border-color: rgba(224,112,112,.3); }
+    .badge-codigo  { background: rgba(255,255,255,.1);  color: rgba(255,255,255,.7); }
+    .badge-sede    { background: rgba(74,138,212,.2);   color: #85b7eb; border-color: rgba(133,183,235,.3); }
 
-    .perfil-stats  { display: flex; gap: 32px; margin-left: auto; position: relative; z-index: 1; }
-    .perfil-stat   { text-align: center; }
-    .perfil-stat-num { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: var(--gold-300); display: block; line-height: 1; }
-    .perfil-stat-lbl { font-size: 10.5px; color: rgba(255,255,255,.45); margin-top: 4px; text-transform: uppercase; letter-spacing: .8px; }
-    .perfil-stat-sep { width: 1px; background: rgba(255,255,255,.1); align-self: stretch; }
+    .perfil-stats     { display: flex; gap: 32px; margin-left: auto; position: relative; z-index: 1; }
+    .perfil-stat      { text-align: center; }
+    .perfil-stat-num  { font-family: var(--font-display); font-size: 26px; font-weight: 400; color: var(--gold-300); display: block; line-height: 1; }
+    .perfil-stat-lbl  { font-size: 10.5px; color: rgba(255,255,255,.45); margin-top: 4px; text-transform: uppercase; letter-spacing: .8px; }
+    .perfil-stat-sep  { width: 1px; background: rgba(255,255,255,.1); align-self: stretch; }
 
-    .datos-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; }
-    .dato-item  { padding: 14px 20px; border-bottom: 1px solid var(--border-faint); border-right: 1px solid var(--border-faint); }
-    .dato-item:nth-child(3n) { border-right: none; }
+    /* ── Sección de edición ────────────────────────────────── */
+    .edit-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .edit-section-title {
+      font-size: 14px; font-weight: 600; color: var(--text-primary);
+    }
+    .edit-toggle-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: var(--r-md);
+      border: 1.5px solid var(--border-light);
+      background: var(--bg-subtle); color: var(--text-secondary);
+      font-size: 12.5px; font-weight: 600; cursor: pointer;
+      font-family: var(--font-body);
+      transition: all var(--t-base) var(--ease);
+    }
+    .edit-toggle-btn:hover { border-color: var(--navy-400); color: var(--navy-700); background: var(--navy-50); }
+    .edit-toggle-btn.editing {
+      background: var(--gold-50); border-color: var(--gold-400); color: var(--gold-700);
+    }
+
+    /* Campos de datos — modo vista y modo edición */
+    .datos-grid {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 0;
+    }
+    .dato-item {
+      padding: 14px 18px; border-bottom: 1px solid var(--border-faint);
+      border-right: 1px solid var(--border-faint);
+      transition: background .15s ease;
+    }
+    .dato-item:nth-child(3n)     { border-right: none; }
     .dato-item:nth-last-child(-n+3) { border-bottom: none; }
-    .dato-label { font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 5px; }
-    .dato-value { font-size: 13.5px; color: var(--text-primary); font-weight: 500; }
+    .dato-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 5px; }
+    .dato-value { font-size: 13.5px; color: var(--text-primary); font-weight: 500; min-height: 22px; }
 
-    .timeline-item { display: flex; align-items: center; gap: 12px; padding: 11px 22px; border-bottom: 1px solid var(--border-faint); transition: background var(--t-fast); }
+    /* Input inline para campos editables */
+    .dato-input, .dato-select {
+      width: 100%; padding: 5px 9px;
+      border: 1.5px solid var(--gold-400);
+      border-radius: var(--r-sm);
+      background: var(--gold-50);
+      font-size: 13px; font-family: var(--font-body);
+      color: var(--text-primary); outline: none;
+      transition: all .2s ease;
+      box-shadow: 0 0 0 3px rgba(201,146,42,.08);
+    }
+    .dato-input:focus, .dato-select:focus {
+      border-color: var(--gold-600); box-shadow: var(--glow-gold);
+    }
+
+    /* Barra de acciones de guardado */
+    .save-bar {
+      display: none; align-items: center; justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--gold-50); border-top: 1px solid var(--gold-100);
+      border-radius: 0 0 var(--r-lg) var(--r-lg);
+    }
+    .save-bar.visible { display: flex; }
+    .save-bar-msg  { font-size: 13px; color: var(--gold-700); font-weight: 500; }
+    .save-bar-btns { display: flex; gap: 8px; }
+
+    /* ── Timeline aportes ──────────────────────────────────── */
+    .timeline-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 22px; border-bottom: 1px solid var(--border-faint);
+      transition: background var(--t-fast);
+    }
     .timeline-item:last-child { border-bottom: none; }
     .timeline-item:hover { background: var(--bg-subtle); }
-    .t-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 2px solid; }
+    .t-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; border: 2px solid; }
     .dp { background: var(--green-500); border-color: var(--green-500); }
     .dn { background: #fff; border-color: var(--amber-500); }
     .dm { background: var(--red-500); border-color: var(--red-500); }
-    .dv { background: var(--red-300); border-color: var(--red-300); }
     .t-periodo { font-size: 13px; font-weight: 500; flex: 1; }
     .t-monto   { font-size: 13px; color: var(--text-secondary); min-width: 90px; text-align: right; }
-    .t-fecha   { font-size: 11.5px; color: var(--text-muted); min-width: 80px; text-align: right; }
-    .t-metodo  { font-size: 11px; color: var(--text-faint); min-width: 90px; text-align: right; }
+    .t-fecha   { font-size: 11px; color: var(--text-muted); min-width: 80px; text-align: right; }
 
-    .credito-card { background: var(--bg-subtle); border: 1px solid var(--border-faint); border-radius: var(--r-lg); padding: 18px 20px; margin-bottom: 12px; transition: all var(--t-base) var(--ease); }
-    .credito-card:last-child { margin-bottom: 0; }
-    .credito-card:hover { box-shadow: var(--shadow-sm); border-color: var(--border-medium); }
-    .credito-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
-    .credito-id   { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
-    .credito-monto{ font-family: var(--font-display); font-size: 22px; color: var(--text-primary); }
-    .credito-prop { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-    .credito-pinfo{ display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px; }
-    .credito-saldo{ font-size: 13px; font-weight: 600; color: var(--amber-700); margin-top: 8px; }
+    /* ── Tarjeta de crédito ────────────────────────────────── */
+    .cred-card {
+      background: var(--bg-subtle); border: 1px solid var(--border-faint);
+      border-radius: var(--r-lg); padding: 18px 20px; margin-bottom: 12px;
+    }
+    .cred-card:last-child { margin-bottom: 0; }
+    .cred-card.mora { border-left: 3px solid var(--red-500); }
+    .cred-card.activo { border-left: 3px solid var(--green-500); }
+    .cred-card.pagado { border-left: 3px solid var(--text-faint); opacity: .75; }
+    .cred-head { display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .cred-id   { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+    .cred-monto{ font-family: var(--font-display); font-size: 22px; color: var(--text-primary); }
+    .cred-prop { font-size: 12px; color: var(--text-muted); }
+    .cred-prog { margin: 10px 0 6px; }
+    .cred-info {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px; margin-top: 12px;
+    }
+    .cred-info-item { background: var(--bg-surface); border-radius: var(--r-sm); padding: 8px 10px; }
+    .cred-info-lbl  { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 3px; }
+    .cred-info-val  { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 
-    .metric-mini { background: var(--bg-subtle); border: 1px solid var(--border-faint); border-radius: var(--r-md); padding: 14px 16px; text-align: center; transition: all var(--t-base) var(--ease); }
+    /* ── Métricas mini ─────────────────────────────────────── */
+    .metric-mini {
+      background: var(--bg-subtle); border: 1px solid var(--border-faint);
+      border-radius: var(--r-md); padding: 14px 16px; text-align: center;
+      transition: all var(--t-base) var(--ease);
+    }
     .metric-mini:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
-    .metric-mini-label { font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 6px; }
+    .metric-mini-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 6px; }
     .metric-mini-value { font-family: var(--font-display); font-size: 20px; font-weight: 400; line-height: 1.1; }
     .metric-mini.green .metric-mini-value { color: var(--green-700); }
     .metric-mini.red   .metric-mini-value { color: var(--red-500); }
@@ -92,116 +212,182 @@
     .metric-mini.blue  .metric-mini-value { color: var(--blue-700); }
     .metric-mini.amber .metric-mini-value { color: var(--amber-700); }
 
+    /* ── Breadcrumb ────────────────────────────────────────── */
     .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); margin-bottom: 18px; }
     .breadcrumb a { color: var(--blue-500); transition: color var(--t-fast); }
     .breadcrumb a:hover { color: var(--blue-700); }
     .breadcrumb-sep { color: var(--text-faint); }
 
-    @media print {
-      .sidebar,.topbar,.breadcrumb,.btn,.no-print { display: none !important; }
-      .main-content { margin-left: 0 !important; }
+    /* ── Panel cambiar contraseña ──────────────────────────── */
+    .pwd-panel {
+      background: linear-gradient(135deg, var(--navy-50), var(--bg-surface));
+      border: 1px solid var(--navy-100); border-radius: var(--r-lg);
+      padding: 18px 22px; display: flex; align-items: center;
+      gap: 16px; justify-content: space-between;
     }
+    .pwd-panel-icon { font-size: 28px; }
+    .pwd-panel-title { font-size: 14px; font-weight: 600; color: var(--navy-800); }
+    .pwd-panel-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Print ─────────────────────────────────────────────── */
+    @media print {
+      .sidebar,.topbar,.breadcrumb,.save-bar,.edit-toggle-btn,.no-print,
+      .avatar-color-btn,.pwd-panel { display: none !important; }
+      .main-content { margin-left: 0 !important; }
+      .dato-input, .dato-select { border: none; background: none; box-shadow: none; }
+    }
+
     @media (max-width: 768px) {
-      .perfil-hero  { flex-direction: column; text-align: center; gap: 16px; }
+      .perfil-hero { flex-direction: column; text-align: center; gap: 16px; }
       .perfil-stats { margin-left: 0; gap: 20px; }
       .datos-grid   { grid-template-columns: 1fr 1fr; }
+      .cred-info    { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
+
 <body>
 <div class="app-layout" id="app-layout">
   <div class="main-content">
     <div class="page-content">
 
+      <!-- Breadcrumb -->
       <div class="breadcrumb">
-        <a href="../pages/dashboard.html">Inicio</a>
-        <span class="breadcrumb-sep">&#x203A;</span>
-        <a href="../pages/socios.html">Socios</a>
-        <span class="breadcrumb-sep">&#x203A;</span>
+        <a href="dashboard.html">Inicio</a>
+        <span class="breadcrumb-sep">›</span>
+        <a href="socios.html">Socios</a>
+        <span class="breadcrumb-sep">›</span>
         <span id="bcrNombre">Cargando...</span>
       </div>
 
-      <!-- Hero -->
+      <!-- ── HERO ──────────────────────────────────────────── -->
       <div class="perfil-hero">
-        <div class="perfil-avatar" id="pAvatar">?</div>
+        <div class="avatar-wrap">
+          <div class="perfil-avatar" id="pAvatar">?</div>
+          <div class="avatar-color-btn no-print" id="avatarColorBtn"
+            onclick="toggleColorPicker()" title="Cambiar color del avatar">🎨</div>
+          <div class="avatar-colors" id="avatarColors"></div>
+        </div>
+
         <div class="perfil-info">
           <div class="perfil-nombre" id="pNombre">Cargando...</div>
-          <div class="perfil-cargo"  id="pCargo">&#8212;</div>
+          <div class="perfil-cargo"  id="pCargo">—</div>
           <div class="perfil-badges" id="pBadges"></div>
         </div>
-        <div class="perfil-stats"   id="pStats"></div>
+
+        <div class="perfil-stats" id="pStats"></div>
       </div>
 
-      <!-- 4 métricas -->
+      <!-- ── 4 MÉTRICAS ────────────────────────────────────── -->
       <div class="grid-4" style="margin-bottom:20px;" id="pMetricas"></div>
 
-      <!-- Gráfico ahorro + Datos personales -->
+      <!-- ── DATOS PERSONALES + GRÁFICO ──────────────────── -->
       <div class="grid-main-aside" style="margin-bottom:20px;">
+
+        <!-- Gráfico -->
         <div class="card">
           <div class="card-header">
             <span class="card-title">Evolución del ahorro acumulado</span>
             <div class="no-print" style="display:flex;gap:8px;">
-              <button class="btn btn-secondary btn-sm" onclick="window.print()">&#x1F5A8; Imprimir</button>
-              <button class="btn btn-primary btn-sm"   onclick="Toast.success('Descargando estado de cuenta...')">&#x2B07; Descargar</button>
+              <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Imprimir</button>
+              <button class="btn btn-primary btn-sm" onclick="Toast.success('Descargando estado de cuenta...')">↓ Descargar</button>
             </div>
           </div>
           <div class="card-body">
             <div style="position:relative;height:220px;"><canvas id="chartAhorro"></canvas></div>
           </div>
         </div>
-        <div class="card">
+
+        <!-- Datos personales — editables -->
+        <div class="card" style="overflow:hidden;">
           <div class="card-header">
             <span class="card-title">Datos personales</span>
-            <a href="../pages/socios.html" class="btn-link no-print">Editar &#8594;</a>
+            <button class="edit-toggle-btn no-print" id="editToggleBtn" onclick="toggleEdicion()">
+              ✏ Editar
+            </button>
           </div>
+
+          <!-- Grid de datos -->
           <div class="datos-grid" id="pDatos"></div>
+
+          <!-- Barra de guardado (oculta por defecto) -->
+          <div class="save-bar" id="saveBar">
+            <span class="save-bar-msg">💾 Tienes cambios sin guardar</span>
+            <div class="save-bar-btns">
+              <button class="btn btn-secondary btn-sm" onclick="cancelarEdicion()">Cancelar</button>
+              <button class="btn btn-primary  btn-sm" onclick="guardarCambios()">Guardar cambios</button>
+            </div>
+          </div>
+
+          <!-- Botón cambiar contraseña -->
+          <div style="padding:16px 18px 14px;border-top:1px solid var(--border-faint);">
+            <div class="pwd-panel">
+              <div class="pwd-panel-icon">🔑</div>
+              <div style="flex:1;">
+                <div class="pwd-panel-title">Contraseña de acceso</div>
+                <div class="pwd-panel-sub">Actualiza tu contraseña para mantener tu cuenta segura</div>
+              </div>
+              <a href="cambiar-password.html" class="btn btn-secondary btn-sm no-print">
+                Cambiar contraseña →
+              </a>
+            </div>
+          </div>
         </div>
+
       </div>
 
-      <!-- Historial aportes + Créditos -->
+      <!-- ── HISTORIAL APORTES + CRÉDITOS ─────────────────── -->
       <div class="grid-2" style="margin-bottom:20px;">
+
+        <!-- Historial de aportes -->
         <div class="card">
           <div class="card-header">
             <span class="card-title">Historial de aportes</span>
             <span id="pAportesResumen" style="font-size:12px;color:var(--text-muted);"></span>
           </div>
-          <div id="pAportesMini" style="padding:12px 22px 4px;display:flex;gap:12px;flex-wrap:wrap;"></div>
-          <div id="pTimeline"></div>
+          <!-- Chips resumen -->
+          <div id="pAportesMini" style="padding:10px 22px 0;display:flex;gap:10px;flex-wrap:wrap;"></div>
+          <!-- Timeline -->
+          <div id="pTimeline" style="margin-top:8px;"></div>
         </div>
+
+        <!-- Estado de créditos -->
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Cr&#xe9;ditos</span>
-            <a href="../pages/creditos.html" class="btn btn-primary btn-sm no-print">+ Nuevo cr&#xe9;dito</a>
+            <span class="card-title">Créditos</span>
+            <a href="creditos.html" class="btn btn-primary btn-sm no-print">+ Nuevo crédito</a>
           </div>
           <div class="card-body" id="pCreditos">
             <div class="empty-state">
-              <div class="empty-icon">&#x1F4B3;</div>
-              <div class="empty-title">Sin cr&#xe9;ditos</div>
-              <div class="empty-desc">Este socio no tiene cr&#xe9;ditos registrados.</div>
+              <div class="empty-icon">💳</div>
+              <div class="empty-title">Sin créditos</div>
+              <div class="empty-desc">Este socio no tiene créditos registrados.</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Estado de cuenta -->
+      <!-- ── ESTADO DE CUENTA ──────────────────────────────── -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Estado de cuenta &#8212; resumen financiero</span>
+          <span class="card-title">Estado de cuenta — resumen financiero</span>
           <span style="font-size:12px;color:var(--text-muted);" id="pFecha"></span>
         </div>
         <div class="card-body">
           <div class="grid-4" style="margin-bottom:20px;" id="pEstadoCuenta"></div>
+
+          <!-- Barra de capacidad de crédito -->
           <div style="background:var(--bg-subtle);border:1px solid var(--border-faint);border-radius:var(--r-md);padding:16px 20px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-size:13px;font-weight:600;">Capacidad de cr&#xe9;dito disponible</span>
-              <span style="font-size:13px;font-weight:600;color:var(--navy-700);" id="pCapLabel">&#8212;</span>
+              <span style="font-size:13px;font-weight:600;">Capacidad de crédito disponible</span>
+              <span style="font-size:13px;font-weight:600;color:var(--navy-700);" id="pCapLabel">—</span>
             </div>
             <div class="progress" style="height:8px;">
-              <div class="progress-fill green" id="pCapBarra" style="width:0%"></div>
+              <div class="progress-fill green" id="pCapBarra" style="width:0%;transition:width .8s ease;"></div>
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:6px;">
-              <span style="font-size:11px;color:var(--text-muted);" id="pCapUsado">Usado: &#8212;</span>
-              <span style="font-size:11px;color:var(--text-muted);" id="pCapMax">M&#xe1;ximo: &#8212;</span>
+              <span style="font-size:11px;color:var(--text-muted);" id="pCapUsado">Usado: —</span>
+              <span style="font-size:11px;color:var(--text-muted);" id="pCapMax">Máximo: —</span>
             </div>
           </div>
         </div>
@@ -212,272 +398,572 @@
 </div>
 <div class="toast-container" id="toastContainer"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Scripts -->
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="../js/data.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
 <script src="../js/roles.js"></script>
 <script src="../js/layout.js"></script>
 <script src="../js/app.js"></script>
+<script src="../js/charts.js"></script>
 <script src="../js/loading.js"></script>
-<script src="../js/export.js"></script>
-<script>
-var SID    = new URLSearchParams(window.location.search).get("id") || "S001";
-var SOCIO  = null;
 
+<script>
+/* ═══════════════════════════════════════════════════════════
+   ESTADO GLOBAL
+═══════════════════════════════════════════════════════════ */
+var SID     = new URLSearchParams(window.location.search).get("id") || "S001";
+var SOCIO   = null;
+var EDITANDO = false;
+var COLORES_AVATAR = [
+  { css: "linear-gradient(135deg,#e0af50,#c9922a)", label: "Dorado" },
+  { css: "linear-gradient(135deg,#4a8ad4,#153d6e)", label: "Azul" },
+  { css: "linear-gradient(135deg,#5dcaa5,#085041)", label: "Verde" },
+  { css: "linear-gradient(135deg,#e07070,#7a1f1f)", label: "Rojo" },
+  { css: "linear-gradient(135deg,#a891e8,#3c3489)", label: "Morado" },
+  { css: "linear-gradient(135deg,#e0a84a,#7a4a00)", label: "Ámbar" },
+  { css: "linear-gradient(135deg,#85b7eb,#0c447c)", label: "Celeste" },
+  { css: "linear-gradient(135deg,#b0b0b0,#444441)", label: "Gris" },
+];
+var avatarColorActual = 0;
+
+/* ═══════════════════════════════════════════════════════════
+   INICIO
+═══════════════════════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", function() {
   SOCIO = DataHelper.getSocio(SID);
 
   if (!SOCIO) {
-    document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:system-ui;">' +
-      '<div style="font-size:48px;margin-bottom:16px;">&#x26A0;&#xFE0F;</div>' +
-      '<h2>Socio no encontrado</h2><p style="color:#7a95b0;margin:12px 0 24px;">ID: "'+SID+'"</p>' +
-      '<a href="socios.html" style="background:#0f2d52;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;">&#x2190; Volver a socios</a></div>';
+    document.body.innerHTML =
+      '<div style="padding:60px;text-align:center;font-family:system-ui;">' +
+      '<div style="font-size:48px;margin-bottom:16px;">⚠️</div>' +
+      '<h2>Socio no encontrado</h2>' +
+      '<p style="color:#7a95b0;margin:12px 0 24px;">El ID "' + SID + '" no existe en el sistema.</p>' +
+      '<a href="socios.html" style="background:#0f2d52;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;">← Volver a socios</a>' +
+      '</div>';
     return;
   }
 
-  buildLayout("Perfil del Socio", SOCIO.nombre + " &#8212; " + SOCIO.codigo,
-    '<a href="socios.html" class="btn btn-secondary btn-sm">&#x2190; Volver</a>');
-  initChartDefaults();
+  buildLayout(
+    "Perfil del Socio",
+    SOCIO.nombre + " — " + SOCIO.codigo,
+    '<a href="socios.html" class="btn btn-secondary btn-sm">← Socios</a>'
+  );
+
+  if (typeof initChartDefaults === "function") initChartDefaults();
 
   document.getElementById("bcrNombre").textContent = SOCIO.nombre;
-  document.getElementById("pFecha").textContent = "Generado: " +
-    new Date().toLocaleDateString("es-CO",{day:"2-digit",month:"long",year:"numeric"});
+  document.getElementById("pFecha").textContent =
+    "Generado: " + new Date().toLocaleDateString("es-CO", { day:"2-digit", month:"long", year:"numeric" });
 
-  // ── Skeletons inmediatos ─────────────────────────────────
-  Skeleton.show("pMetricas", "metrics", 4);
-  Skeleton.show("pDatos",    "text",    9);
-  Skeleton.show("pTimeline", "timeline", 5);
-  Skeleton.show("pCreditos", "card",    120);
-  Skeleton.show("pEstadoCuenta", "metrics", 4);
-  // Hero skeleton
-  var heroEl = document.querySelector(".perfil-hero");
-  if (heroEl) heroEl.innerHTML = Skeleton.hero();
-  // Gráfico skeleton
-  var gEl = document.querySelector("#chartAhorro")?.parentElement;
-  if (gEl) gEl.innerHTML = Skeleton.chartLine(220);
+  // Colores del avatar
+  construirColorPicker();
 
-  // ── Carga escalonada ──────────────────────────────────────
-  setTimeout(function() {
-    // Reconstruir hero real
-    if (heroEl) heroEl.innerHTML =
-      '<div class="perfil-avatar" id="pAvatar">?</div>' +
-      '<div class="perfil-info"><div class="perfil-nombre" id="pNombre"></div>' +
-      '<div class="perfil-cargo" id="pCargo"></div>' +
-      '<div class="perfil-badges" id="pBadges"></div></div>' +
-      '<div class="perfil-stats" id="pStats"></div>';
-    renderHero();
-  }, 350);
+  // Cerrar popover al hacer clic fuera
+  document.addEventListener("click", function(e) {
+    var wrap = document.getElementById("avatarColors");
+    var btn  = document.getElementById("avatarColorBtn");
+    if (wrap && !wrap.contains(e.target) && e.target !== btn) {
+      wrap.classList.remove("open");
+    }
+  });
 
-  setTimeout(function() {
-    renderMetricas(); Skeleton.hide("pMetricas");
-    renderDatos();    Skeleton.hide("pDatos");
-  }, 500);
+  renderHero();
+  renderMetricas();
+  renderDatos();
+  renderAportes();
+  renderCreditos();
+  renderEstado();
 
-  setTimeout(function() {
-    renderAportes();  Skeleton.hide("pTimeline");
-    renderCreditos(); Skeleton.hide("pCreditos");
-    renderEstado();   Skeleton.hide("pEstadoCuenta");
-  }, 700);
-
-  setTimeout(function() {
-    if (gEl) gEl.innerHTML = '<canvas id="chartAhorro"></canvas>';
-    crearGraficoAhorro();
-  }, 900);
+  setTimeout(function() { crearGraficoAhorro(); }, 300);
 });
 
-/* ─── Hero ───────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════════════════ */
 function renderHero() {
   var ini = SOCIO.nombre.split(" ").map(function(p){return p[0];}).slice(0,2).join("");
-  document.getElementById("pAvatar").textContent = ini;
-  document.getElementById("pNombre").textContent = SOCIO.nombre;
-  document.getElementById("pCargo").textContent  = SOCIO.cargo + "  \u2022  " + SOCIO.sede;
+  var av  = document.getElementById("pAvatar");
+  av.textContent = ini;
+  av.style.background = COLORES_AVATAR[avatarColorActual].css;
 
-  var bcls = { activo:"badge-activo", mora:"badge-mora", pendiente:"badge-pendiente" };
-  var blbl = { activo:"\u2713 Activo", mora:"\u26A0 En mora", pendiente:"\u23F3 Pendiente" };
+  document.getElementById("pNombre").textContent = SOCIO.nombre;
+  document.getElementById("pCargo").textContent  = SOCIO.cargo + "  ·  " + SOCIO.sede;
+
+  var bcls = { activo:"badge-activo", mora:"badge-mora" };
+  var blbl = { activo:"✓ Activo", mora:"⚠ En mora" };
   document.getElementById("pBadges").innerHTML =
-    '<span class="perfil-badge badge-codigo">'+SOCIO.codigo+'</span>' +
-    '<span class="perfil-badge '+(bcls[SOCIO.estado]||"")+'">'+( blbl[SOCIO.estado]||SOCIO.estado)+'</span>' +
-    '<span class="perfil-badge badge-sede">'+SOCIO.sede+'</span>';
+    '<span class="perfil-badge badge-codigo">' + SOCIO.codigo + '</span>' +
+    '<span class="perfil-badge ' + (bcls[SOCIO.estado]||"badge-codigo") + '">' +
+      (blbl[SOCIO.estado]||SOCIO.estado) + '</span>' +
+    '<span class="perfil-badge badge-sede">' + SOCIO.sede + '</span>';
 
   var pagados = DataHelper.getAportesSocio(SID).filter(function(a){return a.estado==="pagado";}).length;
   var meses   = mesesActivo(SOCIO.fecha_ingreso);
-  var pct     = pagados > 0 ? Math.min(100, Math.round((pagados/meses)*100)) : 100;
+  var pct     = meses > 0 ? Math.min(100, Math.round((pagados/meses)*100)) : 100;
+
   document.getElementById("pStats").innerHTML =
-    stat(fmtM(SOCIO.ahorro_acumulado), "Ahorro acum.") +
+    heroStat(fmtM(SOCIO.ahorro_acumulado), "Ahorro acum.") +
     '<div class="perfil-stat-sep"></div>' +
-    stat(pagados, "Aportes pagados") +
+    heroStat(pagados, "Aportes pagados") +
     '<div class="perfil-stat-sep"></div>' +
-    stat(pct+"%", "Cumplimiento");
-}
-function stat(n,l) {
-  return '<div class="perfil-stat"><span class="perfil-stat-num">'+n+'</span><span class="perfil-stat-lbl">'+l+'</span></div>';
+    heroStat(pct + "%", "Cumplimiento");
 }
 
-/* ─── Métricas ───────────────────────────────────────────── */
-function renderMetricas() {
-  var ap = DataHelper.getAportesSocio(SID);
-  var cr = DataHelper.getCreditosSocio(SID);
-  var mora = ap.filter(function(a){return ["mora","vencido"].includes(a.estado);});
-  var deuda = cr.filter(function(c){return c.estado!=="pagado";}).reduce(function(t,c){return t+c.saldo_capital;},0);
-  document.getElementById("pMetricas").innerHTML = [
-    { cls:"green", label:"Ahorro acumulado",  value: DataHelper.formatCOP(SOCIO.ahorro_acumulado) },
-    { cls:"navy",  label:"Aportes pagados",   value: ap.filter(function(a){return a.estado==="pagado";}).length + " / " + ap.length },
-    { cls: mora.length?"red":"blue",  label: mora.length?"En mora":"Aporte mensual", value: mora.length ? mora.length+" per\xedodo(s)" : DataHelper.formatCOP(SOCIO.aporte_mensual) },
-    { cls: deuda?"amber":"green", label: deuda?"Saldo deuda":"Sin deuda", value: deuda ? DataHelper.formatCOP(deuda) : "\u2713 Libre" }
-  ].map(function(m){
-    return '<div class="metric-mini '+m.cls+'"><div class="metric-mini-label">'+m.label+'</div><div class="metric-mini-value">'+m.value+'</div></div>';
+function heroStat(n, l) {
+  return '<div class="perfil-stat">' +
+    '<span class="perfil-stat-num">' + n + '</span>' +
+    '<span class="perfil-stat-lbl">' + l + '</span></div>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COLOR PICKER DEL AVATAR
+═══════════════════════════════════════════════════════════ */
+function construirColorPicker() {
+  var wrap = document.getElementById("avatarColors");
+  wrap.innerHTML = COLORES_AVATAR.map(function(col, i) {
+    return '<div class="avatar-color-swatch ' + (i===0?"active":"") + '" ' +
+      'style="background:' + col.css + '" ' +
+      'title="' + col.label + '" ' +
+      'onclick="cambiarColorAvatar(' + i + ')" ></div>';
   }).join("");
 }
 
-/* ─── Gráfico de ahorro ──────────────────────────────────── */
-function crearGraficoAhorro() {
-  destroyChart("chartAhorro");
-  var ctx = document.getElementById("chartAhorro");
-  if (!ctx) return;
-  var labels = [], valores = [];
-  var d = new Date(SOCIO.fecha_ingreso + "T00:00:00");
-  var hoy = new Date("2026-03-22");
-  var acc = 0;
-  while (d <= hoy && labels.length <= 36) {
-    labels.push(d.toLocaleDateString("es-CO",{month:"short",year:"2-digit"}));
-    acc += SOCIO.aporte_mensual;
-    valores.push(Math.min(acc, SOCIO.ahorro_acumulado));
-    d.setMonth(d.getMonth()+1);
-  }
-  ChartInstances["chartAhorro"] = new Chart(ctx, {
-    type:"line",
-    data:{ labels:labels, datasets:[{
-      label:"Ahorro", data:valores,
-      borderColor:ChartColors.navy,
-      backgroundColor:function(c){
-        var ca=c.chart.chartArea; if(!ca) return "transparent";
-        var g=c.chart.ctx.createLinearGradient(0,ca.top,0,ca.bottom);
-        g.addColorStop(0,"rgba(15,45,82,.18)"); g.addColorStop(1,"rgba(15,45,82,.01)"); return g;
-      },
-      borderWidth:2.5, fill:true, tension:.4,
-      pointRadius:function(c){return c.dataIndex===valores.length-1?6:0;},
-      pointBackgroundColor:"#fff", pointBorderColor:ChartColors.navy, pointBorderWidth:2.5
-    }]},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){
-        return " "+new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",minimumFractionDigits:0}).format(c.raw);
-      }}}},
-      scales:{
-        x:{grid:{display:false}, border:{display:false}, ticks:{maxTicksLimit:8,maxRotation:0}},
-        y:{border:{display:false}, ticks:{callback:function(v){return"$"+(v/1000000).toFixed(1)+"M";}, maxTicksLimit:5}}
-      }
-    }
+function toggleColorPicker() {
+  document.getElementById("avatarColors").classList.toggle("open");
+}
+
+function cambiarColorAvatar(idx) {
+  avatarColorActual = idx;
+  var av = document.getElementById("pAvatar");
+  av.style.background = COLORES_AVATAR[idx].css;
+  av.style.transform  = "scale(1.08)";
+  setTimeout(function() { av.style.transform = "scale(1)"; }, 250);
+
+  document.querySelectorAll(".avatar-color-swatch").forEach(function(el, i) {
+    el.classList.toggle("active", i === idx);
+  });
+  document.getElementById("avatarColors").classList.remove("open");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MÉTRICAS
+═══════════════════════════════════════════════════════════ */
+function renderMetricas() {
+  var ap   = DataHelper.getAportesSocio(SID);
+  var cr   = DataHelper.getCreditosSocio(SID);
+  var mora = ap.filter(function(a) { return ["mora","vencido"].includes(a.estado); });
+  var deuda= cr.filter(function(c) { return c.estado !== "pagado"; })
+               .reduce(function(t,c) { return t + c.saldo_capital; }, 0);
+
+  document.getElementById("pMetricas").innerHTML = [
+    { cls:"green", label:"Ahorro acumulado",
+      value: DataHelper.formatCOP(SOCIO.ahorro_acumulado) },
+    { cls:"navy",  label:"Aportes pagados",
+      value: ap.filter(function(a){return a.estado==="pagado";}).length + " / " + ap.length },
+    { cls: mora.length ? "red" : "blue",
+      label: mora.length ? "Períodos en mora" : "Aporte mensual",
+      value: mora.length ? mora.length + " período(s)" : DataHelper.formatCOP(SOCIO.aporte_mensual) },
+    { cls: deuda ? "amber" : "green",
+      label: deuda ? "Saldo deuda activa" : "Estado de deuda",
+      value: deuda ? DataHelper.formatCOP(deuda) : "✓ Sin deuda" }
+  ].map(function(m) {
+    return '<div class="metric-mini ' + m.cls + '">' +
+      '<div class="metric-mini-label">' + m.label + '</div>' +
+      '<div class="metric-mini-value">' + m.value + '</div></div>';
+  }).join("");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DATOS PERSONALES — EDICIÓN INLINE
+═══════════════════════════════════════════════════════════ */
+
+// Campos no editables y editables
+var CAMPOS_FIJOS = [
+  { l:"Documento",       k:"documento" },
+  { l:"Correo",          k:"email" },
+  { l:"Antigüedad",      k:"_antiguedad" },
+  { l:"Código",          k:"codigo" },
+  { l:"Fecha de ingreso",k:"_ingreso" },
+  { l:"Aporte mensual",  k:"_aporte" },
+];
+
+var CAMPOS_EDIT = [
+  { l:"Teléfono",        k:"telefono",  tipo:"tel",    placeholder:"3001234567" },
+  { l:"Cargo",           k:"cargo",     tipo:"select",
+    opciones:["Rector","Docente de Matemáticas","Docente de Ciencias","Docente de Español",
+               "Docente de Inglés","Docente de Historia","Psicóloga","Coordinador","Administrativo","Otro"] },
+  { l:"Sede",            k:"sede",      tipo:"select",
+    opciones:["Sede Central","Sede Norte","Sede Sur"] },
+];
+
+function valCampo(k) {
+  if (k === "_antiguedad")  return mesesActivo(SOCIO.fecha_ingreso) + " meses";
+  if (k === "_ingreso")     return DataHelper.formatFecha(SOCIO.fecha_ingreso);
+  if (k === "_aporte")      return DataHelper.formatCOP(SOCIO.aporte_mensual);
+  return SOCIO[k] || "—";
+}
+
+function renderDatos() {
+  var html = "";
+
+  // Primero los editables
+  CAMPOS_EDIT.forEach(function(c) {
+    html += '<div class="dato-item">' +
+      '<div class="dato-label">' + c.l + '</div>' +
+      '<div class="dato-value" id="val_' + c.k + '">' + (SOCIO[c.k] || "—") + '</div>' +
+      buildInputField(c) +
+    '</div>';
+  });
+
+  // Luego los fijos
+  CAMPOS_FIJOS.forEach(function(c) {
+    html += '<div class="dato-item">' +
+      '<div class="dato-label">' + c.l + '</div>' +
+      '<div class="dato-value">' + valCampo(c.k) + '</div>' +
+    '</div>';
+  });
+
+  document.getElementById("pDatos").innerHTML = html;
+
+  // Ocultar inputs (modo vista por defecto)
+  CAMPOS_EDIT.forEach(function(c) {
+    var inp = document.getElementById("inp_" + c.k);
+    if (inp) inp.style.display = "none";
   });
 }
 
-/* ─── Datos personales ───────────────────────────────────── */
-function renderDatos() {
-  var datos = [
-    {l:"Documento",       v:SOCIO.documento},
-    {l:"Correo",          v:SOCIO.email},
-    {l:"Tel\xe9fono",     v:SOCIO.telefono},
-    {l:"Cargo",           v:SOCIO.cargo},
-    {l:"Sede",            v:SOCIO.sede},
-    {l:"Ingreso al fondo",v:DataHelper.formatFecha(SOCIO.fecha_ingreso)},
-    {l:"Aporte mensual",  v:DataHelper.formatCOP(SOCIO.aporte_mensual)},
-    {l:"Antig\xfcedad",  v:mesesActivo(SOCIO.fecha_ingreso)+" meses"},
-    {l:"C\xf3digo",       v:SOCIO.codigo}
-  ];
-  document.getElementById("pDatos").innerHTML = datos.map(function(d){
-    return '<div class="dato-item"><div class="dato-label">'+d.l+'</div><div class="dato-value">'+d.v+'</div></div>';
-  }).join("");
+function buildInputField(c) {
+  if (c.tipo === "select") {
+    var opts = c.opciones.map(function(op) {
+      return '<option value="' + op + '" ' + (SOCIO[c.k]===op?"selected":"") + '>' + op + '</option>';
+    }).join("");
+    return '<select id="inp_' + c.k + '" class="dato-select" ' +
+      'onchange="marcarCambio()">' + opts + '</select>';
+  }
+  return '<input type="' + c.tipo + '" id="inp_' + c.k + '" class="dato-input" ' +
+    'value="' + (SOCIO[c.k]||"") + '" ' +
+    'placeholder="' + (c.placeholder||"") + '" ' +
+    'oninput="marcarCambio()"/>';
 }
 
-/* ─── Historial de aportes ───────────────────────────────── */
+function marcarCambio() {
+  // Mostrar save-bar si hay cambios
+  document.getElementById("saveBar").classList.add("visible");
+}
+
+function toggleEdicion() {
+  EDITANDO = !EDITANDO;
+  var btn = document.getElementById("editToggleBtn");
+
+  CAMPOS_EDIT.forEach(function(c) {
+    var val = document.getElementById("val_" + c.k);
+    var inp = document.getElementById("inp_" + c.k);
+    if (!val || !inp) return;
+
+    if (EDITANDO) {
+      val.style.display = "none";
+      inp.style.display = "block";
+      inp.style.animation = "none";
+    } else {
+      val.style.display = "block";
+      inp.style.display = "none";
+    }
+  });
+
+  if (EDITANDO) {
+    btn.textContent = "✕ Cancelar";
+    btn.classList.add("editing");
+    // Enfocar primer campo
+    var primerInp = document.getElementById("inp_" + CAMPOS_EDIT[0].k);
+    if (primerInp) setTimeout(function() { primerInp.focus(); }, 50);
+  } else {
+    btn.textContent = "✏ Editar";
+    btn.classList.remove("editing");
+    document.getElementById("saveBar").classList.remove("visible");
+  }
+}
+
+function cancelarEdicion() {
+  // Restaurar valores originales en los inputs
+  CAMPOS_EDIT.forEach(function(c) {
+    var inp = document.getElementById("inp_" + c.k);
+    if (inp) {
+      if (c.tipo === "select") {
+        inp.value = SOCIO[c.k] || "";
+      } else {
+        inp.value = SOCIO[c.k] || "";
+      }
+    }
+  });
+  EDITANDO = true;
+  toggleEdicion(); // Cambia a false
+}
+
+function guardarCambios() {
+  // Validar teléfono
+  var tel = document.getElementById("inp_telefono");
+  if (tel && tel.value && !/^[0-9]{7,11}$/.test(tel.value.replace(/\s/g,""))) {
+    Toast.warn("El teléfono debe tener entre 7 y 11 dígitos.");
+    tel.focus(); return;
+  }
+
+  // Aplicar cambios al objeto SOCIO en memoria
+  var hayChanges = false;
+  CAMPOS_EDIT.forEach(function(c) {
+    var inp = document.getElementById("inp_" + c.k);
+    if (!inp) return;
+    var nuevoVal = inp.value.trim();
+    if (nuevoVal !== SOCIO[c.k]) {
+      SOCIO[c.k] = nuevoVal;
+      hayChanges  = true;
+    }
+  });
+
+  if (!hayChanges) {
+    EDITANDO = true; toggleEdicion();
+    Toast.success("No hay cambios que guardar.");
+    return;
+  }
+
+  // Animación de guardado
+  var saveBtn = document.querySelector(".save-bar-btns .btn-primary");
+  var origText = saveBtn.textContent;
+  saveBtn.textContent = "Guardando...";
+  saveBtn.disabled    = true;
+
+  setTimeout(function() {
+    // Actualizar el array DB.socios
+    var idx = DB.socios.findIndex(function(s) { return s.id === SID; });
+    if (idx >= 0) DB.socios[idx] = SOCIO;
+
+    saveBtn.textContent = origText;
+    saveBtn.disabled    = false;
+
+    // Actualizar vistas
+    CAMPOS_EDIT.forEach(function(c) {
+      var valEl = document.getElementById("val_" + c.k);
+      if (valEl) valEl.textContent = SOCIO[c.k] || "—";
+    });
+
+    // Actualizar hero con nuevo cargo/sede
+    renderHero();
+
+    EDITANDO = true; toggleEdicion();
+    Toast.success("✓ Datos actualizados correctamente.");
+  }, 500);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HISTORIAL DE APORTES
+═══════════════════════════════════════════════════════════ */
 function renderAportes() {
-  var ap = DataHelper.getAportesSocio(SID);
-  var pg = ap.filter(function(a){return a.estado==="pagado";}).length;
-  var pe = ap.filter(function(a){return a.estado==="pendiente";}).length;
-  var mo = ap.filter(function(a){return ["mora","vencido"].includes(a.estado);}).length;
-  document.getElementById("pAportesResumen").textContent = pg+" pag. \u00b7 "+pe+" pend. \u00b7 "+mo+" mora";
+  var ap  = DataHelper.getAportesSocio(SID);
+  var pg  = ap.filter(function(a) { return a.estado === "pagado"; }).length;
+  var pe  = ap.filter(function(a) { return a.estado === "pendiente"; }).length;
+  var mo  = ap.filter(function(a) { return ["mora","vencido"].includes(a.estado); }).length;
+
+  document.getElementById("pAportesResumen").textContent =
+    pg + " pag. · " + pe + " pend." + (mo ? " · ⚠ " + mo + " mora" : "");
 
   var mini = "";
-  if (pg) mini += '<span style="font-size:12px;color:var(--green-500);font-weight:600;">\u2713 '+pg+' pagados</span>';
-  if (pe) mini += '<span style="font-size:12px;color:var(--amber-500);font-weight:600;">\u23F3 '+pe+' pendiente(s)</span>';
-  if (mo) mini += '<span style="font-size:12px;color:var(--red-500);font-weight:600;">\u26A0 '+mo+' en mora</span>';
+  if (pg) mini += '<span style="font-size:12px;color:var(--green-500);font-weight:600;">✓ ' + pg + ' pagados</span>';
+  if (pe) mini += '<span style="font-size:12px;color:var(--amber-500);font-weight:600;">⏳ ' + pe + ' pendiente(s)</span>';
+  if (mo) mini += '<span style="font-size:12px;color:var(--red-500);font-weight:600;">⚠ ' + mo + ' en mora</span>';
   document.getElementById("pAportesMini").innerHTML = mini;
 
-  var dotMap    = {pagado:"dp", pendiente:"dn", mora:"dm", vencido:"dv"};
-  var metodoMap = {nomina:"N\xf3mina", transferencia:"Transf.", efectivo:"Efectivo"};
-  document.getElementById("pTimeline").innerHTML = ap.slice().reverse().map(function(a){
+  var dotMap = { pagado:"dp", pendiente:"dn", mora:"dm", vencido:"dm" };
+  var metMap = { nomina:"Nómina", transferencia:"Transf.", efectivo:"Efectivo" };
+
+  document.getElementById("pTimeline").innerHTML = ap.slice().reverse().map(function(a) {
     return '<div class="timeline-item">' +
-      '<div class="t-dot '+(dotMap[a.estado]||"dn")+'"></div>' +
-      '<span class="t-periodo">'+a.periodo+'</span>' +
-      '<span class="t-monto">'+DataHelper.formatCOP(a.monto)+'</span>' +
-      '<span class="t-fecha">'+(a.fecha_pago ? DataHelper.formatFecha(a.fecha_pago) : "&#8212;")+'</span>' +
-      '<span class="t-metodo">'+(metodoMap[a.metodo]||"&#8212;")+'</span>' +
-      DataHelper.estadoPill(a.estado) + '</div>';
+      '<div class="t-dot ' + (dotMap[a.estado]||"dn") + '"></div>' +
+      '<span class="t-periodo">' + a.periodo + '</span>' +
+      '<span class="t-monto">' + DataHelper.formatCOP(a.monto) + '</span>' +
+      '<span class="t-fecha">' + (a.fecha_pago ? DataHelper.formatFecha(a.fecha_pago) : "—") + '</span>' +
+      DataHelper.estadoPill(a.estado) +
+    '</div>';
   }).join("") || '<div style="padding:32px;text-align:center;color:var(--text-muted);">Sin aportes registrados.</div>';
 }
 
-/* ─── Créditos ───────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   CRÉDITOS
+═══════════════════════════════════════════════════════════ */
 function renderCreditos() {
   var cr = DataHelper.getCreditosSocio(SID);
   if (!cr.length) return;
-  document.getElementById("pCreditos").innerHTML = cr.map(function(c){
-    var pct = Math.round((c.cuotas_pagadas/c.cuotas)*100);
-    var pc  = pct>=80?"green":pct>=40?"gold":"red";
-    return '<div class="credito-card">' +
-      '<div class="credito-head">' +
-        '<div><div class="credito-id">#'+c.id+' \u00b7 '+DataHelper.formatFecha(c.fecha_desembolso)+'</div>' +
-        '<div class="credito-monto">'+DataHelper.formatCOP(c.monto)+'</div>' +
-        '<div class="credito-prop">'+(c.proposito||"&#8212;")+'</div></div>' +
+
+  document.getElementById("pCreditos").innerHTML = cr.map(function(c) {
+    var pct     = Math.round((c.cuotas_pagadas / c.cuotas) * 100);
+    var progCls = c.estado === "mora" ? "red" : pct >= 80 ? "green" : "gold";
+    var cuota   = Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas));
+    var interes = Math.round(c.saldo_capital * c.tasa_mensual / 100);
+
+    return '<div class="cred-card ' + c.estado + '">' +
+      '<div class="cred-head">' +
+        '<div>' +
+          '<div class="cred-id">#' + c.id + ' · ' + DataHelper.formatFecha(c.fecha_desembolso) + '</div>' +
+          '<div class="cred-monto">' + DataHelper.formatCOP(c.monto) + '</div>' +
+          '<div class="cred-prop">' + (c.proposito || "—") + '</div>' +
+        '</div>' +
         DataHelper.estadoPill(c.estado) +
       '</div>' +
-      '<div class="credito-pinfo"><span>'+c.cuotas_pagadas+' / '+c.cuotas+' cuotas pagadas</span><span>'+pct+'%</span></div>' +
-      '<div class="progress" style="height:7px;"><div class="progress-fill '+pc+'" style="width:'+pct+'%"></div></div>' +
-      '<div class="credito-saldo">Saldo: '+DataHelper.formatCOP(c.saldo_capital)+'</div>' +
-      '<div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:var(--text-muted);">' +
-        '<span>Tasa: '+c.tasa_mensual+'% m.</span>' +
-        '<span>Cuotas restantes: '+(c.cuotas-c.cuotas_pagadas)+'</span>' +
-      '</div></div>';
+
+      // Barra de progreso
+      '<div class="cred-prog">' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px;">' +
+          '<span>' + c.cuotas_pagadas + ' de ' + c.cuotas + ' cuotas</span>' +
+          '<span style="font-weight:600;">' + pct + '%</span>' +
+        '</div>' +
+        '<div class="progress" style="height:7px;">' +
+          '<div class="progress-fill ' + progCls + '" style="width:' + pct + '%;transition:width .8s ease;"></div>' +
+        '</div>' +
+      '</div>' +
+
+      // Detalle en mini cards
+      '<div class="cred-info">' +
+        credInfoItem("Saldo pendiente", DataHelper.formatCOP(c.saldo_capital)) +
+        credInfoItem("Cuota mensual",   DataHelper.formatCOP(cuota)) +
+        credInfoItem("Interés próx.",   DataHelper.formatCOP(interes)) +
+      '</div>' +
+
+      // Alerta de mora
+      (c.estado === "mora"
+        ? '<div style="margin-top:10px;background:var(--red-50);border:1px solid var(--red-100);border-radius:var(--r-sm);padding:8px 12px;font-size:12px;color:var(--red-700);">⚠ Este crédito tiene cuotas vencidas. Comunícate con el fondo.</div>'
+        : "") +
+
+      '<div style="display:flex;justify-content:flex-end;margin-top:10px;">' +
+        '<a href="creditos.html" class="btn-link" style="font-size:12px;">Ver plan completo →</a>' +
+      '</div>' +
+    '</div>';
   }).join("");
 }
 
-/* ─── Estado de cuenta ───────────────────────────────────── */
+function credInfoItem(label, val) {
+  return '<div class="cred-info-item">' +
+    '<div class="cred-info-lbl">' + label + '</div>' +
+    '<div class="cred-info-val">' + val + '</div></div>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ESTADO DE CUENTA
+═══════════════════════════════════════════════════════════ */
 function renderEstado() {
-  var ap = DataHelper.getAportesSocio(SID);
-  var cr = DataHelper.getCreditosSocio(SID);
-  var totalAp  = ap.filter(function(a){return a.estado==="pagado";}).reduce(function(t,a){return t+a.monto;},0);
-  var deuda    = cr.filter(function(c){return c.estado!=="pagado";}).reduce(function(t,c){return t+c.saldo_capital;},0);
-  var neto     = SOCIO.ahorro_acumulado - deuda;
-  var maxCred  = SOCIO.ahorro_acumulado * (DB.config.max_credito_multiplicador||3);
-  var pctUsado = maxCred > 0 ? Math.round((deuda/maxCred)*100) : 0;
+  var ap      = DataHelper.getAportesSocio(SID);
+  var cr      = DataHelper.getCreditosSocio(SID);
+  var totalAp = ap.filter(function(a){return a.estado==="pagado";})
+                  .reduce(function(t,a){return t+a.monto;},0);
+  var deuda   = cr.filter(function(c){return c.estado!=="pagado";})
+                  .reduce(function(t,c){return t+c.saldo_capital;},0);
+  var neto    = SOCIO.ahorro_acumulado - deuda;
+  var maxCred = SOCIO.ahorro_acumulado * (DB.config.max_credito_multiplicador || 3);
+  var pctUsado= maxCred > 0 ? Math.round((deuda/maxCred)*100) : 0;
 
   document.getElementById("pEstadoCuenta").innerHTML = [
-    {cls:"green", label:"Total aportado",   value: DataHelper.formatCOP(totalAp)},
-    {cls:"navy",  label:"Ahorro acumulado", value: DataHelper.formatCOP(SOCIO.ahorro_acumulado)},
-    {cls: deuda?"amber":"green", label:"Saldo deuda",   value: deuda ? DataHelper.formatCOP(deuda) : "Sin deuda"},
-    {cls: neto>=0?"blue":"red",  label:"Balance neto",  value: DataHelper.formatCOP(neto)}
-  ].map(function(m){
-    return '<div class="metric-mini '+m.cls+'"><div class="metric-mini-label">'+m.label+'</div><div class="metric-mini-value">'+m.value+'</div></div>';
+    { cls:"green", label:"Total aportado",   value: DataHelper.formatCOP(totalAp) },
+    { cls:"navy",  label:"Ahorro acumulado", value: DataHelper.formatCOP(SOCIO.ahorro_acumulado) },
+    { cls: deuda ? "amber" : "green",
+      label: "Saldo deuda",
+      value: deuda ? DataHelper.formatCOP(deuda) : "Sin deuda" },
+    { cls: neto >= 0 ? "blue" : "red",
+      label: "Balance neto",
+      value: DataHelper.formatCOP(neto) },
+  ].map(function(m) {
+    return '<div class="metric-mini ' + m.cls + '">' +
+      '<div class="metric-mini-label">'  + m.label + '</div>' +
+      '<div class="metric-mini-value">'  + m.value + '</div></div>';
   }).join("");
 
-  document.getElementById("pCapLabel").textContent  = DataHelper.formatCOP(Math.max(0, maxCred-deuda))+" disponibles";
-  document.getElementById("pCapBarra").style.width  = Math.min(pctUsado,100)+"%";
-  document.getElementById("pCapBarra").className    = "progress-fill "+(pctUsado>75?"red":pctUsado>40?"gold":"green");
-  document.getElementById("pCapUsado").textContent  = "Usado: "+DataHelper.formatCOP(deuda);
-  document.getElementById("pCapMax").textContent    = "M\xe1ximo: "+DataHelper.formatCOP(maxCred);
+  document.getElementById("pCapLabel").textContent = DataHelper.formatCOP(Math.max(0,maxCred-deuda)) + " disponibles";
+  var barra = document.getElementById("pCapBarra");
+  setTimeout(function() { barra.style.width = Math.min(pctUsado,100) + "%"; }, 400);
+  barra.className = "progress-fill " + (pctUsado > 75 ? "red" : pctUsado > 40 ? "gold" : "green");
+  document.getElementById("pCapUsado").textContent = "Usado: " + DataHelper.formatCOP(deuda);
+  document.getElementById("pCapMax").textContent   = "Máximo: " + DataHelper.formatCOP(maxCred);
 }
 
-/* ─── Utilidades ─────────────────────────────────────────── */
-function fmtM(v) {
-  if (v>=1000000) return "$"+(v/1000000).toFixed(1)+"M";
-  if (v>=1000)    return "$"+Math.round(v/1000)+"k";
-  return "$"+v;
+/* ═══════════════════════════════════════════════════════════
+   GRÁFICO DE AHORRO
+═══════════════════════════════════════════════════════════ */
+function crearGraficoAhorro() {
+  if (typeof destroyChart === "function") destroyChart("chartAhorro");
+  var ctx = document.getElementById("chartAhorro");
+  if (!ctx || typeof Chart === "undefined") return;
+
+  var labels = [], valores = [];
+  var d   = new Date(SOCIO.fecha_ingreso + "T00:00:00");
+  var hoy = new Date("2026-03-22");
+  var acc = 0;
+  while (d <= hoy && labels.length <= 36) {
+    labels.push(d.toLocaleDateString("es-CO", { month:"short", year:"2-digit" }));
+    acc += SOCIO.aporte_mensual;
+    valores.push(Math.min(acc, SOCIO.ahorro_acumulado));
+    d.setMonth(d.getMonth() + 1);
+  }
+
+  var navyColor = "rgba(15,45,82,1)";
+  if (typeof ChartInstances !== "undefined") {
+    ChartInstances["chartAhorro"] = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Ahorro acumulado",
+          data: valores,
+          borderColor: navyColor,
+          backgroundColor: function(c) {
+            var ca = c.chart.chartArea;
+            if (!ca) return "rgba(15,45,82,.08)";
+            var g = c.chart.ctx.createLinearGradient(0, ca.top, 0, ca.bottom);
+            g.addColorStop(0, "rgba(15,45,82,.18)");
+            g.addColorStop(1, "rgba(15,45,82,.01)");
+            return g;
+          },
+          borderWidth: 2.5, fill: true, tension: .4,
+          pointRadius: function(c) { return c.dataIndex === valores.length-1 ? 6 : 0; },
+          pointBackgroundColor: "#fff",
+          pointBorderColor: navyColor,
+          pointBorderWidth: 2.5,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(c) {
+                return " " + new Intl.NumberFormat("es-CO",
+                  { style:"currency", currency:"COP", minimumFractionDigits:0 }).format(c.raw);
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid:{display:false}, border:{display:false}, ticks:{maxTicksLimit:8,maxRotation:0} },
+          y: { border:{display:false},
+               ticks:{ callback:function(v){return "$"+(v/1000000).toFixed(1)+"M";}, maxTicksLimit:5 } }
+        }
+      }
+    });
+  }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   UTILIDADES
+═══════════════════════════════════════════════════════════ */
+function fmtM(v) {
+  if (v >= 1000000) return "$" + (v/1000000).toFixed(1) + "M";
+  if (v >= 1000)    return "$" + Math.round(v/1000) + "k";
+  return "$" + v;
+}
+
 function mesesActivo(f) {
-  var d = new Date(f+"T00:00:00"), h = new Date("2026-03-22");
-  return Math.max(1,(h.getFullYear()-d.getFullYear())*12+(h.getMonth()-d.getMonth()));
+  var d = new Date(f + "T00:00:00"), h = new Date("2026-03-22");
+  return Math.max(1, (h.getFullYear()-d.getFullYear())*12 + (h.getMonth()-d.getMonth()));
 }
 </script>
 </body>
