@@ -6,9 +6,22 @@
   <title>FONEVI — Aportes</title>
   <link rel="stylesheet" href="../css/main.css"/>
   <link rel="stylesheet" href="../css/dashboard.css"/>
-  <link rel="stylesheet" href="../css/darkmode.css"/>
+  <link rel="stylesheet" href="../css/loading.css"/>
   <!-- Favicon + PWA -->
   <link rel="icon"             href="../favicon.svg"            type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-32x32.svg"   sizes="32x32" type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-16x16.svg"   sizes="16x16" type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="../icons/icon-180x180.svg" sizes="180x180"/>
+  <link rel="apple-touch-icon" href="../icons/icon-152x152.svg" sizes="152x152"/>
+  <link rel="manifest"         href="../manifest.json"/>
+  <meta name="mobile-web-app-capable"                content="yes"/>
+  <meta name="apple-mobile-web-app-capable"          content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title"            content="FONEVI"/>
+  <meta name="theme-color"                           content="#0f2d52"/>
+  <link rel="stylesheet" href="../css/transitions.css"/>
+  <link rel="stylesheet" href="../css/darkmode.css"/>
+  <link rel="stylesheet" href="../css/comprobantes.css"/>
 </head>
 <body>
 
@@ -53,6 +66,11 @@
           <div class="search-box">
             <span class="search-icon">🔍</span>
             <input type="text" id="searchAporte" placeholder="Buscar..." />
+          </div>
+          <div class="btn-print-group" style="display:flex;gap:8px;">
+            <button class="btn btn-secondary btn-sm" onclick="imprimirResumenAportes()" data-noprint>
+              🖨 Resumen período
+            </button>
           </div>
           <button class="btn btn-primary" onclick="Modal.open('modalNuevoAporte')" data-role-staff>
             + Registrar Aporte
@@ -136,6 +154,10 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
+
+<!-- Exportación PDF/Excel -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
 <script src="../js/data.js"></script>
@@ -146,10 +168,12 @@
 <script src="../js/app.js"></script>
 <script src="../js/loading.js"></script>
 <script src="../js/export.js"></script>
+<script src="../js/comprobantes.js"></script>
 <script>
 let filtroAporte = "todos";
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (!Roles.proteger("aportes")) return;
   buildLayout("Aportes", "Control del ahorro mensual", "");
   renderKPIs();
   renderTabla("todos");
@@ -203,7 +227,7 @@ function renderTabla(filtro) {
       <td data-role-staff>
         ${a.estado !== "pagado"
           ? `<button class="btn btn-link" onclick="marcarPagado('${a.id}')">Marcar pagado</button>`
-          : `<button class="btn btn-link">Comprobante</button>`
+          : `<button class="btn btn-link" onclick="Comprobantes.imprimirAporte('${a.id}')">🖨 Comprobante</button>`
         }
       </td>
     </tr>
@@ -237,6 +261,61 @@ function autocompletarMonto() {
   if (s) document.getElementById("na-monto").value = s.aporte_mensual;
 }
 
+function imprimirResumenAportes() {
+  // Generar tabla resumen de todos los aportes del período actual
+  var lista = DB.aportes.filter(function(a){ return a.periodo === DB.config.periodo_actual; });
+  if (!lista.length) lista = DB.aportes.slice(0, 20);
+
+  var pagados    = lista.filter(function(a){ return a.estado === "pagado"; });
+  var pendientes = lista.filter(function(a){ return a.estado !== "pagado"; });
+  var totalRec   = pagados.reduce(function(t,a){ return t+a.monto; }, 0);
+
+  var num = "RES-" + new Date().getFullYear() +
+    String(new Date().getMonth()+1).padStart(2,"0") +
+    String(new Date().getDate()).padStart(2,"0");
+
+  var filas = lista.map(function(a, i) {
+    var estadoCls = a.estado === "pagado" ? "comp-badge-ok"
+      : a.estado === "mora" || a.estado === "vencido" ? "comp-badge-mora"
+      : "comp-badge-pend";
+    var estadoLabel = a.estado === "pagado" ? "Pagado"
+      : a.estado === "mora" || a.estado === "vencido" ? "Mora"
+      : "Pendiente";
+    return "<tr>" +
+      "<td>" + a.id + "</td>" +
+      "<td>" + DataHelper.getSocioNombre(a.socio_id) + "</td>" +
+      "<td>" + a.periodo + "</td>" +
+      "<td>" + DataHelper.formatCOP(a.monto) + "</td>" +
+      "<td>" + (a.fecha_pago ? DataHelper.formatFecha(a.fecha_pago) : "—") + "</td>" +
+      "<td><span class=\"comp-badge " + estadoCls + "\">" + estadoLabel + "</span></td>" +
+    "</tr>";
+  }).join("");
+
+  var html = "<div class=\"comprobante\">" +
+    Comprobantes._encabezado("Resumen de Aportes — " + DB.config.periodo_actual, num) +
+    "<div class=\"comp-body\">" +
+      "<table class=\"comp-tabla\">" +
+        "<thead><tr>" +
+          "<th>ID</th><th>Socio</th><th>Período</th><th>Monto</th><th>Fecha</th><th>Estado</th>" +
+        "</tr></thead>" +
+        "<tbody>" + filas + "</tbody>" +
+      "</table>" +
+      "<table class=\"comp-tabla\" style=\"margin-top:10pt;\">" +
+        "<thead><tr><th colspan=\"2\">Resumen</th></tr></thead>" +
+        "<tbody>" +
+          "<tr><td class=\"td-label\">Aportes pagados</td><td class=\"td-value\">" + pagados.length + " / " + lista.length + "</td></tr>" +
+          "<tr><td class=\"td-label\">Aportes pendientes</td><td class=\"td-value\">" + pendientes.length + "</td></tr>" +
+          "<tr class=\"tr-total\"><td class=\"td-label\">Total recaudado</td>" +
+            "<td class=\"td-monto\">" + DataHelper.formatCOP(totalRec) + "</td></tr>" +
+        "</tbody>" +
+      "</table>" +
+    "</div>" +
+    Comprobantes._pieFirmas("resumen de aportes") +
+  "</div>";
+
+  Comprobantes._imprimir(html, "Resumen Aportes " + DB.config.periodo_actual);
+}
+
 function guardarAporte() {
   const socioId = document.getElementById("na-socio").value;
   const monto   = parseFloat(document.getElementById("na-monto").value);
@@ -260,5 +339,6 @@ function guardarAporte() {
   Toast.success(`Aporte de ${DataHelper.formatCOP(monto)} registrado correctamente.`);
 }
 </script>
+<div class="comprobante-wrapper" id="comprobante-print-area"></div>
 </body>
 </html>

@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../css/loading.css"/>
   <link rel="stylesheet" href="../css/transitions.css"/>
   <link rel="stylesheet" href="../css/darkmode.css"/>
+  <link rel="stylesheet" href="../css/comprobantes.css"/>
   <link rel="icon"     href="../favicon.svg" type="image/svg+xml"/>
   <link rel="manifest" href="../manifest.json"/>
   <meta name="theme-color" content="#0f2d52"/>
@@ -68,15 +69,15 @@
       background: radial-gradient(circle, rgba(201,146,42,.18) 0%, transparent 70%);
       border-radius: 50%; right: -30px; bottom: -50px; pointer-events: none;
     }
-    .sp-label  { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 8px; }
+    .sp-label  { font-size: 20px; font-weight: 600; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 8px; }
     .sp-monto  { font-family: var(--font-display); font-size: 38px; font-weight: 400; color: var(--gold-300); letter-spacing: -1.5px; line-height: 1; }
     .sp-change { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
-    .sp-trend  { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: var(--r-full); }
+    .sp-trend  { font-size: 14px; font-weight: 600; padding: 3px 9px; border-radius: var(--r-full); }
     .sp-trend.up { background: rgba(29,158,117,.25); color: #5dcaa5; }
-    .sp-sub    { font-size: 12px; color: rgba(255,255,255,.38); }
+    .sp-sub    { font-size: 13px; color: rgba(255,255,255,.38); }
     .sp-divider { height: 1px; background: rgba(255,255,255,.07); margin: 16px 0; }
     .sp-row    { display: flex; justify-content: space-between; align-items: center; }
-    .sp-row-label { font-size: 12px; color: rgba(255,255,255,.45); }
+    .sp-row-label { font-size: 13px; color: rgba(255,255,255,.45); }
     .sp-row-val   { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.88); }
 
     /* ── Métricas del fondo (rendimientos) ───────────────── */
@@ -87,10 +88,10 @@
     }
     .fondo-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
     .fondo-num  { font-family: var(--font-display); font-size: 26px; font-weight: 400; line-height: 1; letter-spacing: -.5px; }
-    .fondo-label{ font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 8px; }
-    .fondo-sub  { font-size: 11.5px; color: var(--text-muted); margin-top: 5px; }
-    .fondo-num.green { color: var(--green-500); }
-    .fondo-num.navy  { color: var(--navy-700); }
+    .fondo-label{ font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 8px; }
+    .fondo-sub  { font-size: 13px; color: var(--text-muted); margin-top: 5px; }
+    .fondo-num.green { color: var(--blue-700); }
+    .fondo-num.navy  { color: var(--gold-600); }
     .fondo-num.gold  { color: var(--gold-600); }
     .fondo-num.blue  { color: var(--blue-700); }
 
@@ -118,10 +119,10 @@
     }
     .cs-head  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
     .cs-monto { font-family: var(--font-display); font-size: 26px; color: var(--text-primary); letter-spacing: -.5px; }
-    .cs-prop  { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .cs-prop  { font-size: 12px; color: var(--text-primary); margin-top: 3px; }
     .cs-info  { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; font-size: 12px; }
-    .cs-info-item { background: rgba(255,255,255,.7); border-radius: var(--r-sm); padding: 8px 12px; }
-    .cs-info-label { color: var(--text-muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+    .cs-info-item { background: rgba(255, 255, 255, .7); border-radius: var(--r-sm); padding: 8px 12px; }
+    .cs-info-label { color: var(--amber-50); font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
     .cs-info-val   { font-weight: 600; color: var(--text-primary); }
 
     /* ── Rendimientos mini chart ─────────────────────────── */
@@ -228,20 +229,46 @@
       </div>
 
     </div>
-    <div style="padding:0 0 24px; display:flex; flex-direction:column; gap:10px;">
+    <div style="padding:0 0 24px;display:flex;flex-direction:column;gap:10px;" data-noprint>
+
+    <!-- Botones de impresión -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button onclick="imprimirMiEstadoCuenta()"
+        style="padding:12px 8px;background:var(--green-50);color:var(--text-secondary);
+               border:1.5px solid var(--green-100);border-radius:var(--r-lg);
+               font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);
+               transition:all .2s ease;"
+        onmouseover="this.style.background='var(--green-100)'"
+        onmouseout="this.style.background='var(--green-50)'">
+        🖨 Estado de cuenta
+      </button>
+      <button onclick="imprimirMiPazYSalvo()"
+        style="padding:12px 8px;background:var(--green-50);color:var(--text-secondary);
+               border:1.5px solid var(--green-100);border-radius:var(--r-lg);
+               font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);
+               transition:all .2s ease;"
+        onmouseover="this.style.background='var(--green-100)'"
+        onmouseout="this.style.background='var(--green-50)'">
+        ✅ Paz y salvo
+      </button>
+    </div>
+
+    <!-- Cambiar contraseña -->
     <a href="../pages/cambiar-password.html"
       style="display:block;width:100%;padding:13px;
-             background:var(--navy-50);color:var(--navy-800);
+             background:var(--bg-subtle);color:var(--text-secondary);
              border:1.5px solid var(--border-light);border-radius:var(--r-lg);
              font-size:14px;font-weight:600;cursor:pointer;
              font-family:var(--font-body);text-align:center;text-decoration:none;
              transition:all .2s ease;"
-      onmouseover="this.style.background='var(--navy-100)'"
-      onmouseout="this.style.background='var(--navy-50)'">
+      onmouseover="this.style.background='var(--bg-muted)'"
+      onmouseout="this.style.background='var(--bg-subtle)'">
       🔑 Cambiar contraseña
     </a>
+
+    <!-- Cerrar sesión -->
     <button onclick="doLogout()"
-      style="width:100%;padding:13px;background:var(--red-50);color:var(--red-700);
+      style="width:100%;padding:13px;background:var(--red-50);color:var(--text-secondary);
              border:1.5px solid rgba(163,45,45,.2);border-radius:var(--r-lg);
              font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
       ⏻ Cerrar sesión
@@ -261,6 +288,7 @@
 <script src="../js/app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="../js/charts.js"></script>
+<script src="../js/comprobantes.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
@@ -300,8 +328,10 @@ document.addEventListener("DOMContentLoaded", function() {
       '<div class="empty-desc">No se encontró información de tu cuenta.</div></div>';
     return;
   }
+
   Roles.checkDeniedMessage();
 
+  _socioActual = socio; // guardar para impresión
   renderHero(socio, session);
   renderSaldo(socio);
   renderCredito(socio);
@@ -312,6 +342,20 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 /* ── Hero ───────────────────────────────────────────────── */
+
+/* ── Impresión de comprobantes ──────────────────────────── */
+var _socioActual = null; // se rellena al cargar la página
+
+function imprimirMiEstadoCuenta() {
+  if (!_socioActual) { Toast.warn("Cargando datos del socio..."); return; }
+  Comprobantes.imprimirEstadoCuenta(_socioActual.id);
+}
+
+function imprimirMiPazYSalvo() {
+  if (!_socioActual) { Toast.warn("Cargando datos del socio..."); return; }
+  Comprobantes.imprimirPazYSalvo(_socioActual.id);
+}
+
 function renderHero(s, session) {
   var ini = s.nombre.split(" ").map(function(p){return p[0];}).slice(0,2).join("");
   var ap  = DataHelper.getAportesSocio(s.id);
@@ -528,5 +572,6 @@ function calcMeses(fecha) {
   return Math.max(1,(h.getFullYear()-d.getFullYear())*12+(h.getMonth()-d.getMonth()));
 }
 </script>
+<div class="comprobante-wrapper" id="comprobante-print-area"></div>
 </body>
 </html>
