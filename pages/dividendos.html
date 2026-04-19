@@ -6,78 +6,219 @@
   <title>FONEVI — Dividendos</title>
   <link rel="stylesheet" href="../css/main.css"/>
   <link rel="stylesheet" href="../css/dashboard.css"/>
+  <link rel="stylesheet" href="../css/loading.css"/>
+  <link rel="stylesheet" href="../css/transitions.css"/>
   <link rel="stylesheet" href="../css/darkmode.css"/>
-  <!-- Favicon + PWA -->
   <link rel="icon"             href="../favicon.svg"            type="image/svg+xml"/>
-</head>
-<body>
+  <link rel="icon"             href="../icons/icon-32x32.svg"   sizes="32x32"  type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-16x16.svg"   sizes="16x16"  type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="../icons/icon-180x180.svg" sizes="180x180"/>
+  <link rel="manifest"         href="../manifest.json"/>
+  <meta name="mobile-web-app-capable"      content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color"                 content="#0f2d52"/>
 
+  <style>
+    /* ── Barra de participación proporcional ─────────────── */
+    .part-bar-wrap {
+      display: flex; align-items: center; gap: 8px; min-width: 140px;
+    }
+    .part-bar-track {
+      flex: 1; height: 6px; background: var(--bg-muted);
+      border-radius: var(--r-full); overflow: hidden;
+    }
+    .part-bar-fill {
+      height: 100%; border-radius: var(--r-full);
+      background: linear-gradient(90deg, var(--gold-400), var(--gold-600));
+      transition: width .6s var(--ease);
+    }
+    .part-pct {
+      font-size: 11.5px; font-weight: 600; color: var(--gold-700);
+      min-width: 40px; text-align: right;
+    }
+
+    /* ── Fila de la tabla ──────────────────────────────────── */
+    .div-row-top { background: var(--gold-50) !important; }
+    .div-row-top td { font-weight: 600 !important; }
+
+    /* ── Tarjetas resumen lateral ──────────────────────────── */
+    .resumen-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid var(--border-faint);
+      font-size: 13px;
+    }
+    .resumen-row:last-child { border-bottom: none; }
+    .resumen-label { color: var(--text-muted); }
+    .resumen-val   { font-weight: 600; color: var(--text-primary); }
+    .resumen-val.gold  { color: var(--gold-700); }
+    .resumen-val.green { color: var(--green-700); }
+    .resumen-val.navy  { color: var(--navy-700); }
+
+    /* ── Historial anual ───────────────────────────────────── */
+    .hist-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border-radius: var(--r-md);
+      background: var(--bg-subtle); border: 1px solid var(--border-faint);
+      transition: all var(--t-base) var(--ease); cursor: pointer;
+    }
+    .hist-item:hover { border-color: var(--gold-300); box-shadow: var(--shadow-sm); }
+    .hist-item.activo { border-color: var(--gold-400); background: var(--gold-50); }
+    .hist-anio  { font-family: var(--font-display); font-size: 22px; font-weight: 400; color: var(--navy-700); min-width: 52px; }
+    .hist-detalle { flex: 1; }
+    .hist-total { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .hist-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Panel sin datos ───────────────────────────────────── */
+    .proyeccion-banner {
+      background: linear-gradient(135deg, var(--navy-50), var(--gold-50));
+      border: 1px solid var(--gold-100); border-radius: var(--r-lg);
+      padding: 20px 24px; margin-bottom: 16px;
+      display: flex; gap: 16px; align-items: flex-start;
+    }
+    .proy-icon  { font-size: 28px; flex-shrink: 0; }
+    .proy-title { font-size: 14px; font-weight: 600; color: var(--navy-800); margin-bottom: 4px; }
+    .proy-desc  { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── Tabla de distribución ─────────────────────────────── */
+    .tabla-wrap { overflow-x: auto; }
+
+    /* ── Modal confirmación distribución ───────────────────── */
+    .conf-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      margin: 16px 0;
+    }
+    .conf-item {
+      background: var(--bg-subtle); border-radius: var(--r-md);
+      padding: 12px 14px;
+    }
+    .conf-item-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 4px; }
+    .conf-item-val   { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+    .conf-item-val.gold  { color: var(--gold-700); }
+    .conf-item-val.green { color: var(--green-700); }
+
+    /* ── Ranking mini en el sidebar ────────────────────────── */
+    .rank-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid var(--border-faint);
+    }
+    .rank-item:last-child { border-bottom: none; }
+    .rank-num  { font-size: 11px; font-weight: 700; color: var(--text-muted); width: 16px; text-align: center; }
+    .rank-nombre { font-size: 12.5px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rank-monto  { font-size: 12px; font-weight: 600; color: var(--gold-700); white-space: nowrap; }
+
+    /* ── Pestaña año activo ────────────────────────────────── */
+    .anio-badge {
+      background: var(--gold-100); color: var(--gold-800);
+      font-size: 10px; font-weight: 700; padding: 1px 6px;
+      border-radius: var(--r-full); margin-left: 4px;
+    }
+
+    @media print {
+      .sidebar,.topbar,.no-print { display: none !important; }
+      .main-content { margin-left: 0 !important; }
+    }
+  </style>
+</head>
+
+<body>
 <div class="app-layout" id="app-layout">
   <div class="main-content">
     <div class="page-content">
 
-      <div class="page-header">
-        <h1>Módulo de Dividendos</h1>
-        <p>Cálculo y distribución de utilidades anuales entre los socios</p>
-      </div>
-
-      <!-- Selector de año -->
-      <div style="display:flex; align-items:center; gap:14px; margin-bottom:22px; flex-wrap:wrap;">
-        <div class="tab-bar" id="anioTabs">
-          <button class="tab-btn active" data-tab="2025">2025</button>
-          <button class="tab-btn" data-tab="2024">2024</button>
-          <button class="tab-btn" data-tab="2026">2026 (proyección)</button>
+      <!-- ── SELECTOR AÑO + ACCIONES ──────────────────────── -->
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;">
+        <div class="tab-bar" id="anioTabs"></div>
+        <div style="display:flex;gap:8px;margin-left:auto;" class="no-print">
+          <button class="btn btn-secondary btn-sm" onclick="exportarExcel()">⬇ Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Imprimir</button>
+          <button class="btn btn-primary" onclick="Modal.open('modalCalcular')">
+            🧮 Calcular dividendos
+          </button>
         </div>
-        <button class="btn btn-primary" onclick="Modal.open('modalCalcular')" data-role-admin>
-          🧮 Calcular Dividendos
-        </button>
       </div>
 
-      <!-- KPIs del año -->
-      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="kpiDividendos"></div>
+      <!-- ── KPIs ─────────────────────────────────────────── -->
+      <div class="kpi-grid" id="kpiDividendos"
+        style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;"></div>
 
-      <!-- Grid principal -->
+      <!-- ── GRID PRINCIPAL ───────────────────────────────── -->
       <div class="grid-main-aside" style="margin-bottom:20px;">
 
         <!-- Tabla de distribución -->
         <div class="card">
           <div class="card-header">
-            <span class="card-title" id="tituloTabla">Distribución 2025</span>
-            <button class="btn btn-secondary btn-sm" onclick="exportarDividendos()">⬇ Exportar</button>
+            <span class="card-title" id="tituloTabla">Distribución</span>
+            <span id="badgeEstado"></span>
           </div>
-          <table class="data-table" id="tablaDividendos">
-            <thead>
-              <tr>
-                <th>Socio</th>
-                <th>Ahorro base</th>
-                <th>% Participación</th>
-                <th>Dividendo</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody id="dividendosTbody"></tbody>
-          </table>
+
+          <!-- Banner de proyección (si aplica) -->
+          <div id="proyeccionBanner" style="display:none;padding:16px 20px 0;"></div>
+
+          <!-- Tabla -->
+          <div class="tabla-wrap" id="tablaWrap">
+            <table class="data-table table-animated" id="tablaDividendos">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Socio</th>
+                  <th>Ahorro base</th>
+                  <th>Participación</th>
+                  <th>Dividendo asignado</th>
+                  <th>Estado</th>
+                  <th class="no-print">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="dividendosTbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Fila de totales -->
+          <div id="filaTotal" style="border-top:2px solid var(--border-light);padding:12px 20px;
+            display:flex;justify-content:space-between;align-items:center;background:var(--bg-subtle);">
+          </div>
         </div>
 
         <!-- Panel lateral -->
-        <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- Gráfico dona de distribución -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Distribución</span>
+            </div>
+            <div class="card-body" style="padding-bottom:10px;">
+              <div style="position:relative;height:180px;">
+                <canvas id="chartDona"></canvas>
+              </div>
+            </div>
+          </div>
 
           <!-- Resumen del reparto -->
           <div class="card">
-            <div class="card-header"><span class="card-title">Resumen del Reparto</span></div>
-            <div class="card-body" id="resumenReparto">
-              <!-- llenado por JS -->
+            <div class="card-header">
+              <span class="card-title">Resumen</span>
             </div>
+            <div class="card-body" id="resumenReparto" style="padding-top:4px;"></div>
           </div>
 
-          <!-- Historial de años -->
+          <!-- Top 3 beneficiarios -->
           <div class="card">
-            <div class="card-header"><span class="card-title">Historial</span></div>
-            <div class="card-body">
-              <div style="display:flex; flex-direction:column; gap:10px;" id="historialAnios"></div>
+            <div class="card-header">
+              <span class="card-title">Mayores dividendos</span>
             </div>
+            <div class="card-body" id="rankingPanel" style="padding-top:4px;"></div>
           </div>
 
+        </div>
+      </div>
+
+      <!-- ── HISTORIAL ANUAL ─────────────────────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Historial de distribuciones</span>
+        </div>
+        <div class="card-body">
+          <div class="grid-3" id="historialAnios"></div>
         </div>
       </div>
 
@@ -85,45 +226,102 @@
   </div>
 </div>
 
-<!-- Modal Calcular Dividendos -->
+<!-- ═══════════════════════════════════════════════════════
+     MODAL — CALCULAR DIVIDENDOS
+═══════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modalCalcular">
-  <div class="modal">
+  <div class="modal" style="max-width:560px;">
     <div class="modal-header">
-      <span class="modal-title">Calcular Dividendos del Período</span>
+      <span class="modal-title">🧮 Calcular Dividendos del Período</span>
       <button class="modal-close" onclick="Modal.close('modalCalcular')">×</button>
     </div>
     <div class="modal-body">
+
       <div class="form-grid">
         <div class="form-group">
-          <label class="form-label">Año</label>
-          <input type="number" class="form-control" id="cd-anio" value="2026" min="2020" max="2030" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Total utilidades ($)</label>
-          <input type="number" class="form-control" id="cd-utilidades" placeholder="Ej: 15000000" oninput="previsualizarCalculo()" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">% a distribuir entre socios</label>
-          <input type="number" class="form-control" id="cd-pct" value="80" min="1" max="100" oninput="previsualizarCalculo()" />
-          <span class="form-hint">El porcentaje restante queda como reserva del fondo</span>
+          <label class="form-label">Año fiscal</label>
+          <input type="number" class="form-control" id="cd-anio"
+            value="2026" min="2020" max="2035"/>
         </div>
         <div class="form-group">
           <label class="form-label">Fecha de distribución</label>
-          <input type="date" class="form-control" id="cd-fecha" />
+          <input type="date" class="form-control" id="cd-fecha"/>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Total de utilidades del período ($)</label>
+          <input type="number" class="form-control" id="cd-utilidades"
+            placeholder="Ej: 15.000.000"
+            min="0" step="100000" oninput="previsualizarCalculo()"/>
+          <span class="form-hint">Ingresa las utilidades netas del fondo en el año</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">% a distribuir entre socios</label>
+          <input type="number" class="form-control" id="cd-pct"
+            value="80" min="1" max="100" step="1" oninput="previsualizarCalculo()"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">% reserva del fondo</label>
+          <input type="number" class="form-control" id="cd-reserva"
+            value="20" disabled/>
+          <span class="form-hint">Calculado automáticamente</span>
         </div>
       </div>
-      <div id="previstaCalculo" style="margin-top:16px;"></div>
+
+      <!-- Vista previa del cálculo -->
+      <div id="previstaCalculo" style="margin-top:8px;"></div>
+
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="Modal.close('modalCalcular')">Cancelar</button>
-      <button class="btn btn-primary" onclick="aplicarDividendos()">Aplicar Distribución</button>
+      <button class="btn btn-primary" id="btnAplicar" onclick="aplicarDividendos()" disabled>
+        Aplicar distribución
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL — CONFIRMAR DISTRIBUCIÓN INDIVIDUAL
+═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalConfirmarSocio">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="modal-title">Confirmar pago de dividendo</span>
+      <button class="modal-close" onclick="Modal.close('modalConfirmarSocio')">×</button>
+    </div>
+    <div class="modal-body" id="confirmarSocioBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modalConfirmarSocio')">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmarSocio" onclick="confirmarPagoSocio()">
+        ✓ Confirmar pago
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL — REGISTRAR DISTRIBUCIÓN MASIVA
+═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalDistribuir">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <span class="modal-title">🎁 Registrar distribución</span>
+      <button class="modal-close" onclick="Modal.close('modalDistribuir')">×</button>
+    </div>
+    <div class="modal-body" id="distribuirBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('modalDistribuir')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarDistribucionTotal()">
+        ✓ Marcar todos como distribuidos
+      </button>
     </div>
   </div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
 
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
 <script src="../js/data.js"></script>
@@ -133,219 +331,666 @@
 <script src="../js/layout.js"></script>
 <script src="../js/app.js"></script>
 <script src="../js/loading.js"></script>
-<script src="../js/export.js"></script>
+
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  buildLayout("Dividendos", "Distribución de utilidades anuales", "");
+/* ═══════════════════════════════════════════════════════════
+   ESTADO GLOBAL
+═══════════════════════════════════════════════════════════ */
+var anioActual  = null;       // año seleccionado
+var divActual   = null;       // objeto dividendo del año seleccionado
+var socioConfirmando = null;  // para modal de pago individual
+var chartDonaInst = null;     // instancia Chart.js
+
+/* Colores para la dona — uno por socio */
+var COLORES_DONA = [
+  "#0f2d52","#c9922a","#1d9e75","#2563a8","#ba7517",
+  "#153d6e","#a32d2d","#085041","#1a4a7a","#7a4a00",
+];
+
+/* ═══════════════════════════════════════════════════════════
+   INICIO
+═══════════════════════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded", function() {
+  if (!Roles.proteger("dividendos")) return;
+
+  buildLayout("Dividendos", "Distribución de utilidades anuales del fondo", "");
+
   document.getElementById("cd-fecha").value = new Date().toISOString().split("T")[0];
-  renderPagina("2025");
-  initTabs("anioTabs", (tab) => renderPagina(tab));
+
+  // Sincronizar % reserva
+  document.getElementById("cd-pct").addEventListener("input", function() {
+    document.getElementById("cd-reserva").value = Math.max(0, 100 - parseFloat(this.value || 0));
+  });
+
+  // Construir tabs de años (historial + año actual)
+  construirTabs();
+
+  // Seleccionar el año más reciente con datos, o el actual
+  var anioInicial = DB.dividendos.length
+    ? String(DB.dividendos[DB.dividendos.length - 1].anio)
+    : String(new Date().getFullYear());
+  renderPagina(anioInicial);
 });
 
-function renderPagina(anio) {
-  const div = DB.dividendos.find(d => String(d.anio) === anio);
-  document.getElementById("tituloTabla").textContent = `Distribución ${anio}`;
+/* ═══════════════════════════════════════════════════════════
+   TABS DE AÑOS
+═══════════════════════════════════════════════════════════ */
+function construirTabs() {
+  var anioHoy = new Date().getFullYear();
+  // Años con datos + año actual
+  var anios   = DB.dividendos.map(function(d) { return d.anio; });
+  if (!anios.includes(anioHoy)) anios.push(anioHoy);
+  anios.sort(function(a,b) { return b - a; }); // Más reciente primero
 
-  if (!div) {
-    // Proyección o sin datos
-    renderKPIsVacios(anio);
-    renderTablaVacia(anio);
-    return;
-  }
-  renderKPIs(div);
-  renderTabla(div);
-  renderResumen(div);
-  renderHistorial();
+  var container = document.getElementById("anioTabs");
+  container.innerHTML = anios.map(function(a) {
+    var tieneData = DB.dividendos.find(function(d) { return d.anio === a; });
+    var badge     = (!tieneData)
+      ? '<span class="anio-badge">nuevo</span>'
+      : "";
+    return '<button class="tab-btn" data-tab="' + a + '" onclick="renderPagina(\'' + a + '\')">' +
+      a + badge + '</button>';
+  }).join("");
 }
 
-function renderKPIs(div) {
-  const sociosActivos = DB.socios.filter(s => s.estado === "activo").length;
-  const promedio = Math.round(div.total_distribuido / sociosActivos);
+function activarTab(anio) {
+  document.querySelectorAll("#anioTabs .tab-btn").forEach(function(btn) {
+    btn.classList.toggle("active", btn.dataset.tab === String(anio));
+  });
+}
 
-  const kpis = [
-    { label: "Utilidades " + div.anio,  value: DataHelper.formatCOP(div.total_utilidades), cls: "green", icon: "📈" },
-    { label: "Total Distribuido",        value: DataHelper.formatCOP(div.total_distribuido), cls: "blue",  icon: "🎁" },
-    { label: "Reserva del Fondo",        value: DataHelper.formatCOP(div.total_utilidades - div.total_distribuido), cls: "gold", icon: "🏦" },
-    { label: "Promedio por Socio",       value: DataHelper.formatCOP(promedio), cls: "navy", icon: "👤" }
-  ];
-  document.getElementById("kpiDividendos").innerHTML = kpis.map(k => `
-    <div class="kpi-card ${k.cls}">
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-value" style="font-size:18px;">${k.value}</div>
-      <div class="kpi-bg-icon">${k.icon}</div>
-    </div>
-  `).join("");
+/* ═══════════════════════════════════════════════════════════
+   RENDER PRINCIPAL
+═══════════════════════════════════════════════════════════ */
+function renderPagina(anio) {
+  anioActual = parseInt(anio);
+  divActual  = DB.dividendos.find(function(d) { return d.anio === anioActual; }) || null;
+
+  activarTab(anio);
+
+  document.getElementById("tituloTabla").textContent = "Distribución " + anio;
+
+  if (divActual) {
+    renderKPIs(divActual);
+    renderTabla(divActual);
+    renderResumen(divActual);
+    renderRanking(divActual);
+    renderGraficaDona(divActual);
+    renderHistorial();
+    // Badge de estado
+    document.getElementById("badgeEstado").innerHTML =
+      divActual.estado === "distribuido"
+        ? '<span class="pill pill-green">✓ Distribuido</span>'
+        : '<span class="pill pill-amber">Pendiente de distribuir</span>';
+    document.getElementById("proyeccionBanner").style.display = "none";
+  } else {
+    renderKPIsVacios(anio);
+    renderTablaProyeccion(anio);
+    renderResumenVacio(anio);
+    renderGraficaDonaVacia();
+    renderHistorial();
+    document.getElementById("badgeEstado").innerHTML =
+      '<span class="pill pill-amber">Sin calcular</span>';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KPIs
+═══════════════════════════════════════════════════════════ */
+function renderKPIs(div) {
+  var activos  = DB.socios.filter(function(s) { return s.estado === "activo"; }).length;
+  var promedio = activos > 0 ? Math.round(div.total_distribuido / activos) : 0;
+  var reserva  = div.total_utilidades - div.total_distribuido;
+
+  document.getElementById("kpiDividendos").innerHTML = [
+    { label:"Utilidades " + div.anio,  value: DataHelper.formatCOP(div.total_utilidades), cls:"green", icon:"📈" },
+    { label:"Total distribuido",       value: DataHelper.formatCOP(div.total_distribuido), cls:"gold",  icon:"🎁" },
+    { label:"Reserva del fondo",       value: DataHelper.formatCOP(reserva),               cls:"blue",  icon:"🏦" },
+    { label:"Promedio por socio",      value: DataHelper.formatCOP(promedio),               cls:"navy",  icon:"👤" },
+  ].map(function(k) {
+    return '<div class="kpi-card ' + k.cls + '">' +
+      '<div class="kpi-label">'   + k.label  + '</div>' +
+      '<div class="kpi-value" style="font-size:18px;">' + k.value + '</div>' +
+      '<div class="kpi-bg-icon">' + k.icon   + '</div></div>';
+  }).join("");
 }
 
 function renderKPIsVacios(anio) {
-  document.getElementById("kpiDividendos").innerHTML = `
-    <div class="kpi-card blue" style="grid-column: 1/-1;">
-      <div class="kpi-label">Dividendos ${anio}</div>
-      <div style="font-size:14px; color:var(--muted); margin-top:8px;">
-        ${anio === "2026" ? "Año en curso — usa el botón Calcular Dividendos para hacer la proyección." : "Sin datos registrados para este período."}
-      </div>
-    </div>
-  `;
-  document.getElementById("dividendosTbody").innerHTML = `
-    <tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted);">
-      Sin datos para el período seleccionado.
-    </td></tr>`;
-  document.getElementById("resumenReparto").innerHTML = `<p style="font-size:13px; color:var(--muted);">Sin datos.</p>`;
-}
-
-function renderTabla(div) {
-  const sociosActivos = DB.socios.filter(s => s.estado === "activo");
-  const totalAhorros  = sociosActivos.reduce((t, s) => t + s.ahorro_acumulado, 0);
-
-  document.getElementById("dividendosTbody").innerHTML = sociosActivos.map(s => {
-    const pct = (s.ahorro_acumulado / totalAhorros * 100).toFixed(2);
-    const dvd = Math.round(div.total_distribuido * s.ahorro_acumulado / totalAhorros);
-    const yaDistribuido = div.detalle?.find(d => d.socio_id === s.id);
-    return `<tr>
-      <td>${s.nombre}</td>
-      <td>${DataHelper.formatCOP(s.ahorro_acumulado)}</td>
-      <td style="color:var(--muted);">${pct}%</td>
-      <td style="font-weight:500; color:var(--gold);">${DataHelper.formatCOP(dvd)}</td>
-      <td>${yaDistribuido
-        ? '<span class="pill pill-green">Distribuido</span>'
-        : '<span class="pill pill-amber">Pendiente</span>'}</td>
-    </tr>`;
+  var totalAh = DataHelper.getTotalAhorros();
+  document.getElementById("kpiDividendos").innerHTML = [
+    { label:"Socios activos",   value: DB.socios.filter(function(s){return s.estado==="activo";}).length + " socios", cls:"blue",  icon:"👥" },
+    { label:"Total en ahorros", value: DataHelper.formatCOP(totalAh), cls:"green", icon:"💰" },
+    { label:"Utilidades " + anio, value: "Por calcular", cls:"gold",  icon:"📈" },
+    { label:"Promedio estimado", value: "—",             cls:"navy",  icon:"👤" },
+  ].map(function(k) {
+    return '<div class="kpi-card ' + k.cls + '">' +
+      '<div class="kpi-label">'   + k.label  + '</div>' +
+      '<div class="kpi-value" style="font-size:18px;">' + k.value + '</div>' +
+      '<div class="kpi-bg-icon">' + k.icon   + '</div></div>';
   }).join("");
 }
 
-function renderTablaVacia(anio) {
-  if (anio !== "2026") {
-    document.getElementById("dividendosTbody").innerHTML = `
-      <tr><td colspan="5" style="text-align:center; padding:32px; color:var(--muted);">Sin datos.</td></tr>`;
-    document.getElementById("resumenReparto").innerHTML = "";
+/* ═══════════════════════════════════════════════════════════
+   TABLA DE DISTRIBUCIÓN
+═══════════════════════════════════════════════════════════ */
+function renderTabla(div) {
+  var sociosActivos = DB.socios.filter(function(s) { return s.estado === "activo"; });
+  var totalAh       = sociosActivos.reduce(function(t,s) { return t + s.ahorro_acumulado; }, 0);
+  var pendientes    = 0;
+
+  // Ordenar por ahorro descendente
+  sociosActivos.sort(function(a,b) { return b.ahorro_acumulado - a.ahorro_acumulado; });
+
+  var filas = sociosActivos.map(function(s, i) {
+    var pct  = totalAh > 0 ? (s.ahorro_acumulado / totalAh * 100) : 0;
+    var dvd  = totalAh > 0 ? Math.round(div.total_distribuido * s.ahorro_acumulado / totalAh) : 0;
+    var det  = div.detalle && div.detalle.find(function(d) { return d.socio_id === s.id; });
+    var pagado = det && det.pagado;
+
+    if (!pagado) pendientes++;
+
+    var top3  = i < 3;
+    var trCls = top3 ? "div-row-top" : "";
+
+    return '<tr class="' + trCls + '">' +
+      '<td class="muted mono">' + (i+1) + '</td>' +
+      '<td>' +
+        '<div style="font-weight:' + (top3?"600":"400") + ';">' + s.nombre + '</div>' +
+        '<div style="font-size:10.5px;color:var(--text-muted);">' + s.cargo + '</div>' +
+      '</td>' +
+      '<td>' + DataHelper.formatCOP(s.ahorro_acumulado) + '</td>' +
+      '<td>' +
+        '<div class="part-bar-wrap">' +
+          '<div class="part-bar-track"><div class="part-bar-fill" style="width:' + (pct*3.5).toFixed(1) + '%;max-width:100%;"></div></div>' +
+          '<span class="part-pct">' + pct.toFixed(2) + '%</span>' +
+        '</div>' +
+      '</td>' +
+      '<td style="font-weight:600;color:var(--gold-700);font-size:14px;">' +
+        DataHelper.formatCOP(dvd) +
+      '</td>' +
+      '<td>' + (pagado
+        ? '<span class="pill pill-green">✓ Pagado</span>'
+        : div.estado === "distribuido"
+          ? '<span class="pill pill-amber">Pendiente</span>'
+          : '<span class="pill" style="background:var(--bg-muted);color:var(--text-muted);">Sin distribuir</span>') +
+      '</td>' +
+      '<td class="no-print">' +
+        (!pagado && div.estado !== "pendiente_calculo"
+          ? '<button class="btn btn-link" style="font-size:12px;" ' +
+              'onclick="abrirConfirmarSocio(\'' + s.id + '\', ' + dvd + ', \'' + s.nombre + '\')">' +
+              (div.estado === "distribuido" ? "Marcar pagado" : "Registrar pago") + '</button>'
+          : (pagado ? '<span style="font-size:11px;color:var(--green-500);">✓</span>' : '—')) +
+      '</td>' +
+    '</tr>';
+  }).join("");
+
+  document.getElementById("dividendosTbody").innerHTML = filas;
+
+  // Fila de totales
+  var totalDvd = div.total_distribuido;
+  var btnDistribuir = pendientes > 0 && div.estado !== "pendiente_calculo"
+    ? '<button class="btn btn-primary btn-sm no-print" onclick="abrirDistribuirTodos()">' +
+        '🎁 Distribuir todos (' + pendientes + ' pendientes)</button>'
+    : '<span class="pill pill-green">Todos distribuidos</span>';
+
+  document.getElementById("filaTotal").innerHTML =
+    '<div style="display:flex;gap:24px;align-items:center;">' +
+      '<span style="font-size:12px;color:var(--text-muted);">' + sociosActivos.length + ' socios · 100%</span>' +
+      '<span style="font-size:15px;font-weight:700;color:var(--gold-700);">Total: ' + DataHelper.formatCOP(totalDvd) + '</span>' +
+    '</div>' +
+    btnDistribuir;
+}
+
+function renderTablaProyeccion(anio) {
+  // Proyección usando $15M de utilidades estimadas y 80%
+  var utils     = 15000000;
+  var totalDist = Math.round(utils * 0.80);
+  var socios    = DB.socios.filter(function(s) { return s.estado === "activo"; });
+  var totalAh   = socios.reduce(function(t,s) { return t + s.ahorro_acumulado; }, 0);
+
+  socios.sort(function(a,b) { return b.ahorro_acumulado - a.ahorro_acumulado; });
+
+  // Banner de proyección
+  var banner = document.getElementById("proyeccionBanner");
+  banner.style.display = "block";
+  banner.innerHTML =
+    '<div class="proyeccion-banner">' +
+      '<div class="proy-icon">📊</div>' +
+      '<div>' +
+        '<div class="proy-title">Proyección estimada ' + anio + '</div>' +
+        '<div class="proy-desc">Basada en utilidades estimadas de ' + DataHelper.formatCOP(utils) +
+          ' y 80% de distribución. Usa el botón <strong>Calcular dividendos</strong> para ingresar los valores reales del período.</div>' +
+      '</div>' +
+    '</div>';
+
+  var filas = socios.map(function(s, i) {
+    var pct = totalAh > 0 ? (s.ahorro_acumulado / totalAh * 100) : 0;
+    var dvd = totalAh > 0 ? Math.round(totalDist * s.ahorro_acumulado / totalAh) : 0;
+    return '<tr>' +
+      '<td class="muted mono">' + (i+1) + '</td>' +
+      '<td>' +
+        '<div>' + s.nombre + '</div>' +
+        '<div style="font-size:10.5px;color:var(--text-muted);">' + s.cargo + '</div>' +
+      '</td>' +
+      '<td>' + DataHelper.formatCOP(s.ahorro_acumulado) + '</td>' +
+      '<td>' +
+        '<div class="part-bar-wrap">' +
+          '<div class="part-bar-track"><div class="part-bar-fill" style="width:' + (pct*3.5).toFixed(1) + '%;max-width:100%;opacity:.6;"></div></div>' +
+          '<span class="part-pct" style="opacity:.7;">' + pct.toFixed(2) + '%</span>' +
+        '</div>' +
+      '</td>' +
+      '<td style="font-weight:600;color:var(--amber-500);">' + DataHelper.formatCOP(dvd) + '</td>' +
+      '<td><span class="pill" style="background:var(--amber-50);color:var(--amber-700);">Proyectado</span></td>' +
+      '<td class="no-print">—</td>' +
+    '</tr>';
+  }).join("");
+
+  document.getElementById("dividendosTbody").innerHTML = filas;
+
+  document.getElementById("filaTotal").innerHTML =
+    '<span style="font-size:12px;color:var(--text-muted);">Proyección · ' + socios.length + ' socios</span>' +
+    '<span style="font-size:15px;font-weight:700;color:var(--amber-500);">Est. ' + DataHelper.formatCOP(totalDist) + '</span>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESUMEN LATERAL
+═══════════════════════════════════════════════════════════ */
+function renderResumen(div) {
+  var pctReserva = 100 - div.porcentaje_distribuido;
+  var pagados    = div.detalle ? div.detalle.filter(function(d) { return d.pagado; }).length : 0;
+  var activos    = DB.socios.filter(function(s) { return s.estado === "activo"; }).length;
+
+  document.getElementById("resumenReparto").innerHTML =
+    resRow("Año fiscal",                  div.anio) +
+    resRow("Total utilidades",            DataHelper.formatCOP(div.total_utilidades)) +
+    resRow("Distribuido (" + div.porcentaje_distribuido + "%)",
+                                          DataHelper.formatCOP(div.total_distribuido), "gold") +
+    resRow("Reserva (" + pctReserva + "%)",
+                                          DataHelper.formatCOP(div.total_utilidades - div.total_distribuido), "navy") +
+    resRow("Socios beneficiados",         activos + " activos") +
+    resRow("Pagados",                     pagados + " / " + activos, pagados === activos ? "green" : "") +
+    resRow("Fecha distribución",          DataHelper.formatFecha(div.fecha_distribucion));
+}
+
+function renderResumenVacio(anio) {
+  document.getElementById("resumenReparto").innerHTML =
+    '<div style="text-align:center;padding:16px 0;">' +
+      '<div style="font-size:28px;margin-bottom:8px;">🧮</div>' +
+      '<div style="font-size:13px;color:var(--text-muted);">No hay dividendos calculados para ' + anio + '</div>' +
+      '<button class="btn btn-primary btn-sm no-print" style="margin-top:12px;" onclick="Modal.open(\'modalCalcular\')">Calcular ahora</button>' +
+    '</div>';
+  document.getElementById("rankingPanel").innerHTML =
+    '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:16px 0;">Sin datos</div>';
+}
+
+function resRow(label, val, cls) {
+  return '<div class="resumen-row">' +
+    '<span class="resumen-label">' + label + '</span>' +
+    '<span class="resumen-val ' + (cls||"") + '">' + val + '</span>' +
+  '</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RANKING TOP
+═══════════════════════════════════════════════════════════ */
+function renderRanking(div) {
+  var socios  = DB.socios.filter(function(s) { return s.estado === "activo"; });
+  var totalAh = socios.reduce(function(t,s) { return t + s.ahorro_acumulado; }, 0);
+
+  var ranking = socios.map(function(s) {
+    return {
+      nombre: s.nombre,
+      dvd: totalAh > 0 ? Math.round(div.total_distribuido * s.ahorro_acumulado / totalAh) : 0,
+    };
+  }).sort(function(a,b) { return b.dvd - a.dvd; }).slice(0,5);
+
+  var medals = ["🥇","🥈","🥉","4°","5°"];
+  document.getElementById("rankingPanel").innerHTML = ranking.map(function(r, i) {
+    return '<div class="rank-item">' +
+      '<span class="rank-num">' + medals[i] + '</span>' +
+      '<span class="rank-nombre">' + r.nombre.split(" ")[0] + " " + (r.nombre.split(" ")[1]||"") + '</span>' +
+      '<span class="rank-monto">' + DataHelper.formatCOP(r.dvd) + '</span>' +
+    '</div>';
+  }).join("");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GRÁFICA DONA
+═══════════════════════════════════════════════════════════ */
+function renderGraficaDona(div) {
+  var socios  = DB.socios.filter(function(s) { return s.estado === "activo"; });
+  var totalAh = socios.reduce(function(t,s) { return t + s.ahorro_acumulado; }, 0);
+  socios.sort(function(a,b) { return b.ahorro_acumulado - a.ahorro_acumulado; });
+
+  var labels = socios.map(function(s) { return s.nombre.split(" ")[0]; });
+  var data   = socios.map(function(s) {
+    return totalAh > 0 ? Math.round(div.total_distribuido * s.ahorro_acumulado / totalAh) : 0;
+  });
+
+  if (chartDonaInst) { chartDonaInst.destroy(); chartDonaInst = null; }
+
+  var ctx = document.getElementById("chartDona");
+  if (!ctx || typeof Chart === "undefined") return;
+
+  chartDonaInst = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: labels,
+      datasets: [{
+        data:            data,
+        backgroundColor: COLORES_DONA.slice(0, socios.length),
+        borderColor:     "#fff",
+        borderWidth:     2,
+        hoverOffset:     6,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: "68%",
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(c) {
+              var pct = (c.raw / data.reduce(function(a,b){return a+b;},0) * 100).toFixed(1);
+              return " " + DataHelper.formatCOP(c.raw) + " (" + pct + "%)";
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderGraficaDonaVacia() {
+  if (chartDonaInst) { chartDonaInst.destroy(); chartDonaInst = null; }
+
+  var socios  = DB.socios.filter(function(s) { return s.estado === "activo"; });
+  var totalAh = socios.reduce(function(t,s) { return t + s.ahorro_acumulado; }, 0);
+
+  var ctx = document.getElementById("chartDona");
+  if (!ctx || typeof Chart === "undefined") return;
+
+  // Mostrar la distribución potencial basada en ahorros
+  chartDonaInst = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: socios.map(function(s) { return s.nombre.split(" ")[0]; }),
+      datasets: [{
+        data:            socios.map(function(s) { return s.ahorro_acumulado; }),
+        backgroundColor: COLORES_DONA.slice(0, socios.length).map(function(c) { return c + "99"; }),
+        borderColor:     "#fff",
+        borderWidth:     2,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: "68%",
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(c) {
+              var pct = totalAh > 0 ? (c.raw / totalAh * 100).toFixed(1) : 0;
+              return " " + pct + "% del ahorro total";
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HISTORIAL ANUAL
+═══════════════════════════════════════════════════════════ */
+function renderHistorial() {
+  var container = document.getElementById("historialAnios");
+  if (!DB.dividendos.length) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--text-muted);grid-column:1/-1;">Aún no hay distribuciones registradas.</div>';
     return;
   }
-  // Proyección 2026
-  const totalAhorros = DB.socios.filter(s=>s.estado==="activo").reduce((t,s)=>t+s.ahorro_acumulado,0);
-  const proyUtilidades = 15000000;
-  const proyDistribuido = Math.round(proyUtilidades * 0.80);
-  const sociosActivos = DB.socios.filter(s => s.estado === "activo");
 
-  document.getElementById("dividendosTbody").innerHTML = sociosActivos.map(s => {
-    const pct = (s.ahorro_acumulado / totalAhorros * 100).toFixed(2);
-    const dvd = Math.round(proyDistribuido * s.ahorro_acumulado / totalAhorros);
-    return `<tr>
-      <td>${s.nombre}</td>
-      <td>${DataHelper.formatCOP(s.ahorro_acumulado)}</td>
-      <td style="color:var(--muted);">${pct}%</td>
-      <td style="font-weight:500; color:var(--amber);">${DataHelper.formatCOP(dvd)}</td>
-      <td><span class="pill pill-amber">Proyectado</span></td>
-    </tr>`;
+  var sorted = DB.dividendos.slice().sort(function(a,b) { return b.anio - a.anio; });
+  container.innerHTML = sorted.map(function(d) {
+    var activos  = DB.socios.filter(function(s) { return s.estado === "activo"; }).length;
+    var promedio = activos > 0 ? Math.round(d.total_distribuido / activos) : 0;
+    var pctReserva = 100 - d.porcentaje_distribuido;
+    var esActivo  = d.anio === anioActual;
+
+    return '<div class="hist-item ' + (esActivo?"activo":"") + '" onclick="renderPagina(\'' + d.anio + '\')">' +
+      '<div class="hist-anio">' + d.anio + '</div>' +
+      '<div class="hist-detalle">' +
+        '<div class="hist-total">Distribuido: ' + DataHelper.formatCOP(d.total_distribuido) + '</div>' +
+        '<div class="hist-sub">' +
+          'Utilidades: ' + DataHelper.formatCOP(d.total_utilidades) +
+          ' · Reserva: ' + pctReserva + '%' +
+          ' · Prom/socio: ' + DataHelper.formatCOP(promedio) +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">' +
+        '<span class="pill ' + (d.estado==="distribuido"?"pill-green":"pill-amber") + '">' +
+          (d.estado==="distribuido"?"✓ Distribuido":"Pendiente") + '</span>' +
+        '<span style="font-size:10px;color:var(--text-muted);">' + DataHelper.formatFecha(d.fecha_distribucion) + '</span>' +
+      '</div>' +
+    '</div>';
   }).join("");
-
-  document.getElementById("resumenReparto").innerHTML = `
-    <div class="alert info">
-      <div class="alert-icon">ℹ️</div>
-      <div><div class="alert-title">Proyección estimada 2026</div>
-      <div class="alert-body">Basada en utilidades estimadas de ${DataHelper.formatCOP(proyUtilidades)} y 80% de distribución.</div></div>
-    </div>`;
 }
 
-function renderResumen(div) {
-  const pctReserva = 100 - div.porcentaje_distribuido;
-  document.getElementById("resumenReparto").innerHTML = `
-    <div style="display:flex; flex-direction:column; gap:10px;">
-      <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:0.5px solid var(--border);">
-        <span style="color:var(--muted);">Año</span><strong>${div.anio}</strong>
-      </div>
-      <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:0.5px solid var(--border);">
-        <span style="color:var(--muted);">Total utilidades</span><strong>${DataHelper.formatCOP(div.total_utilidades)}</strong>
-      </div>
-      <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:0.5px solid var(--border);">
-        <span style="color:var(--muted);">Distribuido (${div.porcentaje_distribuido}%)</span>
-        <strong style="color:var(--gold);">${DataHelper.formatCOP(div.total_distribuido)}</strong>
-      </div>
-      <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:0.5px solid var(--border);">
-        <span style="color:var(--muted);">Reserva (${pctReserva}%)</span>
-        <strong>${DataHelper.formatCOP(div.total_utilidades - div.total_distribuido)}</strong>
-      </div>
-      <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0;">
-        <span style="color:var(--muted);">Fecha distribución</span>
-        <span>${DataHelper.formatFecha(div.fecha_distribucion)}</span>
-      </div>
-      <div style="margin-top:4px;">
-        <span class="pill ${div.estado === 'distribuido' ? 'pill-green' : 'pill-amber'}">
-          ${div.estado === 'distribuido' ? 'Distribuido' : 'Pendiente'}
-        </span>
-      </div>
-    </div>
-  `;
-}
-
-function renderHistorial() {
-  document.getElementById("historialAnios").innerHTML = DB.dividendos.map(d => `
-    <div style="display:flex; align-items:center; justify-content:space-between; padding:10px; background:var(--surface2); border-radius:8px;">
-      <div>
-        <div style="font-size:13px; font-weight:500;">Año ${d.anio}</div>
-        <div style="font-size:11px; color:var(--muted);">${DataHelper.formatCOP(d.total_distribuido)} distribuidos</div>
-      </div>
-      <span class="pill ${d.estado === 'distribuido' ? 'pill-green' : 'pill-amber'}">
-        ${d.estado === 'distribuido' ? 'Completado' : 'Pendiente'}
-      </span>
-    </div>
-  `).join("") || `<p style="font-size:13px; color:var(--muted);">Sin historial.</p>`;
-}
-
+/* ═══════════════════════════════════════════════════════════
+   CALCULAR Y APLICAR DIVIDENDOS
+═══════════════════════════════════════════════════════════ */
 function previsualizarCalculo() {
-  const utils  = parseFloat(document.getElementById("cd-utilidades").value) || 0;
-  const pct    = parseFloat(document.getElementById("cd-pct").value) || 80;
-  const total  = Math.round(utils * pct / 100);
-  const reserva = utils - total;
-  if (!utils) { document.getElementById("previstaCalculo").innerHTML = ""; return; }
+  var utils   = parseFloat(document.getElementById("cd-utilidades").value) || 0;
+  var pct     = parseFloat(document.getElementById("cd-pct").value) || 80;
+  var total   = Math.round(utils * pct / 100);
+  var reserva = utils - total;
+  var activos = DB.socios.filter(function(s) { return s.estado === "activo"; });
+  var btn     = document.getElementById("btnAplicar");
 
-  document.getElementById("previstaCalculo").innerHTML = `
-    <div class="alert success">
-      <div class="alert-icon">✓</div>
-      <div>
-        <div class="alert-title">Vista previa</div>
-        <div class="alert-body">
-          Se distribuirán <strong>${DataHelper.formatCOP(total)}</strong> entre
-          ${DB.socios.filter(s=>s.estado==="activo").length} socios activos.
-          Reserva del fondo: ${DataHelper.formatCOP(reserva)}.
-        </div>
-      </div>
-    </div>`;
+  document.getElementById("cd-reserva").value = Math.max(0, 100 - pct);
+
+  if (!utils) {
+    document.getElementById("previstaCalculo").innerHTML = "";
+    btn.disabled = true; return;
+  }
+
+  btn.disabled = false;
+
+  var promedio = activos.length > 0 ? Math.round(total / activos.length) : 0;
+
+  document.getElementById("previstaCalculo").innerHTML =
+    '<div style="background:var(--green-50);border:1px solid var(--green-100);border-radius:var(--r-md);padding:14px 16px;margin-top:4px;">' +
+      '<div style="font-size:12px;font-weight:700;color:var(--green-700);margin-bottom:10px;">✓ Vista previa del cálculo</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+        confItem("A distribuir",   DataHelper.formatCOP(total),   "gold") +
+        confItem("Reserva fondo",  DataHelper.formatCOP(reserva), "") +
+        confItem("Socios activos", activos.length + " socios",    "") +
+        confItem("Prom. por socio",DataHelper.formatCOP(promedio), "green") +
+      '</div>' +
+    '</div>';
+}
+
+function confItem(label, val, cls) {
+  return '<div style="background:var(--bg-surface);border-radius:var(--r-sm);padding:8px 10px;">' +
+    '<div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);margin-bottom:3px;">' + label + '</div>' +
+    '<div style="font-size:14px;font-weight:600;color:' +
+      (cls==="gold"?"var(--gold-700)":cls==="green"?"var(--green-700)":"var(--text-primary)") +
+      ';">' + val + '</div>' +
+  '</div>';
 }
 
 function aplicarDividendos() {
-  const anio  = parseInt(document.getElementById("cd-anio").value);
-  const utils = parseFloat(document.getElementById("cd-utilidades").value) || 0;
-  const pct   = parseFloat(document.getElementById("cd-pct").value) || 80;
-  if (!utils) { Toast.warn("Ingresa el total de utilidades."); return; }
+  var anio  = parseInt(document.getElementById("cd-anio").value);
+  var utils = parseFloat(document.getElementById("cd-utilidades").value) || 0;
+  var pct   = parseFloat(document.getElementById("cd-pct").value) || 80;
+  var fecha = document.getElementById("cd-fecha").value;
 
-  const totalDist = Math.round(utils * pct / 100);
-  const totalAh   = DB.socios.filter(s=>s.estado==="activo").reduce((t,s)=>t+s.ahorro_acumulado,0);
-  const detalle   = DB.socios.filter(s=>s.estado==="activo").map(s => ({
-    socio_id: s.id,
-    monto: Math.round(totalDist * s.ahorro_acumulado / totalAh)
-  }));
+  if (!utils)  { Toast.warn("Ingresa el total de utilidades del período."); return; }
+  if (!fecha)  { Toast.warn("Selecciona la fecha de distribución."); return; }
 
-  const existing = DB.dividendos.findIndex(d => d.anio === anio);
-  const nuevo = {
-    id: "D" + anio, anio, total_utilidades: utils,
-    porcentaje_distribuido: pct, total_distribuido: totalDist,
-    fecha_distribucion: document.getElementById("cd-fecha").value,
-    estado: "distribuido", detalle
+  var totalDist = Math.round(utils * pct / 100);
+  var socios    = DB.socios.filter(function(s) { return s.estado === "activo"; });
+  var totalAh   = socios.reduce(function(t,s) { return t + s.ahorro_acumulado; }, 0);
+
+  var detalle = socios.map(function(s) {
+    return {
+      socio_id: s.id,
+      monto:    totalAh > 0 ? Math.round(totalDist * s.ahorro_acumulado / totalAh) : 0,
+      pagado:   false,
+    };
+  });
+
+  var nuevo = {
+    id:                   "D" + anio,
+    anio:                 anio,
+    total_utilidades:     utils,
+    porcentaje_distribuido: pct,
+    total_distribuido:    totalDist,
+    fecha_distribucion:   fecha,
+    estado:               "pendiente",
+    detalle:              detalle,
   };
-  if (existing >= 0) DB.dividendos[existing] = nuevo;
-  else DB.dividendos.push(nuevo);
+
+  // Reemplazar o agregar
+  var idx = DB.dividendos.findIndex(function(d) { return d.anio === anio; });
+  if (idx >= 0) DB.dividendos[idx] = nuevo;
+  else          DB.dividendos.push(nuevo);
+
+  // Agregar tab si no existe
+  if (!document.querySelector('#anioTabs .tab-btn[data-tab="' + anio + '"]')) {
+    construirTabs();
+  }
 
   Modal.close("modalCalcular");
   renderPagina(String(anio));
-  // Seleccionar el tab del año calculado
-  document.querySelectorAll("#anioTabs .tab-btn").forEach(b => {
-    b.classList.toggle("active", b.dataset.tab === String(anio));
-  });
-  Toast.success(`Dividendos ${anio} calculados y distribuidos correctamente.`);
+  Toast.success("✓ Dividendos " + anio + " calculados — " + DataHelper.formatCOP(totalDist) + " a distribuir entre " + socios.length + " socios.");
 }
 
-function exportarDividendos() {
-  Toast.success("Exportando distribución de dividendos a CSV...");
+/* ═══════════════════════════════════════════════════════════
+   REGISTRAR PAGO INDIVIDUAL
+═══════════════════════════════════════════════════════════ */
+function abrirConfirmarSocio(socioId, monto, nombre) {
+  if (!divActual) return;
+  socioConfirmando = socioId;
+
+  document.getElementById("confirmarSocioBody").innerHTML =
+    '<p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">¿Confirmar el pago del dividendo a este socio?</p>' +
+    '<div class="conf-grid">' +
+      confItem("Socio",      nombre,                      "") +
+      confItem("Dividendo",  DataHelper.formatCOP(monto), "gold") +
+      confItem("Año",        String(divActual.anio),      "") +
+      confItem("Fecha",      DataHelper.formatFecha(divActual.fecha_distribucion), "") +
+    '</div>';
+
+  Modal.open("modalConfirmarSocio");
+}
+
+function confirmarPagoSocio() {
+  if (!divActual || !socioConfirmando) return;
+  var det = divActual.detalle && divActual.detalle.find(function(d) { return d.socio_id === socioConfirmando; });
+  if (det) det.pagado = true;
+
+  // Si todos están pagados → marcar distribuido
+  var todosPagados = divActual.detalle && divActual.detalle.every(function(d) { return d.pagado; });
+  if (todosPagados) divActual.estado = "distribuido";
+
+  socioConfirmando = null;
+  Modal.close("modalConfirmarSocio");
+  renderPagina(String(anioActual));
+  Toast.success("✓ Pago de dividendo registrado.");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REGISTRAR DISTRIBUCIÓN TOTAL
+═══════════════════════════════════════════════════════════ */
+function abrirDistribuirTodos() {
+  if (!divActual) return;
+  var pendientes = divActual.detalle
+    ? divActual.detalle.filter(function(d) { return !d.pagado; }).length
+    : 0;
+
+  document.getElementById("distribuirBody").innerHTML =
+    '<div style="background:var(--gold-50);border:1px solid var(--gold-100);border-radius:var(--r-md);padding:16px;margin-bottom:16px;">' +
+      '<div style="font-size:14px;font-weight:600;color:var(--gold-700);margin-bottom:6px;">🎁 Distribución masiva</div>' +
+      '<div style="font-size:13px;color:var(--gold-600);">' +
+        'Se marcará el dividendo de <strong>' + pendientes + ' socios</strong> como pagado.<br>' +
+        'Total a distribuir: <strong>' + DataHelper.formatCOP(divActual.total_distribuido) + '</strong>' +
+      '</div>' +
+    '</div>' +
+    '<p style="font-size:12.5px;color:var(--text-muted);">Esta acción actualiza el estado de todos los dividendos pendientes del año <strong>' + divActual.anio + '</strong>.</p>';
+
+  Modal.open("modalDistribuir");
+}
+
+function confirmarDistribucionTotal() {
+  if (!divActual) return;
+
+  if (divActual.detalle) {
+    divActual.detalle.forEach(function(d) { d.pagado = true; });
+  }
+  divActual.estado = "distribuido";
+
+  Modal.close("modalDistribuir");
+  renderPagina(String(anioActual));
+  Toast.success("🎉 Distribución " + divActual.anio + " completada — todos los dividendos registrados.");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORTAR EXCEL
+═══════════════════════════════════════════════════════════ */
+function exportarExcel() {
+  if (typeof XLSX === "undefined") { Toast.warn("Cargando exportador..."); return; }
+
+  var socios  = DB.socios.filter(function(s) { return s.estado === "activo"; });
+  var totalAh = socios.reduce(function(t,s) { return t + s.ahorro_acumulado; }, 0);
+  socios.sort(function(a,b) { return b.ahorro_acumulado - a.ahorro_acumulado; });
+
+  var titulo = divActual
+    ? "Distribución Dividendos " + divActual.anio
+    : "Proyección Dividendos " + anioActual;
+
+  var datos = [
+    [titulo],
+    ["Generado:", new Date().toLocaleDateString("es-CO")],
+    [],
+    ["#","Socio","Cargo","Sede","Ahorro base","Participación (%)","Dividendo asignado","Estado"],
+  ];
+
+  var totalDist = divActual ? divActual.total_distribuido : Math.round(15000000 * 0.80);
+
+  socios.forEach(function(s, i) {
+    var pct = totalAh > 0 ? parseFloat((s.ahorro_acumulado / totalAh * 100).toFixed(2)) : 0;
+    var dvd = totalAh > 0 ? Math.round(totalDist * s.ahorro_acumulado / totalAh) : 0;
+    var det = divActual && divActual.detalle && divActual.detalle.find(function(d) { return d.socio_id === s.id; });
+    datos.push([
+      i+1, s.nombre, s.cargo, s.sede,
+      s.ahorro_acumulado, pct, dvd,
+      det && det.pagado ? "Pagado" : divActual ? "Pendiente" : "Proyectado",
+    ]);
+  });
+
+  datos.push([]);
+  datos.push(["TOTALES","","","", totalAh, 100, totalDist, ""]);
+
+  if (divActual) {
+    datos.push([]);
+    datos.push(["Total utilidades", divActual.total_utilidades]);
+    datos.push(["Total distribuido (" + divActual.porcentaje_distribuido + "%)", divActual.total_distribuido]);
+    datos.push(["Reserva fondo", divActual.total_utilidades - divActual.total_distribuido]);
+    datos.push(["Fecha distribución", divActual.fecha_distribucion]);
+  }
+
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet(datos);
+
+  // Anchos de columna
+  ws["!cols"] = [
+    {wch:4},{wch:28},{wch:26},{wch:16},
+    {wch:16},{wch:16},{wch:18},{wch:14},
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, "Dividendos " + anioActual);
+  XLSX.writeFile(wb, "FONEVI_Dividendos_" + anioActual + ".xlsx");
+  Toast.success("✓ Archivo Excel exportado.");
 }
 </script>
 </body>
