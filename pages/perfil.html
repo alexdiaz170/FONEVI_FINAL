@@ -120,17 +120,17 @@
 
     /* Campos de datos — modo vista y modo edición */
     .datos-grid {
-      display: grid; grid-template-columns: repeat(3,1fr); gap: 0;
+      display: grid; grid-template-columns: repeat(2,1fr); gap: 0;
     }
     .dato-item {
-      padding: 14px 18px; border-bottom: 1px solid var(--border-faint);
+      padding: 10px 14px; border-bottom: 1px solid var(--border-faint);
       border-right: 1px solid var(--border-faint);
       transition: background .15s ease;
     }
-    .dato-item:nth-child(3n)     { border-right: none; }
-    .dato-item:nth-last-child(-n+3) { border-bottom: none; }
+    .dato-item:nth-child(2n)     { border-right: none; }
+    .dato-item:nth-last-child(-n+2) { border-bottom: none; }
     .dato-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 5px; }
-    .dato-value { font-size: 13.5px; color: var(--text-primary); font-weight: 500; min-height: 22px; }
+    .dato-value { font-size: 12.5px; color: var(--text-primary); font-weight: 500; min-height: 22px; }
 
     /* Input inline para campos editables */
     .dato-input, .dato-select {
@@ -222,11 +222,11 @@
     .pwd-panel {
       background: linear-gradient(135deg, var(--navy-50), var(--bg-surface));
       border: 1px solid var(--navy-100); border-radius: var(--r-lg);
-      padding: 18px 22px; display: flex; align-items: center;
+      padding: 18px 18px; display: flex; align-items: center;
       gap: 16px; justify-content: space-between;
     }
     .pwd-panel-icon { font-size: 28px; }
-    .pwd-panel-title { font-size: 14px; font-weight: 600; color: var(--navy-800); }
+    .pwd-panel-title { font-size: 14px; font-weight: 600; color: var(--gold-700); }
     .pwd-panel-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
     /* ── Print ─────────────────────────────────────────────── */
@@ -294,7 +294,7 @@
             </div>
           </div>
           <div class="card-body">
-            <div style="position:relative;height:220px;"><canvas id="chartAhorro"></canvas></div>
+            <div style="position:relative;height:160px;"><canvas id="chartAhorro"></canvas></div>
           </div>
         </div>
 
@@ -324,11 +324,11 @@
             <div class="pwd-panel">
               <div class="pwd-panel-icon">🔑</div>
               <div style="flex:1;">
-                <div class="pwd-panel-title">Contraseña de acceso</div>
-                <div class="pwd-panel-sub">Actualiza tu contraseña para mantener tu cuenta segura</div>
+               <div class="pwd-panel-title">Contraseña de acceso</div>
+                <!-- <div class="pwd-panel-sub">Actualiza tu contraseña</div> -->
               </div>
               <a href="cambiar-password.html" class="btn btn-secondary btn-sm no-print">
-                Cambiar contraseña →
+                Cambiar contraseña
               </a>
             </div>
           </div>
@@ -408,6 +408,7 @@
 <script src="../js/roles.js"></script>
 <script src="../js/layout.js"></script>
 <script src="../js/app.js"></script>
+<script src="../js/search.js"></script>
 <script src="../js/charts.js"></script>
 <script src="../js/loading.js"></script>
 
@@ -588,7 +589,7 @@ var CAMPOS_FIJOS = [
   { l:"Antigüedad",      k:"_antiguedad" },
   { l:"Código",          k:"codigo" },
   { l:"Fecha de ingreso",k:"_ingreso" },
-  { l:"Aporte mensual",  k:"_aporte" },
+  //{ l:"Aporte mensual",  k:"_aporte" },
 ];
 
 var CAMPOS_EDIT = [

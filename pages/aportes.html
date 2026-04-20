@@ -7,155 +7,339 @@
   <link rel="stylesheet" href="../css/main.css"/>
   <link rel="stylesheet" href="../css/dashboard.css"/>
   <link rel="stylesheet" href="../css/loading.css"/>
-  <!-- Favicon + PWA -->
-  <link rel="icon"             href="../favicon.svg"            type="image/svg+xml"/>
-  <link rel="icon"             href="../icons/icon-32x32.svg"   sizes="32x32" type="image/svg+xml"/>
-  <link rel="icon"             href="../icons/icon-16x16.svg"   sizes="16x16" type="image/svg+xml"/>
-  <link rel="apple-touch-icon" href="../icons/icon-180x180.svg" sizes="180x180"/>
-  <link rel="apple-touch-icon" href="../icons/icon-152x152.svg" sizes="152x152"/>
-  <link rel="manifest"         href="../manifest.json"/>
-  <meta name="mobile-web-app-capable"                content="yes"/>
-  <meta name="apple-mobile-web-app-capable"          content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title"            content="FONEVI"/>
-  <meta name="theme-color"                           content="#0f2d52"/>
   <link rel="stylesheet" href="../css/transitions.css"/>
   <link rel="stylesheet" href="../css/darkmode.css"/>
-  <link rel="stylesheet" href="../css/comprobantes.css"/>
-</head>
-<body>
+  <link rel="icon"             href="../favicon.svg"           type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-32x32.svg"  sizes="32x32" type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-16x16.svg"  sizes="16x16" type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="../icons/icon-180x180.svg" sizes="180x180"/>
+  <link rel="manifest"         href="../manifest.json"/>
+  <meta name="mobile-web-app-capable"      content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color"                 content="#0f2d52"/>
 
+  <style>
+    /* ── Barra de progreso de recaudo ─────────────────────── */
+    .recaudo-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-faint);
+      border-radius: var(--r-lg);
+      padding: 18px 22px;
+      margin-bottom: 20px;
+    }
+    .recaudo-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+    }
+    .recaudo-title {
+      font-size: 14px; font-weight: 600; color: var(--text-primary);
+    }
+    .recaudo-periodo {
+      font-size: 12px; color: var(--text-muted);
+      background: var(--bg-subtle); border: 1px solid var(--border-faint);
+      border-radius: var(--r-full); padding: 3px 12px;
+    }
+    .recaudo-monto {
+      font-family: var(--font-display); font-size: 28px; font-weight: 400;
+      color: var(--navy-800); letter-spacing: -.5px; margin-bottom: 6px;
+    }
+    .recaudo-track {
+      height: 10px; background: var(--bg-muted);
+      border-radius: var(--r-full); overflow: hidden; margin-bottom: 10px;
+    }
+    .recaudo-fill {
+      height: 100%; border-radius: var(--r-full);
+      background: linear-gradient(90deg, var(--green-500), var(--green-300));
+      transition: width .9s cubic-bezier(.16,1,.3,1);
+    }
+    .recaudo-stats {
+      display: flex; gap: 20px; flex-wrap: wrap;
+    }
+    .recaudo-stat {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12.5px;
+    }
+    .rs-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .rs-dot.green { background: var(--green-500); }
+    .rs-dot.amber { background: var(--amber-500); }
+    .rs-dot.red   { background: var(--red-500); }
+    .rs-dot.muted { background: var(--text-faint); }
+    .rs-label { color: var(--text-muted); }
+    .rs-num   { font-weight: 600; color: var(--text-primary); }
+
+    /* ── Selector de período ───────────────────────────────── */
+    .periodo-select {
+      padding: 7px 12px;
+      border: 1.5px solid var(--border-light);
+      border-radius: var(--r-md);
+      font-size: 13px; font-family: var(--font-body);
+      background: var(--bg-subtle); color: var(--text-primary);
+      outline: none; cursor: pointer;
+      transition: border-color .15s;
+    }
+    .periodo-select:focus { border-color: var(--gold-500); box-shadow: var(--glow-gold); }
+
+    /* ── Cambio de estado — dropdown inline ────────────────── */
+    .estado-select {
+      padding: 3px 8px; border: 1.5px solid var(--border-light);
+      border-radius: var(--r-full); font-size: 11px;
+      font-family: var(--font-body); background: var(--bg-subtle);
+      color: var(--text-primary); outline: none; cursor: pointer;
+      transition: all .15s;
+    }
+    .estado-select:focus { border-color: var(--gold-500); }
+    .estado-select.pagado    { background: var(--green-50); color: var(--green-700); border-color: var(--green-200); }
+    .estado-select.pendiente { background: var(--amber-50); color: var(--amber-700); border-color: var(--amber-200); }
+    .estado-select.mora      { background: var(--red-50);   color: var(--red-700);   border-color: var(--red-200); }
+    .estado-select.vencido   { background: var(--red-50);   color: var(--red-700);   border-color: var(--red-200); }
+
+    /* ── Fila de mora resaltada ────────────────────────────── */
+    tr.fila-mora td { background: var(--red-50) !important; }
+    tr.fila-mora td:first-child {
+      border-left: 3px solid var(--red-400);
+    }
+
+    /* ── Comprobante de impresión ──────────────────────────── */
+    @media print {
+      .sidebar, .topbar, .no-print,
+      .recaudo-card, .tab-bar,
+      .search-box, .periodo-select { display: none !important; }
+      .main-content { margin-left: 0 !important; }
+
+      #comprobantePrint {
+        display: block !important;
+        font-family: Arial, sans-serif;
+        font-size: 11pt;
+        color: #000;
+        padding: 20pt;
+      }
+      .comp-header {
+        display: flex; justify-content: space-between;
+        border-bottom: 2pt solid #0f2d52; padding-bottom: 10pt; margin-bottom: 16pt;
+      }
+      .comp-logo-txt {
+        font-size: 18pt; font-weight: 700; color: #0f2d52; letter-spacing: -0.5px;
+      }
+      .comp-sub-txt { font-size: 9pt; color: #666; margin-top: 2pt; }
+      .comp-num     { font-size: 9pt; color: #666; text-align: right; }
+      .comp-title   { font-size: 14pt; font-weight: 700; margin-bottom: 12pt; color: #0f2d52; }
+      .comp-grid    {
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 6pt 20pt; margin-bottom: 14pt; font-size: 10pt;
+      }
+      .comp-field-label { color: #666; font-size: 8pt; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .5pt; margin-bottom: 1pt; }
+      .comp-field-val   { font-weight: 600; }
+      .comp-monto-box {
+        background: #f0f7ff; border: 1pt solid #b5d4f4;
+        border-radius: 6pt; padding: 10pt 16pt; margin-bottom: 14pt; text-align: center;
+      }
+      .comp-monto-lbl { font-size: 9pt; color: #555; }
+      .comp-monto-val { font-size: 22pt; font-weight: 700; color: #0f2d52; }
+      .comp-firmas {
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 30pt; margin-top: 30pt; padding-top: 10pt;
+        border-top: 0.5pt solid #ccc;
+      }
+      .comp-firma-line {
+        border-top: 1pt solid #000; padding-top: 4pt;
+        font-size: 9pt; color: #555;
+      }
+      .comp-footer {
+        margin-top: 14pt; font-size: 8pt; color: #999;
+        border-top: 0.5pt solid #ddd; padding-top: 6pt; text-align: center;
+      }
+    }
+    #comprobantePrint { display: none; }
+
+    /* ── Empty state ───────────────────────────────────────── */
+    .empty-aportes {
+      padding: 40px 20px; text-align: center;
+    }
+    .empty-aportes .ei { font-size: 32px; margin-bottom: 10px; }
+    .empty-aportes .et { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .empty-aportes .ed { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+  </style>
+</head>
+
+<body>
 <div class="app-layout" id="app-layout">
   <div class="main-content">
     <div class="page-content">
-      <div class="page-header">
-        <h1>Módulo de Aportes</h1>
-        <p>Registro y control del ahorro mensual obligatorio</p>
-      </div>
 
-      <!-- KPIs del mes -->
-      <div class="kpi-grid" id="kpiAportes"></div>
+      <!-- ── KPIs ─────────────────────────────────────────── -->
+      <div class="kpi-grid" id="kpiAportes"
+        style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;"></div>
 
-      <!-- Progreso del mes -->
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-body">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <span style="font-size:14px; font-weight:500;">Progreso de recaudo — <span id="periodoLabel">Marzo 2026</span></span>
-            <span style="font-size:13px; color:var(--muted);" id="progLabel">109 / 127 socios</span>
+      <!-- ── PROGRESO DE RECAUDO ───────────────────────────── -->
+      <div class="recaudo-card" id="recaudoCard">
+        <div class="recaudo-header">
+          <div>
+            <span class="recaudo-title">Recaudo del período</span>
           </div>
-          <div class="progress" style="height:10px;">
-            <div class="progress-fill green" id="progFill" style="width:85%"></div>
-          </div>
-          <div style="display:flex; gap:20px; margin-top:12px; flex-wrap:wrap;">
-            <span style="font-size:12px; color:var(--green);">● Pagados: <strong id="cntPagados">109</strong></span>
-            <span style="font-size:12px; color:var(--amber);">● Pendientes: <strong id="cntPendientes">12</strong></span>
-            <span style="font-size:12px; color:var(--red);">● En mora: <strong id="cntMora">6</strong></span>
-          </div>
+          <select class="periodo-select no-print" id="selectPeriodo"
+            onchange="cambiarPeriodo(this.value)"></select>
         </div>
+        <div class="recaudo-monto" id="recaudoMonto">$0</div>
+        <div class="recaudo-track">
+          <div class="recaudo-fill" id="recaudoFill" style="width:0%"></div>
+        </div>
+        <div class="recaudo-stats" id="recaudoStats"></div>
       </div>
 
-      <!-- Filtros y tabla -->
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
-        <div class="tab-bar" id="filtroAporte">
+      <!-- ── FILTROS + ACCIONES ────────────────────────────── -->
+      <div style="display:flex;align-items:center;justify-content:space-between;
+        margin-bottom:14px;flex-wrap:wrap;gap:10px;" class="no-print">
+        <div class="tab-bar" id="filtroEstado">
           <button class="tab-btn active" data-tab="todos">Todos</button>
           <button class="tab-btn" data-tab="pagado">Pagados</button>
           <button class="tab-btn" data-tab="pendiente">Pendientes</button>
           <button class="tab-btn" data-tab="mora">En mora</button>
         </div>
-        <div style="display:flex; gap:10px;">
+        <div style="display:flex;gap:8px;align-items:center;">
           <div class="search-box">
             <span class="search-icon">🔍</span>
-            <input type="text" id="searchAporte" placeholder="Buscar..." />
+            <input type="text" id="searchAporte" placeholder="Buscar socio o período..."/>
           </div>
-          <div class="btn-print-group" style="display:flex;gap:8px;">
-            <button class="btn btn-secondary btn-sm" onclick="imprimirResumenAportes()" data-noprint>
-              🖨 Resumen período
-            </button>
-          </div>
-          <button class="btn btn-primary" onclick="Modal.open('modalNuevoAporte')" data-role-staff>
-            + Registrar Aporte
+          <button class="btn btn-secondary btn-sm" onclick="exportarExcel()">⬇ Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportarPDF()">🖨 PDF</button>
+          <button class="btn btn-primary" onclick="Modal.open('modalNuevoAporte')">
+            + Registrar aporte
           </button>
         </div>
       </div>
 
+      <!-- ── TABLA ─────────────────────────────────────────── -->
       <div class="card">
-        <table class="data-table" id="tablaAportes">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Socio</th>
-              <th>Período</th>
-              <th>Monto</th>
-              <th>Fecha de pago</th>
-              <th>Método</th>
-              <th>Estado</th>
-              <th data-role-staff>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="aporteTbody"></tbody>
-        </table>
+        <div class="card-header" style="padding-bottom:0;border-bottom:none;">
+          <span class="card-title" id="tituloTabla">Todos los aportes</span>
+          <span id="contadorAportes"
+            style="font-size:12px;color:var(--text-muted);"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table table-animated" id="tablaAportes">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Socio</th>
+                <th>Período</th>
+                <th>Monto</th>
+                <th>Fecha de pago</th>
+                <th>Método</th>
+                <th>Estado</th>
+                <th class="no-print">Cambiar estado</th>
+                <th class="no-print">Comprobante</th>
+              </tr>
+            </thead>
+            <tbody id="aporteTbody"></tbody>
+          </table>
+        </div>
+        <div id="aporteEmpty" style="display:none;">
+          <div class="empty-aportes">
+            <div class="ei">💰</div>
+            <div class="et">Sin aportes en este filtro</div>
+            <div class="ed">Cambia el período o el estado para ver otros registros.</div>
+          </div>
+        </div>
       </div>
 
     </div>
   </div>
 </div>
 
-<!-- Modal Nuevo Aporte -->
+<!-- ═══════════════════════════════════════════════════════
+     COMPROBANTE (solo visible al imprimir)
+═══════════════════════════════════════════════════════ -->
+<div id="comprobantePrint"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL — REGISTRAR APORTE
+═══════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modalNuevoAporte">
-  <div class="modal">
+  <div class="modal" style="max-width:520px;">
     <div class="modal-header">
-      <span class="modal-title">Registrar Aporte</span>
+      <span class="modal-title">💰 Registrar Aporte</span>
       <button class="modal-close" onclick="Modal.close('modalNuevoAporte')">×</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Socio</label>
+        <div class="form-group form-full">
+          <label class="form-label">Socio <span style="color:var(--red-500);">*</span></label>
           <select class="form-control" id="na-socio" onchange="autocompletarMonto()">
-            <option value="">— Seleccionar —</option>
+            <option value="">— Seleccionar socio —</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Período</label>
-          <select class="form-control" id="na-periodo">
-            <option>Marzo 2026</option>
-            <option>Febrero 2026</option>
-            <option>Enero 2026</option>
-          </select>
+          <label class="form-label">Período <span style="color:var(--red-500);">*</span></label>
+          <select class="form-control" id="na-periodo"></select>
         </div>
         <div class="form-group">
-          <label class="form-label">Monto ($)</label>
-          <input type="number" class="form-control" id="na-monto" placeholder="120000" />
+          <label class="form-label">Monto ($) <span style="color:var(--red-500);">*</span></label>
+          <input type="number" class="form-control" id="na-monto"
+            placeholder="120000" min="1" step="1000"/>
+          <span class="form-hint" id="na-monto-hint"></span>
         </div>
         <div class="form-group">
           <label class="form-label">Método de pago</label>
           <select class="form-control" id="na-metodo">
-            <option value="nomina">Descuento nómina</option>
+            <option value="nomina">Descuento de nómina</option>
             <option value="transferencia">Transferencia bancaria</option>
             <option value="efectivo">Efectivo</option>
+            <option value="cheque">Cheque</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Fecha de pago</label>
-          <input type="date" class="form-control" id="na-fecha" />
+          <input type="date" class="form-control" id="na-fecha"/>
         </div>
         <div class="form-group">
-          <label class="form-label">Observaciones</label>
-          <input type="text" class="form-control" id="na-obs" placeholder="Opcional" />
+          <label class="form-label">Estado inicial</label>
+          <select class="form-control" id="na-estado">
+            <option value="pagado">Pagado</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="mora">En mora</option>
+          </select>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Observaciones (opcional)</label>
+          <input type="text" class="form-control" id="na-obs"
+            placeholder="Nota adicional sobre el aporte..."/>
         </div>
       </div>
+
+      <!-- Aviso de aporte duplicado -->
+      <div id="naWarning" style="display:none;margin-top:10px;"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="Modal.close('modalNuevoAporte')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarAporte()">Registrar Aporte</button>
+      <button class="btn btn-primary" id="btnGuardarAporte" onclick="guardarAporte()">
+        Registrar aporte
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL — CONFIRMAR CAMBIO DE ESTADO
+═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalCambioEstado">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title">Cambiar estado del aporte</span>
+      <button class="modal-close" onclick="Modal.close('modalCambioEstado')">×</button>
+    </div>
+    <div class="modal-body" id="cambioEstadoBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cancelarCambioEstado()">Cancelar</button>
+      <button class="btn btn-primary"   onclick="confirmarCambioEstado()">Confirmar cambio</button>
     </div>
   </div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
 
-
-<!-- Exportación PDF/Excel -->
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/darkmode.js"></script>
@@ -166,179 +350,676 @@
 <script src="../js/roles.js"></script>
 <script src="../js/layout.js"></script>
 <script src="../js/app.js"></script>
+<script src="../js/search.js"></script>
 <script src="../js/loading.js"></script>
 <script src="../js/export.js"></script>
-<script src="../js/comprobantes.js"></script>
-<script>
-let filtroAporte = "todos";
 
-document.addEventListener("DOMContentLoaded", () => {
+<script>
+/* ═══════════════════════════════════════════════════════════
+   ESTADO GLOBAL
+═══════════════════════════════════════════════════════════ */
+var filtroPeriodo = "";        // "" = todos los períodos
+var filtroEstado  = "todos";   // todos / pagado / pendiente / mora
+var cambioEstadoPendiente = null; // { id, nuevoEstado, selectEl }
+
+var METODO_LABEL = {
+  nomina:       "Nómina",
+  transferencia:"Transferencia",
+  efectivo:     "Efectivo",
+  cheque:       "Cheque",
+};
+
+/* ═══════════════════════════════════════════════════════════
+   INICIO
+═══════════════════════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded", function() {
   if (!Roles.proteger("aportes")) return;
-  buildLayout("Aportes", "Control del ahorro mensual", "");
-  renderKPIs();
-  renderTabla("todos");
+
+  buildLayout(
+    "Aportes",
+    "Control del ahorro mensual del fondo",
+    ""
+  );
+
+  // Período actual como filtro inicial
+  filtroPeriodo = DB.config.periodo_actual;
+
   poblarSelectSocios();
+  poblarSelectPeriodos();
+  poblarSelectPeriodoModal();
+
   document.getElementById("na-fecha").value = new Date().toISOString().split("T")[0];
+  document.getElementById("na-socio").addEventListener("change", function() {
+    autocompletarMonto();
+    verificarDuplicado();
+  });
+  document.getElementById("na-periodo").addEventListener("change", verificarDuplicado);
+
+  renderKPIs();
+  renderRecaudo();
+  renderTabla();
+
   filterTable("searchAporte", "tablaAportes");
-  initTabs("filtroAporte", (tab) => { filtroAporte = tab; renderTabla(tab); });
+  initTabs("filtroEstado", function(tab) {
+    filtroEstado = tab; renderTabla();
+  });
 });
 
+/* ═══════════════════════════════════════════════════════════
+   KPIs
+═══════════════════════════════════════════════════════════ */
 function renderKPIs() {
-  const aportes  = DB.aportes;
-  const pagados  = aportes.filter(a => a.estado === "pagado").length;
-  const pendient = aportes.filter(a => a.estado === "pendiente").length;
-  const mora     = aportes.filter(a => ["mora", "vencido"].includes(a.estado)).length;
-  const totalRec = aportes.filter(a => a.estado === "pagado").reduce((t, a) => t + a.monto, 0);
+  var todos     = DB.aportes;
+  var pagados   = todos.filter(function(a){ return a.estado === "pagado"; });
+  var pendientes= todos.filter(function(a){ return a.estado === "pendiente"; });
+  var mora      = todos.filter(function(a){ return ["mora","vencido"].includes(a.estado); });
+  var totalRec  = pagados.reduce(function(t,a){ return t + a.monto; }, 0);
 
-  const kpis = [
-    { label: "Pagados", value: pagados, sub: "Este período", cls: "green", icon: "✓" },
-    { label: "Pendientes", value: pendient, sub: "Por recaudar", cls: "gold", icon: "⏱" },
-    { label: "En Mora", value: mora, sub: "Requieren seguimiento", cls: "red", icon: "⚠" },
-    { label: "Total Recaudado", value: DataHelper.formatCOP(totalRec), sub: "Todos los períodos", cls: "blue", icon: "💰" }
-  ];
-  document.getElementById("kpiAportes").innerHTML = kpis.map(k => `
-    <div class="kpi-card ${k.cls}">
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-value">${k.value}</div>
-      <div class="kpi-footer">${k.sub}</div>
-      <div class="kpi-bg-icon">${k.icon}</div>
-    </div>
-  `).join("");
+  document.getElementById("kpiAportes").innerHTML = [
+    { label:"Aportes pagados",   value: pagados.length,              sub:"Total en sistema",    cls:"green", icon:"✓" },
+    { label:"Pendientes",        value: pendientes.length,           sub:"Por recaudar",        cls:"gold",  icon:"⏱" },
+    { label:"En mora",           value: mora.length,                 sub:"Requieren seguimiento",cls:"red",  icon:"⚠" },
+    { label:"Total recaudado",   value: DataHelper.formatCOP(totalRec), sub:"Todos los períodos",cls:"blue", icon:"💰" },
+  ].map(function(k) {
+    return '<div class="kpi-card ' + k.cls + '">' +
+      '<div class="kpi-label">'    + k.label + '</div>' +
+      '<div class="kpi-value" style="font-size:' + (k.cls==="blue"?"17px":"24px") + ';">' + k.value + '</div>' +
+      '<div class="kpi-footer">'   + k.sub   + '</div>' +
+      '<div class="kpi-bg-icon">'  + k.icon  + '</div>' +
+    '</div>';
+  }).join("");
 }
 
-function renderTabla(filtro) {
-  let lista = DB.aportes;
-  if (filtro !== "todos") {
-    lista = lista.filter(a => {
-      if (filtro === "mora") return ["mora", "vencido"].includes(a.estado);
-      return a.estado === filtro;
+/* ═══════════════════════════════════════════════════════════
+   BARRA DE RECAUDO DEL PERÍODO
+═══════════════════════════════════════════════════════════ */
+function renderRecaudo() {
+  var periodo  = filtroPeriodo || DB.config.periodo_actual;
+  var lista    = DB.aportes.filter(function(a){ return a.periodo === periodo; });
+  var pagados  = lista.filter(function(a){ return a.estado === "pagado"; });
+  var pend     = lista.filter(function(a){ return a.estado === "pendiente"; });
+  var morosos  = lista.filter(function(a){ return ["mora","vencido"].includes(a.estado); });
+  var totalPag = pagados.reduce(function(t,a){ return t + a.monto; }, 0);
+  var totalPer = lista.reduce(function(t,a){ return t + a.monto; }, 0);
+  var pct      = totalPer > 0 ? Math.round(totalPag / totalPer * 100) : 0;
+
+  document.getElementById("recaudoMonto").textContent = DataHelper.formatCOP(totalPag);
+
+  setTimeout(function() {
+    document.getElementById("recaudoFill").style.width = pct + "%";
+    var fill = document.getElementById("recaudoFill");
+    fill.style.background = pct >= 80
+      ? "linear-gradient(90deg,var(--green-500),var(--green-300))"
+      : pct >= 50
+        ? "linear-gradient(90deg,var(--gold-500),var(--gold-300))"
+        : "linear-gradient(90deg,var(--red-500),var(--red-300))";
+  }, 200);
+
+  document.getElementById("recaudoStats").innerHTML = [
+    { cls:"green", lbl:"Pagados",   n: pagados.length + " (" + pct + "%)" },
+    { cls:"amber", lbl:"Pendientes",n: pend.length },
+    { cls:"red",   lbl:"En mora",   n: morosos.length },
+    { cls:"muted", lbl:"Total período", n: lista.length },
+  ].map(function(s) {
+    return '<div class="recaudo-stat">' +
+      '<div class="rs-dot ' + s.cls + '"></div>' +
+      '<span class="rs-label">' + s.lbl + ':</span>' +
+      '<span class="rs-num">' + s.n + '</span>' +
+    '</div>';
+  }).join("");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TABLA PRINCIPAL
+═══════════════════════════════════════════════════════════ */
+function renderTabla() {
+  var lista = DB.aportes;
+
+  // Filtro período
+  if (filtroPeriodo) {
+    lista = lista.filter(function(a){ return a.periodo === filtroPeriodo; });
+  }
+
+  // Filtro estado
+  if (filtroEstado !== "todos") {
+    lista = lista.filter(function(a){
+      if (filtroEstado === "mora") return ["mora","vencido"].includes(a.estado);
+      return a.estado === filtroEstado;
     });
   }
 
-  document.getElementById("aporteTbody").innerHTML = lista.map(a => `
-    <tr>
-      <td class="mono muted">${a.id}</td>
-      <td>${DataHelper.getSocioNombre(a.socio_id)}</td>
-      <td>${a.periodo}</td>
-      <td style="font-weight:500;">${DataHelper.formatCOP(a.monto)}</td>
-      <td>${DataHelper.formatFecha(a.fecha_pago)}</td>
-      <td class="muted">${a.metodo ? a.metodo.charAt(0).toUpperCase() + a.metodo.slice(1) : "—"}</td>
-      <td>${DataHelper.estadoPill(a.estado)}</td>
-      <td data-role-staff>
-        ${a.estado !== "pagado"
-          ? `<button class="btn btn-link" onclick="marcarPagado('${a.id}')">Marcar pagado</button>`
-          : `<button class="btn btn-link" onclick="Comprobantes.imprimirAporte('${a.id}')">🖨 Comprobante</button>`
-        }
-      </td>
-    </tr>
-  `).join("");
-}
+  // Título dinámico
+  var titulosEstado = {
+    todos:"Todos los aportes", pagado:"Aportes pagados",
+    pendiente:"Aportes pendientes", mora:"Aportes en mora"
+  };
+  document.getElementById("tituloTabla").textContent =
+    (filtroPeriodo || "Todos los períodos") + " — " + (titulosEstado[filtroEstado] || "Todos");
+  document.getElementById("contadorAportes").textContent =
+    lista.length + " registro" + (lista.length !== 1 ? "s" : "");
 
-function marcarPagado(id) {
-  const a = DB.aportes.find(x => x.id === id);
-  if (!a) return;
-  a.estado = "pagado";
-  a.fecha_pago = new Date().toISOString().split("T")[0];
-  a.metodo = "efectivo";
-  renderTabla(filtroAporte);
-  renderKPIs();
-  Toast.success(`Aporte ${id} marcado como pagado.`);
-}
+  var tbody = document.getElementById("aporteTbody");
+  var empty = document.getElementById("aporteEmpty");
 
-function poblarSelectSocios() {
-  const sel = document.getElementById("na-socio");
-  DB.socios.forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s.id;
-    opt.textContent = s.nombre;
-    sel.appendChild(opt);
+  if (!lista.length) {
+    tbody.innerHTML = "";
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+
+  // Ordenar: mora primero, luego pendiente, luego pagado; dentro de cada grupo por período desc
+  lista.sort(function(a, b) {
+    var orden = { mora:0, vencido:1, pendiente:2, pagado:3 };
+    var oa = orden[a.estado] !== undefined ? orden[a.estado] : 4;
+    var ob = orden[b.estado] !== undefined ? orden[b.estado] : 4;
+    if (oa !== ob) return oa - ob;
+    return (b.periodo || "").localeCompare(a.periodo || "");
   });
-}
 
-function autocompletarMonto() {
-  const id = document.getElementById("na-socio").value;
-  const s  = DataHelper.getSocio(id);
-  if (s) document.getElementById("na-monto").value = s.aporte_mensual;
-}
+  tbody.innerHTML = lista.map(function(a) {
+    var esMora = ["mora","vencido"].includes(a.estado);
+    var trCls  = esMora ? "fila-mora" : "";
 
-function imprimirResumenAportes() {
-  // Generar tabla resumen de todos los aportes del período actual
-  var lista = DB.aportes.filter(function(a){ return a.periodo === DB.config.periodo_actual; });
-  if (!lista.length) lista = DB.aportes.slice(0, 20);
+    return '<tr class="' + trCls + '">' +
+      '<td class="mono muted" style="font-size:11px;">' + a.id + '</td>' +
+      '<td style="font-weight:500;">' + DataHelper.getSocioNombre(a.socio_id) + '</td>' +
+      '<td>' + a.periodo + '</td>' +
+      '<td style="font-weight:600;">' + DataHelper.formatCOP(a.monto) + '</td>' +
+      '<td class="muted">' + (a.fecha_pago ? DataHelper.formatFecha(a.fecha_pago) : '<span style="color:var(--text-faint);">—</span>') + '</td>' +
+      '<td class="muted">' + (METODO_LABEL[a.metodo] || a.metodo || "—") + '</td>' +
+      '<td>' + DataHelper.estadoPill(a.estado) + '</td>' +
 
-  var pagados    = lista.filter(function(a){ return a.estado === "pagado"; });
-  var pendientes = lista.filter(function(a){ return a.estado !== "pagado"; });
-  var totalRec   = pagados.reduce(function(t,a){ return t+a.monto; }, 0);
+      // Cambio de estado inline
+      '<td class="no-print">' +
+        '<select class="estado-select ' + (["mora","vencido"].includes(a.estado) ? "mora" : a.estado) + '" ' +
+          'data-id="' + a.id + '" ' +
+          'onchange="solicitarCambioEstado(this)">' +
+          '<option value="pagado"    ' + (a.estado==="pagado"    ? "selected" : "") + '>✓ Pagado</option>' +
+          '<option value="pendiente" ' + (a.estado==="pendiente" ? "selected" : "") + '>⏱ Pendiente</option>' +
+          '<option value="mora"      ' + (["mora","vencido"].includes(a.estado) ? "selected" : "") + '>⚠ En mora</option>' +
+        '</select>' +
+      '</td>' +
 
-  var num = "RES-" + new Date().getFullYear() +
-    String(new Date().getMonth()+1).padStart(2,"0") +
-    String(new Date().getDate()).padStart(2,"0");
-
-  var filas = lista.map(function(a, i) {
-    var estadoCls = a.estado === "pagado" ? "comp-badge-ok"
-      : a.estado === "mora" || a.estado === "vencido" ? "comp-badge-mora"
-      : "comp-badge-pend";
-    var estadoLabel = a.estado === "pagado" ? "Pagado"
-      : a.estado === "mora" || a.estado === "vencido" ? "Mora"
-      : "Pendiente";
-    return "<tr>" +
-      "<td>" + a.id + "</td>" +
-      "<td>" + DataHelper.getSocioNombre(a.socio_id) + "</td>" +
-      "<td>" + a.periodo + "</td>" +
-      "<td>" + DataHelper.formatCOP(a.monto) + "</td>" +
-      "<td>" + (a.fecha_pago ? DataHelper.formatFecha(a.fecha_pago) : "—") + "</td>" +
-      "<td><span class=\"comp-badge " + estadoCls + "\">" + estadoLabel + "</span></td>" +
-    "</tr>";
+      // Comprobante
+      '<td class="no-print">' +
+        (a.estado === "pagado"
+          ? '<button class="btn-link" style="font-size:12px;" ' +
+              'onclick="imprimirComprobante(\'' + a.id + '\')">🖨 Imprimir</button>'
+          : '<span style="color:var(--text-faint);font-size:11px;">—</span>') +
+      '</td>' +
+    '</tr>';
   }).join("");
+}
 
-  var html = "<div class=\"comprobante\">" +
-    Comprobantes._encabezado("Resumen de Aportes — " + DB.config.periodo_actual, num) +
-    "<div class=\"comp-body\">" +
-      "<table class=\"comp-tabla\">" +
-        "<thead><tr>" +
-          "<th>ID</th><th>Socio</th><th>Período</th><th>Monto</th><th>Fecha</th><th>Estado</th>" +
-        "</tr></thead>" +
-        "<tbody>" + filas + "</tbody>" +
-      "</table>" +
-      "<table class=\"comp-tabla\" style=\"margin-top:10pt;\">" +
-        "<thead><tr><th colspan=\"2\">Resumen</th></tr></thead>" +
-        "<tbody>" +
-          "<tr><td class=\"td-label\">Aportes pagados</td><td class=\"td-value\">" + pagados.length + " / " + lista.length + "</td></tr>" +
-          "<tr><td class=\"td-label\">Aportes pendientes</td><td class=\"td-value\">" + pendientes.length + "</td></tr>" +
-          "<tr class=\"tr-total\"><td class=\"td-label\">Total recaudado</td>" +
-            "<td class=\"td-monto\">" + DataHelper.formatCOP(totalRec) + "</td></tr>" +
-        "</tbody>" +
-      "</table>" +
-    "</div>" +
-    Comprobantes._pieFirmas("resumen de aportes") +
-  "</div>";
+/* ═══════════════════════════════════════════════════════════
+   CAMBIO DE ESTADO
+═══════════════════════════════════════════════════════════ */
+function solicitarCambioEstado(selectEl) {
+  var id          = selectEl.dataset.id;
+  var nuevoEstado = selectEl.value;
+  var aporte      = DB.aportes.find(function(a){ return a.id === id; });
+  if (!aporte) return;
+  if (aporte.estado === nuevoEstado) return;
 
-  Comprobantes._imprimir(html, "Resumen Aportes " + DB.config.periodo_actual);
+  cambioEstadoPendiente = { id: id, nuevoEstado: nuevoEstado, selectEl: selectEl };
+
+  var socio  = DataHelper.getSocioNombre(aporte.socio_id);
+  var labels = { pagado:"✓ Pagado", pendiente:"⏱ Pendiente", mora:"⚠ En mora" };
+
+  document.getElementById("cambioEstadoBody").innerHTML =
+    '<p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">' +
+      '¿Confirmar el cambio de estado del siguiente aporte?' +
+    '</p>' +
+    '<div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:14px 16px;font-size:13px;">' +
+      '<div style="margin-bottom:6px;"><strong>' + socio + '</strong> — ' + aporte.periodo + '</div>' +
+      '<div style="margin-bottom:6px;">Monto: <strong>' + DataHelper.formatCOP(aporte.monto) + '</strong></div>' +
+      '<div>Estado: ' + DataHelper.estadoPill(aporte.estado) +
+        ' → ' + DataHelper.estadoPill(nuevoEstado) +
+      '</div>' +
+    '</div>' +
+    (nuevoEstado === "pagado"
+      ? '<div style="margin-top:12px;"><label class="form-label">Fecha de pago</label>' +
+          '<input type="date" class="form-control" id="cambioFecha" ' +
+          'value="' + new Date().toISOString().split("T")[0] + '"/></div>'
+      : "") +
+    (nuevoEstado === "mora"
+      ? '<div style="margin-top:10px;background:var(--red-50);border:1px solid var(--red-100);' +
+          'border-radius:var(--r-sm);padding:10px 14px;font-size:12px;color:var(--red-700);">' +
+          '⚠ Al marcar como mora se registrarán intereses de ' + DB.config.tasa_mora_diaria + '% diario.' +
+        '</div>'
+      : "");
+
+  Modal.open("modalCambioEstado");
+}
+
+function cancelarCambioEstado() {
+  // Restaurar el select al valor original
+  if (cambioEstadoPendiente) {
+    var aporte = DB.aportes.find(function(a){ return a.id === cambioEstadoPendiente.id; });
+    if (aporte && cambioEstadoPendiente.selectEl) {
+      cambioEstadoPendiente.selectEl.value =
+        ["mora","vencido"].includes(aporte.estado) ? "mora" : aporte.estado;
+    }
+    cambioEstadoPendiente = null;
+  }
+  Modal.close("modalCambioEstado");
+}
+
+function confirmarCambioEstado() {
+  if (!cambioEstadoPendiente) return;
+
+  var aporte = DB.aportes.find(function(a){ return a.id === cambioEstadoPendiente.id; });
+  if (!aporte) return;
+
+  var estadoAnterior = aporte.estado;
+  aporte.estado      = cambioEstadoPendiente.nuevoEstado;
+
+  // Actualizar fecha si se marca como pagado
+  if (cambioEstadoPendiente.nuevoEstado === "pagado") {
+    var fechaEl = document.getElementById("cambioFecha");
+    aporte.fecha_pago = fechaEl ? fechaEl.value : new Date().toISOString().split("T")[0];
+
+    // Actualizar ahorro acumulado del socio si antes no estaba pagado
+    if (estadoAnterior !== "pagado") {
+      var socio = DB.socios.find(function(s){ return s.id === aporte.socio_id; });
+      if (socio) socio.ahorro_acumulado += aporte.monto;
+    }
+  }
+
+  // Si se revierte de pagado, descontar del ahorro
+  if (estadoAnterior === "pagado" && cambioEstadoPendiente.nuevoEstado !== "pagado") {
+    var socio2 = DB.socios.find(function(s){ return s.id === aporte.socio_id; });
+    if (socio2) socio2.ahorro_acumulado = Math.max(0, socio2.ahorro_acumulado - aporte.monto);
+  }
+
+  cambioEstadoPendiente = null;
+  Modal.close("modalCambioEstado");
+  renderKPIs();
+  renderRecaudo();
+  renderTabla();
+  Toast.success("✓ Estado actualizado correctamente.");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REGISTRAR NUEVO APORTE
+═══════════════════════════════════════════════════════════ */
+function autocompletarMonto() {
+  var id = document.getElementById("na-socio").value;
+  var s  = DataHelper.getSocio(id);
+  if (s) {
+    document.getElementById("na-monto").value = s.aporte_mensual;
+    document.getElementById("na-monto-hint").textContent =
+      "Aporte habitual: " + DataHelper.formatCOP(s.aporte_mensual);
+  } else {
+    document.getElementById("na-monto-hint").textContent = "";
+  }
+}
+
+function verificarDuplicado() {
+  var socioId = document.getElementById("na-socio").value;
+  var periodo = document.getElementById("na-periodo").value;
+  var warn    = document.getElementById("naWarning");
+  var btn     = document.getElementById("btnGuardarAporte");
+
+  if (!socioId || !periodo) { warn.style.display = "none"; btn.disabled = false; return; }
+
+  var existe = DB.aportes.find(function(a) {
+    return a.socio_id === socioId && a.periodo === periodo;
+  });
+
+  if (existe) {
+    warn.style.display = "block";
+    warn.innerHTML =
+      '<div style="background:var(--amber-50);border:1px solid var(--amber-100);' +
+      'border-radius:var(--r-md);padding:10px 14px;font-size:12.5px;color:var(--amber-700);">' +
+      '⚠ Este socio ya tiene un aporte registrado para <strong>' + periodo + '</strong> ' +
+      '(Estado: ' + DataHelper.estadoPill(existe.estado) + '). ' +
+      'Puedes registrar igualmente si es un pago adicional.' +
+      '</div>';
+    btn.disabled = false; // Permitir igualmente
+  } else {
+    warn.style.display = "none";
+    btn.disabled = false;
+  }
 }
 
 function guardarAporte() {
-  const socioId = document.getElementById("na-socio").value;
-  const monto   = parseFloat(document.getElementById("na-monto").value);
-  if (!socioId || !monto) { Toast.warn("Completa los campos requeridos."); return; }
-  const nuevo = {
-    id: "A" + String(DB.aportes.length + 1).padStart(3, "0"),
-    socio_id: socioId,
-    periodo:  document.getElementById("na-periodo").value,
-    monto,
-    fecha_pago: document.getElementById("na-fecha").value,
-    estado: "pagado",
-    metodo: document.getElementById("na-metodo").value
+  var socioId = document.getElementById("na-socio").value;
+  var monto   = parseFloat(document.getElementById("na-monto").value);
+  var periodo = document.getElementById("na-periodo").value;
+  var estado  = document.getElementById("na-estado").value;
+
+  if (!socioId) { Toast.warn("Selecciona un socio."); return; }
+  if (!monto || monto <= 0) { Toast.warn("Ingresa un monto válido."); return; }
+  if (!periodo) { Toast.warn("Selecciona el período."); return; }
+
+  var btn = document.getElementById("btnGuardarAporte");
+  btn.textContent = "Registrando...";
+  btn.disabled    = true;
+
+  var nuevo = {
+    id:         "A" + String(DB.aportes.length + 1).padStart(3, "0"),
+    socio_id:   socioId,
+    periodo:    periodo,
+    monto:      monto,
+    fecha_pago: estado === "pagado" ? document.getElementById("na-fecha").value : null,
+    estado:     estado,
+    metodo:     document.getElementById("na-metodo").value,
+    obs:        document.getElementById("na-obs").value.trim(),
   };
+
   DB.aportes.push(nuevo);
-  /* Actualizar ahorro acumulado del socio */
-  const s = DataHelper.getSocio(socioId);
-  if (s) s.ahorro_acumulado += monto;
-  Modal.close("modalNuevoAporte");
-  renderTabla(filtroAporte);
-  renderKPIs();
-  Toast.success(`Aporte de ${DataHelper.formatCOP(monto)} registrado correctamente.`);
+
+  // Actualizar ahorro si es pagado
+  if (estado === "pagado") {
+    var s = DataHelper.getSocio(socioId);
+    if (s) s.ahorro_acumulado += monto;
+  }
+
+  setTimeout(function() {
+    btn.textContent = "Registrar aporte";
+    btn.disabled    = false;
+
+    Modal.close("modalNuevoAporte");
+    renderKPIs();
+    renderRecaudo();
+    renderTabla();
+
+    // Actualizar selector de período si es nuevo
+    poblarSelectPeriodos();
+
+    Toast.success("✓ Aporte de " + DataHelper.formatCOP(monto) + " registrado.");
+  }, 400);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CAMBIAR PERÍODO
+═══════════════════════════════════════════════════════════ */
+function cambiarPeriodo(valor) {
+  filtroPeriodo = valor;
+  renderRecaudo();
+  renderTabla();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   POBLAR SELECTS
+═══════════════════════════════════════════════════════════ */
+function poblarSelectSocios() {
+  var sel = document.getElementById("na-socio");
+  DB.socios
+    .filter(function(s){ return s.estado === "activo"; })
+    .sort(function(a,b){ return a.nombre.localeCompare(b.nombre); })
+    .forEach(function(s) {
+      var opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.nombre;
+      sel.appendChild(opt);
+    });
+}
+
+function poblarSelectPeriodos() {
+  // Períodos únicos en aportes + período actual
+  var periodos = [];
+  var vistos   = {};
+  DB.aportes.forEach(function(a) {
+    if (a.periodo && !vistos[a.periodo]) {
+      periodos.push(a.periodo);
+      vistos[a.periodo] = true;
+    }
+  });
+  if (!vistos[DB.config.periodo_actual]) {
+    periodos.unshift(DB.config.periodo_actual);
+  }
+
+  // Ordenar: más reciente primero (por año desc, mes desc)
+  var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+               "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  periodos.sort(function(a, b) {
+    var pa = a.split(" "), pb = b.split(" ");
+    var ya = parseInt(pa[pa.length-1]), yb = parseInt(pb[pb.length-1]);
+    if (ya !== yb) return yb - ya;
+    var ma = MESES.indexOf(pa[0]), mb = MESES.indexOf(pb[0]);
+    return mb - ma;
+  });
+
+  // Selector de la página
+  var sel = document.getElementById("selectPeriodo");
+  var cur = sel.value || filtroPeriodo;
+  sel.innerHTML = periodos.map(function(p) {
+    return '<option value="' + p + '" ' + (p === cur ? "selected" : "") + '>' + p + '</option>';
+  }).join("");
+  if (!filtroPeriodo && periodos.length) filtroPeriodo = periodos[0];
+}
+
+function poblarSelectPeriodoModal() {
+  var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+               "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  var sel = document.getElementById("na-periodo");
+  // Generar 12 meses hacia atrás desde el período actual
+  var partes  = DB.config.periodo_actual.split(" ");
+  var mesIdx  = MESES.indexOf(partes[0]);
+  var anio    = parseInt(partes[partes.length-1]);
+  var opciones = [];
+
+  for (var i = 0; i < 12; i++) {
+    var m = mesIdx - i;
+    var y = anio;
+    while (m < 0) { m += 12; y--; }
+    opciones.push(MESES[m] + " " + y);
+  }
+
+  sel.innerHTML = opciones.map(function(p) {
+    return '<option value="' + p + '" ' + (p === DB.config.periodo_actual ? "selected" : "") + '>' + p + '</option>';
+  }).join("");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPROBANTE DE APORTE (impresión)
+═══════════════════════════════════════════════════════════ */
+function imprimirComprobante(id) {
+  var a = DB.aportes.find(function(x){ return x.id === id; });
+  if (!a) return;
+
+  var socio  = DB.socios.find(function(s){ return s.id === a.socio_id; }) || {};
+  var num    = "FONEVI-AP-" + a.id + "-" + new Date().getFullYear();
+  var fecha  = new Date().toLocaleDateString("es-CO", { day:"2-digit", month:"long", year:"numeric" });
+
+  document.getElementById("comprobantePrint").innerHTML =
+    '<div class="comp-header">' +
+      '<div>' +
+        '<div class="comp-logo-txt">FONEVI</div>' +
+        '<div class="comp-sub-txt">' + DB.config.nombre_completo + '</div>' +
+        '<div class="comp-sub-txt">NIT: ' + DB.config.nit + '</div>' +
+      '</div>' +
+      '<div class="comp-num">' +
+        '<div style="font-size:10pt;font-weight:700;">COMPROBANTE DE APORTE</div>' +
+        '<div>N°: ' + num + '</div>' +
+        '<div>Fecha: ' + fecha + '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="comp-title">Comprobante de Pago de Aporte Mensual</div>' +
+
+    '<div class="comp-grid">' +
+      compField("Socio",           socio.nombre || "—") +
+      compField("Documento",       socio.documento || "—") +
+      compField("Cargo",           socio.cargo || "—") +
+      compField("Sede",            socio.sede || "—") +
+      compField("Período",         a.periodo) +
+      compField("Fecha de pago",   DataHelper.formatFecha(a.fecha_pago)) +
+      compField("Método",          METODO_LABEL[a.metodo] || a.metodo || "—") +
+      compField("Estado",          "PAGADO") +
+    '</div>' +
+
+    '<div class="comp-monto-box">' +
+      '<div class="comp-monto-lbl">Valor del aporte</div>' +
+      '<div class="comp-monto-val">' + DataHelper.formatCOP(a.monto) + '</div>' +
+    '</div>' +
+
+    '<div class="comp-firmas">' +
+      '<div><div class="comp-firma-line">Tesorero(a) FONEVI</div></div>' +
+      '<div><div class="comp-firma-line">Firma del Socio</div></div>' +
+    '</div>' +
+
+    '<div class="comp-footer">' +
+      DB.config.nombre_completo + ' — NIT: ' + DB.config.nit +
+      ' — Documento válido solo con firma autorizada.' +
+    '</div>';
+
+  window.print();
+}
+
+function compField(label, val) {
+  return '<div>' +
+    '<div class="comp-field-label">' + label + '</div>' +
+    '<div class="comp-field-val">' + val + '</div>' +
+  '</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORTAR EXCEL
+═══════════════════════════════════════════════════════════ */
+function exportarExcel() {
+  if (typeof XLSX === "undefined") { Toast.warn("Cargando exportador..."); return; }
+
+  var lista = listaFiltrada();
+  var periodo = filtroPeriodo || "Todos los períodos";
+
+  var datos = [
+    ["FONEVI — Aportes: " + periodo],
+    ["Exportado:", new Date().toLocaleDateString("es-CO")],
+    [],
+    ["ID","Socio","Documento","Período","Monto","Fecha pago","Método","Estado"],
+  ];
+
+  lista.forEach(function(a) {
+    var socio = DB.socios.find(function(s){ return s.id === a.socio_id; }) || {};
+    datos.push([
+      a.id,
+      socio.nombre || DataHelper.getSocioNombre(a.socio_id),
+      socio.documento || "—",
+      a.periodo,
+      a.monto,
+      a.fecha_pago || "—",
+      METODO_LABEL[a.metodo] || a.metodo || "—",
+      a.estado,
+    ]);
+  });
+
+  // Fila de totales
+  var totalPag = lista.filter(function(a){ return a.estado === "pagado"; })
+                      .reduce(function(t,a){ return t + a.monto; }, 0);
+  datos.push([]);
+  datos.push(["TOTAL RECAUDADO","","","", totalPag, "", "", ""]);
+
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet(datos);
+  ws["!cols"] = [
+    {wch:8},{wch:28},{wch:14},{wch:16},{wch:14},{wch:14},{wch:16},{wch:12}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, "Aportes");
+  XLSX.writeFile(wb, "FONEVI_Aportes_" + (filtroPeriodo||"todos").replace(/ /g,"_") + ".xlsx");
+  Toast.success("✓ Excel exportado.");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORTAR PDF (tabla usando jsPDF)
+═══════════════════════════════════════════════════════════ */
+function exportarPDF() {
+  if (typeof jspdf === "undefined" && typeof window.jspdf === "undefined") {
+    Toast.warn("Generando PDF..."); return;
+  }
+  var { jsPDF } = window.jspdf;
+  var doc    = new jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
+  var lista  = listaFiltrada();
+  var periodo= filtroPeriodo || "Todos los períodos";
+
+  // Encabezado
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(14);
+  doc.setTextColor(15, 45, 82);
+  doc.text("FONEVI — Aportes: " + periodo, 14, 16);
+
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(9);
+  doc.setTextColor(100);
+  doc.text("Generado: " + new Date().toLocaleDateString("es-CO"), 14, 22);
+
+  // Tabla
+  var headers = [["ID","Socio","Período","Monto","Fecha pago","Método","Estado"]];
+  var rows    = lista.map(function(a) {
+    return [
+      a.id,
+      DataHelper.getSocioNombre(a.socio_id),
+      a.periodo,
+      DataHelper.formatCOP(a.monto),
+      a.fecha_pago ? DataHelper.formatFecha(a.fecha_pago) : "—",
+      METODO_LABEL[a.metodo] || a.metodo || "—",
+      a.estado.charAt(0).toUpperCase() + a.estado.slice(1),
+    ];
+  });
+
+  // Simple table sin autoTable (por compatibilidad)
+  var y    = 28;
+  var cols = [18, 70, 42, 32, 32, 30, 24];
+  var x0   = 14;
+
+  // Cabecera
+  doc.setFillColor(15, 45, 82);
+  doc.rect(x0, y, 248, 7, "F");
+  doc.setTextColor(255);
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(8);
+  var cx = x0 + 2;
+  headers[0].forEach(function(h, i) { doc.text(h, cx, y+5); cx += cols[i]; });
+
+  // Filas
+  y += 7;
+  rows.forEach(function(row, ri) {
+    if (y > 190) { doc.addPage(); y = 14; }
+    doc.setFillColor(ri % 2 === 0 ? 249 : 255, ri % 2 === 0 ? 250 : 255, ri % 2 === 0 ? 251 : 255);
+    doc.rect(x0, y, 248, 6, "F");
+    doc.setTextColor(30);
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(7.5);
+    cx = x0 + 2;
+    row.forEach(function(cell, i) {
+      var txt = String(cell);
+      if (txt.length > 28) txt = txt.substring(0,26) + "…";
+      doc.text(txt, cx, y+4);
+      cx += cols[i];
+    });
+    y += 6;
+  });
+
+  // Total
+  y += 4;
+  var totalPag = lista.filter(function(a){ return a.estado==="pagado"; })
+                      .reduce(function(t,a){ return t+a.monto; }, 0);
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(9);
+  doc.setTextColor(15, 45, 82);
+  doc.text("Total recaudado: " + DataHelper.formatCOP(totalPag), x0, y);
+
+  doc.save("FONEVI_Aportes_" + (filtroPeriodo||"todos").replace(/ /g,"_") + ".pdf");
+  Toast.success("✓ PDF generado.");
+}
+
+/* ── Helper: lista filtrada actual ─────────────────────── */
+function listaFiltrada() {
+  var lista = DB.aportes;
+  if (filtroPeriodo) {
+    lista = lista.filter(function(a){ return a.periodo === filtroPeriodo; });
+  }
+  if (filtroEstado !== "todos") {
+    lista = lista.filter(function(a){
+      if (filtroEstado === "mora") return ["mora","vencido"].includes(a.estado);
+      return a.estado === filtroEstado;
+    });
+  }
+  return lista;
 }
 </script>
-<div class="comprobante-wrapper" id="comprobante-print-area"></div>
 </body>
 </html>
