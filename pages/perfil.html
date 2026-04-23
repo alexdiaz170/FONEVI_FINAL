@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../css/loading.css"/>
   <link rel="stylesheet" href="../css/transitions.css"/>
   <link rel="stylesheet" href="../css/darkmode.css"/>
+  <link rel="stylesheet" href="../css/comprobantes.css"/>
   <link rel="icon"             href="../favicon.svg"            type="image/svg+xml"/>
   <link rel="icon"             href="../icons/icon-32x32.svg"   sizes="32x32"  type="image/svg+xml"/>
   <link rel="icon"             href="../icons/icon-16x16.svg"   sizes="16x16"  type="image/svg+xml"/>
@@ -222,11 +223,11 @@
     .pwd-panel {
       background: linear-gradient(135deg, var(--navy-50), var(--bg-surface));
       border: 1px solid var(--navy-100); border-radius: var(--r-lg);
-      padding: 18px 18px; display: flex; align-items: center;
+      padding: 18px 22px; display: flex; align-items: center;
       gap: 16px; justify-content: space-between;
     }
     .pwd-panel-icon { font-size: 28px; }
-    .pwd-panel-title { font-size: 14px; font-weight: 600; color: var(--gold-700); }
+    .pwd-panel-title { font-size: 14px; font-weight: 600; color: var(--navy-800); }
     .pwd-panel-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
     /* ── Print ─────────────────────────────────────────────── */
@@ -288,9 +289,10 @@
         <div class="card">
           <div class="card-header">
             <span class="card-title">Evolución del ahorro acumulado</span>
-            <div class="no-print" style="display:flex;gap:8px;">
-              <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Imprimir</button>
-              <button class="btn btn-primary btn-sm" onclick="Toast.success('Descargando estado de cuenta...')">↓ Descargar</button>
+            <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="Carne.mostrar(SID)" title="Ver carné digital">💳 Carné</button>
+              <button class="btn btn-secondary btn-sm" onclick="Comprobantes.imprimirEstadoCuenta(SID)">🖨 Estado</button>
+              <button class="btn btn-secondary btn-sm" onclick="Comprobantes.imprimirPazYSalvo(SID)">✅ Paz y salvo</button>
             </div>
           </div>
           <div class="card-body">
@@ -324,11 +326,11 @@
             <div class="pwd-panel">
               <div class="pwd-panel-icon">🔑</div>
               <div style="flex:1;">
-               <div class="pwd-panel-title">Contraseña de acceso</div>
-                <!-- <div class="pwd-panel-sub">Actualiza tu contraseña</div> -->
+                <div class="pwd-panel-title">Contraseña de acceso</div>
+                <div class="pwd-panel-sub">Actualiza tu contraseña para mantener tu cuenta segura</div>
               </div>
               <a href="cambiar-password.html" class="btn btn-secondary btn-sm no-print">
-                Cambiar contraseña
+                Cambiar contraseña →
               </a>
             </div>
           </div>
@@ -411,6 +413,8 @@
 <script src="../js/search.js"></script>
 <script src="../js/charts.js"></script>
 <script src="../js/loading.js"></script>
+<script src="../js/comprobantes.js"></script>
+<script src="../js/carne.js"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════
@@ -589,7 +593,7 @@ var CAMPOS_FIJOS = [
   { l:"Antigüedad",      k:"_antiguedad" },
   { l:"Código",          k:"codigo" },
   { l:"Fecha de ingreso",k:"_ingreso" },
-  //{ l:"Aporte mensual",  k:"_aporte" },
+  { l:"Aporte mensual",  k:"_aporte" },
 ];
 
 var CAMPOS_EDIT = [
@@ -967,5 +971,6 @@ function mesesActivo(f) {
   return Math.max(1, (h.getFullYear()-d.getFullYear())*12 + (h.getMonth()-d.getMonth()));
 }
 </script>
+<div class="comprobante-wrapper" id="comprobante-print-area"></div>
 </body>
 </html>

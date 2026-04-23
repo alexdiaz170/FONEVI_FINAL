@@ -21,6 +21,8 @@ var Roles = {
     // Administrador + Tesorero
     "socios":           ["administrador", "tesorero"],
     "aportes":          ["administrador", "tesorero"],
+    "cierre-periodo":   ["administrador", "tesorero"],
+    "panel-mora":       ["administrador", "tesorero"],
     "creditos":         ["administrador", "tesorero"],
     "contabilidad":     ["administrador", "tesorero"],
     "reportes":         ["administrador", "tesorero"],
@@ -56,6 +58,8 @@ var Roles = {
           { href: "creditos.html",     page: "creditos",     icon: "💳", label: "Créditos" },
           { href: "solidaridad.html",  page: "solidaridad",  icon: "🤝", label: "Solidaridad" },
           { href: "dividendos.html",   page: "dividendos",   icon: "🎁", label: "Dividendos" },
+          { href: "panel-mora.html",     page: "panel-mora",   icon: "⚠️",  label: "Panel de mora" },
+          { href: "cierre-periodo.html", page: "cierre-periodo",icon: "📅", label: "Cierre de período" },
         ]
       },
       {
@@ -91,6 +95,8 @@ var Roles = {
           { href: "creditos.html",     page: "creditos",     icon: "💳", label: "Créditos" },
           { href: "solidaridad.html",  page: "solidaridad",  icon: "🤝", label: "Solidaridad" },
           { href: "dividendos.html",   page: "dividendos",   icon: "🎁", label: "Dividendos" },
+          { href: "panel-mora.html",     page: "panel-mora",   icon: "⚠️",  label: "Panel de mora" },
+          { href: "cierre-periodo.html", page: "cierre-periodo",icon: "📅", label: "Cierre de período" },
         ]
       },
       {

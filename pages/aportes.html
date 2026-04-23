@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../css/loading.css"/>
   <link rel="stylesheet" href="../css/transitions.css"/>
   <link rel="stylesheet" href="../css/darkmode.css"/>
+  <link rel="stylesheet" href="../css/comprobantes.css"/>
   <link rel="icon"             href="../favicon.svg"           type="image/svg+xml"/>
   <link rel="icon"             href="../icons/icon-32x32.svg"  sizes="32x32" type="image/svg+xml"/>
   <link rel="icon"             href="../icons/icon-16x16.svg"  sizes="16x16" type="image/svg+xml"/>
@@ -253,6 +254,7 @@
      COMPROBANTE (solo visible al imprimir)
 ═══════════════════════════════════════════════════════ -->
 <div id="comprobantePrint"></div>
+<div class="comprobante-wrapper" id="comprobante-print-area"></div>
 
 <!-- ═══════════════════════════════════════════════════════
      MODAL — REGISTRAR APORTE
@@ -353,6 +355,7 @@
 <script src="../js/search.js"></script>
 <script src="../js/loading.js"></script>
 <script src="../js/export.js"></script>
+<script src="../js/comprobantes.js"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════
@@ -544,7 +547,7 @@ function renderTabla() {
       // Comprobante
       '<td class="no-print">' +
         (a.estado === "pagado"
-          ? '<button class="btn-link" style="font-size:12px;" ' +
+          ? '<button class="btn btn-secondary btn-sm" ' +
               'onclick="imprimirComprobante(\'' + a.id + '\')">🖨 Imprimir</button>'
           : '<span style="color:var(--text-faint);font-size:11px;">—</span>') +
       '</td>' +
@@ -818,6 +821,11 @@ function poblarSelectPeriodoModal() {
    COMPROBANTE DE APORTE (impresión)
 ═══════════════════════════════════════════════════════════ */
 function imprimirComprobante(id) {
+  // Usar sistema centralizado de comprobantes
+  if (typeof Comprobantes !== 'undefined') {
+    Comprobantes.imprimirAporte(id);
+    return;
+  }
   var a = DB.aportes.find(function(x){ return x.id === id; });
   if (!a) return;
 

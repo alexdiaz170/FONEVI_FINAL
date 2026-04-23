@@ -68,7 +68,7 @@ const API = {
         this.clearSession();
         const enPages = window.location.pathname.includes("/pages/") ||
                         window.location.pathname.includes("/app/");
-        window.location.href = enPages ? "index.html" : "index.html";
+        window.location.href = enPages ? "../index.html" : "index.html";
         return null;
       }
 
@@ -90,7 +90,7 @@ const API = {
       if (err.name === "AbortError" || err.message === "Failed to fetch" ||
           err.message.includes("NetworkError") || err.message.includes("net::")) {
 
-        console.warn("API: servidor no disponible → modo offline (js/data.js)");
+        console.warn("API: servidor no disponible → modo offline (data.js)");
         this.MODO_OFFLINE = true;
 
         // Mostrar banner si existe
@@ -271,6 +271,98 @@ const API = {
       return { ok: true, datos: DB.config };
     }
 
+    // ── GET /whatsapp/estado ──────────────────────────────
+    if (endpoint === "/whatsapp/estado" && method === "GET") {
+      return { ok: true, habilitado: false,
+        mensaje: "Modo offline — mensajes simulados. Configura WA_TOKEN en el servidor." };
+    }
+
+    // ── GET /whatsapp/logs ─────────────────────────────────
+    if (endpoint.startsWith("/whatsapp/logs") && method === "GET") {
+      var logs = DB._waLogs || [];
+      return { ok: true, datos: logs, total: logs.length };
+    }
+
+    // ── POST /whatsapp/test ────────────────────────────────
+    if (endpoint === "/whatsapp/test" && method === "POST") {
+      var tel  = (body.telefono || "").replace(/\D/g,"");
+      var nom  = body.nombre || "Socio";
+      if (!tel || tel.length < 10) {
+        return { ok: false, mensaje: "Número inválido. Usa 10 dígitos sin +57." };
+      }
+      var log = { id: "WL"+Date.now(), numero: "57"+tel,
+        template: "fonevi_bienvenida", estado: "simulado",
+        message_id: null, enviado_en: new Date().toISOString() };
+      if (!DB._waLogs) DB._waLogs = [];
+      DB._waLogs.unshift(log);
+      console.log("[WA Simulado] → +57"+tel+" | Hola "+nom+", este es un mensaje de prueba de FONEVI.");
+      return { ok: true, resultado: { simulado: true, numero: "57"+tel,
+        mensaje: "Hola "+nom+", este es un mensaje de prueba de FONEVI." } };
+    }
+
+    // ── POST /whatsapp/recordatorios ───────────────────────
+    if (endpoint === "/whatsapp/recordatorios" && method === "POST") {
+      var pendientes = DB.aportes.filter(function(a){
+        return a.estado === "pendiente" && a.periodo === DB.config.periodo_actual;
+      });
+      var enviados = 0; var sinTel = 0; var detalle = [];
+      if (!DB._waLogs) DB._waLogs = [];
+      pendientes.forEach(function(a) {
+        var s = DataHelper.getSocio(a.socio_id);
+        if (!s) return;
+        var tel = (s.telefono||"").replace(/\D/g,"");
+        if (!tel || tel.length < 10) { sinTel++; detalle.push({socio:s.nombre,ok:false,razon:"sin_telefono"}); return; }
+        enviados++;
+        var log = { id: "WL"+Date.now()+enviados, numero: "57"+tel,
+          template: "fonevi_recordatorio_pago", estado: "simulado",
+          message_id: null, enviado_en: new Date().toISOString() };
+        DB._waLogs.unshift(log);
+        console.log("[WA Simulado] Recordatorio → +57"+tel+" | "+s.nombre+" — "+a.periodo);
+        detalle.push({socio:s.nombre, ok:true, simulado:true});
+      });
+      return { ok: true, resultado: { enviados, sinTelefono:sinTel, fallidos:0, detalle } };
+    }
+
+    // ── POST /whatsapp/alertas-mora ────────────────────────
+    if (endpoint === "/whatsapp/alertas-mora" && method === "POST") {
+      var morosos = DB.aportes.filter(function(a){
+        return ["mora","vencido"].includes(a.estado);
+      });
+      var enviados = 0; var sinTel = 0; var detalle = [];
+      if (!DB._waLogs) DB._waLogs = [];
+      morosos.forEach(function(a) {
+        var s = DataHelper.getSocio(a.socio_id);
+        if (!s) return;
+        var tel = (s.telefono||"").replace(/\D/g,"");
+        if (!tel || tel.length < 10) { sinTel++; detalle.push({socio:s.nombre,ok:false,razon:"sin_telefono"}); return; }
+        enviados++;
+        var log = { id: "WL"+Date.now()+enviados, numero: "57"+tel,
+          template: "fonevi_mora_alerta", estado: "simulado",
+          message_id: null, enviado_en: new Date().toISOString() };
+        DB._waLogs.unshift(log);
+        console.log("[WA Simulado] Mora → +57"+tel+" | "+s.nombre+" — "+a.periodo);
+        detalle.push({socio:s.nombre, ok:true, simulado:true});
+      });
+      return { ok: true, resultado: { enviados, sinTelefono:sinTel, fallidos:0, detalle } };
+    }
+
+    // ── POST /whatsapp/individual ──────────────────────────
+    if (endpoint === "/whatsapp/individual" && method === "POST") {
+      var socioId  = body.socio_id;
+      var template = body.template || "fonevi_recordatorio_pago";
+      var s = DataHelper.getSocio(socioId);
+      if (!s) return { ok: false, mensaje: "Socio no encontrado" };
+      var tel = (s.telefono||"").replace(/\D/g,"");
+      if (!tel || tel.length < 10) return { ok: false, mensaje: "El socio no tiene teléfono registrado" };
+      if (!DB._waLogs) DB._waLogs = [];
+      var log = { id: "WL"+Date.now(), numero: "57"+tel,
+        template: template, estado: "simulado",
+        message_id: null, enviado_en: new Date().toISOString() };
+      DB._waLogs.unshift(log);
+      console.log("[WA Simulado] Individual → +57"+tel+" | "+s.nombre+" | "+template);
+      return { ok: true, resultado: { simulado: true, numero: "57"+tel, socio: s.nombre } };
+    }
+
     // Endpoint no mapeado
     console.warn("[Offline] Endpoint no mapeado:", method, endpoint);
     return { ok: true, datos: [], mensaje: "Modo offline — datos locales" };
@@ -357,5 +449,14 @@ const API = {
 
   auditoria: {
     listar: (p={}) => API.get("/auditoria?" + new URLSearchParams(p)),
+  },
+
+  whatsapp: {
+    estado:        ()     => API.get("/whatsapp/estado"),
+    logs:          (n=50) => API.get(`/whatsapp/logs?limit=${n}`),
+    test:          (b)    => API.post("/whatsapp/test", b),
+    recordatorios: ()     => API.post("/whatsapp/recordatorios", {}),
+    alertasMora:   ()     => API.post("/whatsapp/alertas-mora", {}),
+    individual:    (b)    => API.post("/whatsapp/individual", b),
   },
 };
