@@ -13,13 +13,13 @@
   --gold-500:#c9922a; --gold-400:#e0af50; --gold-300:#edc878;
   --gold-100:#faeeda; --gold-50:#fdf8ee;
   /* Semánticos */
-  --green-700:#085041; --green-500:#1d9e75; --green-300:#5dcaa5;
+  --green-700:#085041; --green-600:#157a5a; --green-500:#1d9e75; --green-400:#3ab88a; --green-300:#5dcaa5;
   --green-100:#c8eddf; --green-50:#e8f8f1;
   --red-700:#7a1f1f;   --red-500:#a32d2d;   --red-300:#e07070;
   --red-100:#f7d0d0;   --red-50:#fef2f2;
   --amber-700:#7a4a00; --amber-500:#ba7517; --amber-300:#e0a84a;
   --amber-100:#fde8b8; --amber-50:#fffbeb;
-  --blue-700:#0c447c;  --blue-500:#185fa5;
+  --blue-700:#0c447c;  --blue-500:#185fa5;  --blue-300:#6aaee8;
   --blue-100:#c0d9f4;  --blue-50:#e8f2fc;
   /* Superficies */
   --bg-page:   #f0f4f9;

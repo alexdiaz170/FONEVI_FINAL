@@ -4,11 +4,58 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>FONEVI — Reportes</title>
- <link rel="stylesheet" href="../css/main.css"/>
+  <link rel="stylesheet" href="../css/main.css"/>
   <link rel="stylesheet" href="../css/dashboard.css"/>
-  <link rel="stylesheet" href="../css/darkmode.css"/>
   <!-- Favicon + PWA -->
   <link rel="icon"             href="../favicon.svg"            type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-32x32.svg"   sizes="32x32" type="image/svg+xml"/>
+  <link rel="icon"             href="../icons/icon-16x16.svg"   sizes="16x16" type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="../icons/icon-180x180.svg" sizes="180x180"/>
+  <link rel="apple-touch-icon" href="../icons/icon-152x152.svg" sizes="152x152"/>
+  <link rel="manifest"         href="../manifest.json"/>
+  <meta name="mobile-web-app-capable"                content="yes"/>
+  <meta name="apple-mobile-web-app-capable"          content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title"            content="FONEVI"/>
+  <meta name="theme-color"                           content="#0f2d52"/>
+  <link rel="stylesheet" href="../css/transitions.css"/>
+  <link rel="stylesheet" href="../css/darkmode.css"/>
+  <link rel="stylesheet" href="../css/loading.css"/>
+<style>
+  /* ── Tarjetas de reporte con hover ─────────────────── */
+  .reporte-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-faint);
+    border-radius: var(--r-lg);
+    cursor: pointer;
+    transition: all var(--t-base) var(--ease);
+    position: relative; overflow: hidden;
+  }
+  .reporte-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    opacity:0; transition:opacity .25s;
+    background: linear-gradient(90deg, var(--navy-400), var(--gold-500));
+  }
+  .reporte-card::after {
+    content:''; position:absolute; inset:0; border-radius:var(--r-lg);
+    opacity:0; transition:opacity .25s; pointer-events:none;
+    background: radial-gradient(ellipse at 50% 0%, rgba(15,45,82,.07) 0%, transparent 70%);
+  }
+  .reporte-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 36px rgba(15,45,82,.14);
+    border-color: var(--border-medium);
+  }
+  .reporte-card:hover::before { opacity:1; }
+  .reporte-card:hover::after  { opacity:1; }
+  .reporte-card .card-body { position:relative; z-index:1; }
+  .rc-icon { font-size:34px; margin-bottom:12px;
+    transition: transform .25s ease; display:block; }
+  .reporte-card:hover .rc-icon { transform: scale(1.1) translateY(-2px); }
+  .rc-title { font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:6px; }
+  .rc-desc  { font-size:12px; color:var(--text-muted); line-height:1.55; }
+</style>
 </head>
 <body>
 
@@ -23,62 +70,62 @@
       <!-- Tarjetas de reportes disponibles -->
       <div class="grid-3" style="margin-bottom:24px;">
 
-        <div class="card" style="cursor:pointer;" onclick="generarReporte('estado-cuenta')"
-          onmouseover="this.style.boxShadow='0 4px 16px rgba(15,45,82,0.12)'" onmouseout="this.style.boxShadow='none'">
+        <div class="reporte-card" onclick="generarReporte('estado-cuenta')"
+          >
           <div class="card-body" style="text-align:center; padding:24px;">
-            <div style="font-size:32px; margin-bottom:12px;">📋</div>
-            <div style="font-size:14px; font-weight:500; margin-bottom:6px;">Estado de cuenta por socio</div>
-            <div style="font-size:12px; color:var(--muted);">Historial completo de ahorros, créditos y pagos.</div>
+            <div class="rc-icon">📋</div>
+            <div class="rc-title">Estado de cuenta por socio</div>
+            <div class="rc-desc">Historial completo de ahorros, créditos y pagos.</div>
             <button class="btn btn-primary btn-sm" style="margin-top:16px;">Generar</button>
           </div>
         </div>
 
-        <div class="card" style="cursor:pointer;" onclick="generarReporte('cartera')"
-          onmouseover="this.style.boxShadow='0 4px 16px rgba(15,45,82,0.12)'" onmouseout="this.style.boxShadow='none'">
+        <div class="reporte-card" onclick="generarReporte('cartera')"
+          >
           <div class="card-body" style="text-align:center; padding:24px;">
-            <div style="font-size:32px; margin-bottom:12px;">💳</div>
-            <div style="font-size:14px; font-weight:500; margin-bottom:6px;">Cartera de créditos</div>
-            <div style="font-size:12px; color:var(--muted);">Activos, pagados y en mora con saldos.</div>
+            <div class="rc-icon">💳</div>
+            <div class="rc-title">Cartera de créditos</div>
+            <div class="rc-desc">Activos, pagados y en mora con saldos.</div>
             <button class="btn btn-primary btn-sm" style="margin-top:16px;">Generar</button>
           </div>
         </div>
 
-        <div class="card" style="cursor:pointer;" onclick="generarReporte('balance')"
-          onmouseover="this.style.boxShadow='0 4px 16px rgba(15,45,82,0.12)'" onmouseout="this.style.boxShadow='none'">
+        <div class="reporte-card" onclick="generarReporte('balance')"
+          >
           <div class="card-body" style="text-align:center; padding:24px;">
-            <div style="font-size:32px; margin-bottom:12px;">📊</div>
-            <div style="font-size:14px; font-weight:500; margin-bottom:6px;">Balance general</div>
-            <div style="font-size:12px; color:var(--muted);">Activos, pasivos y patrimonio del fondo.</div>
+            <div class="rc-icon">📊</div>
+            <div class="rc-title">Balance general</div>
+            <div class="rc-desc">Activos, pasivos y patrimonio del fondo.</div>
             <button class="btn btn-primary btn-sm" style="margin-top:16px;">Generar</button>
           </div>
         </div>
 
-        <div class="card" style="cursor:pointer;" onclick="generarReporte('mora')"
-          onmouseover="this.style.boxShadow='0 4px 16px rgba(15,45,82,0.12)'" onmouseout="this.style.boxShadow='none'">
+        <div class="reporte-card" onclick="generarReporte('mora')"
+          >
           <div class="card-body" style="text-align:center; padding:24px;">
-            <div style="font-size:32px; margin-bottom:12px;">⚠️</div>
-            <div style="font-size:14px; font-weight:500; margin-bottom:6px;">Reporte de mora</div>
-            <div style="font-size:12px; color:var(--muted);">Socios con aportes o cuotas vencidas.</div>
+            <div class="rc-icon">⚠️</div>
+            <div class="rc-title">Reporte de mora</div>
+            <div class="rc-desc">Socios con aportes o cuotas vencidas.</div>
             <button class="btn btn-danger btn-sm" style="margin-top:16px;">Generar</button>
           </div>
         </div>
 
-        <div class="card" style="cursor:pointer;" onclick="generarReporte('flujo')"
-          onmouseover="this.style.boxShadow='0 4px 16px rgba(15,45,82,0.12)'" onmouseout="this.style.boxShadow='none'">
+        <div class="reporte-card" onclick="generarReporte('flujo')"
+          >
           <div class="card-body" style="text-align:center; padding:24px;">
-            <div style="font-size:32px; margin-bottom:12px;">💹</div>
-            <div style="font-size:14px; font-weight:500; margin-bottom:6px;">Flujo de caja</div>
-            <div style="font-size:12px; color:var(--muted);">Ingresos y egresos del período seleccionado.</div>
+            <div class="rc-icon">💹</div>
+            <div class="rc-title">Flujo de caja</div>
+            <div class="rc-desc">Ingresos y egresos del período seleccionado.</div>
             <button class="btn btn-primary btn-sm" style="margin-top:16px;">Generar</button>
           </div>
         </div>
 
-        <div class="card" style="cursor:pointer;" onclick="generarReporte('dividendos')"
-          onmouseover="this.style.boxShadow='0 4px 16px rgba(15,45,82,0.12)'" onmouseout="this.style.boxShadow='none'">
+        <div class="reporte-card" onclick="generarReporte('dividendos')"
+          >
           <div class="card-body" style="text-align:center; padding:24px;">
-            <div style="font-size:32px; margin-bottom:12px;">🎁</div>
-            <div style="font-size:14px; font-weight:500; margin-bottom:6px;">Dividendos anuales</div>
-            <div style="font-size:12px; color:var(--muted);">Distribución de utilidades por socio.</div>
+            <div class="rc-icon">🎁</div>
+            <div class="rc-title">Dividendos anuales</div>
+            <div class="rc-desc">Distribución de utilidades por socio.</div>
             <button class="btn btn-gold btn-sm" style="margin-top:16px;">Generar</button>
           </div>
         </div>
@@ -92,7 +139,7 @@
             <span class="card-title" id="reporteTitulo">—</span>
             <div style="display:flex; gap:8px;">
               <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 Imprimir</button>
-              <button class="btn btn-primary btn-sm" onclick="exportarCSV()">⬇ Exportar CSV</button>
+              <button id="btnExport_reporte" class="btn btn-primary btn-sm" onclick="exportarPDFReporte()">⬇ Exportar PDF</button> <button class="btn btn-success btn-sm" onclick="exportarExcelReporte()">📗 Excel</button>
             </div>
           </div>
           <div class="card-body" id="reporteContenido"></div>
@@ -106,6 +153,9 @@
 <div class="toast-container" id="toastContainer"></div>
 
 
+<!-- PDF/Excel -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
 <script src="../js/data.js"></script>
@@ -114,10 +164,11 @@
 <script src="../js/roles.js"></script>
 <script src="../js/layout.js"></script>
 <script src="../js/app.js"></script>
-<script src="../js/loading.js"></script>
+<script src="../js/search.js"></script>
 <script src="../js/export.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+  if (!Roles.proteger("reportes")) return;
   buildLayout("Reportes", "Genera reportes financieros", "");
 });
 
@@ -296,6 +347,20 @@ function generarReporte(tipo) {
 function exportarCSV() {
   Toast.success("Exportando reporte a CSV... (función disponible con backend)");
 }
+
+/* ── Exportar el reporte actualmente visible ─────────── */
+var _tipoReporteActual = null;
+var _originalGenerarReporte = typeof generarReporte === 'function' ? generarReporte : null;
+
+function exportarPDFReporte() {
+  if (_tipoReporteActual) exportarPDF(_tipoReporteActual);
+  else Toast.warn('Genera un reporte primero.');
+}
+function exportarExcelReporte() {
+  var excelMaps = { cartera:'creditos', 'estado-cuenta':null };
+  var tipo = excelMaps[_tipoReporteActual] || _tipoReporteActual;
+  if (tipo) exportarExcel(tipo);
+  else Toast.warn('Este reporte no tiene exportación a Excel.');
+}
+
 </script>
-</body>
-</html>

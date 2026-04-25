@@ -73,7 +73,8 @@ var Carne = (function() {
         '</div>' +
         '<canvas id="carneCanvas" width="' + W + '" height="' + H + '"></canvas>' +
         '<div id="carneBtns">' +
-          '<button class="carne-btn-dl" onclick="Carne.descargar()">⬇ Descargar PNG</button>' +
+          '<button class="carne-btn-dl" onclick="Carne.descargar()">⬇ PNG</button>' +
+          '<button class="carne-btn-dl" id="carne-btn-pdf" onclick="Carne.descargarPDF()">📄 PDF</button>' +
           '<button class="carne-btn-pr" onclick="Carne.imprimir()">🖨 Imprimir</button>' +
           '<button class="carne-btn-cl" onclick="Carne.cerrar()">Cerrar</button>' +
         '</div>' +
@@ -84,6 +85,19 @@ var Carne = (function() {
     div.addEventListener("click", function(e) {
       if (e.target === div) Carne.cerrar();
     });
+  }
+
+
+  /* ── Cargar jsPDF dinámicamente ──────────────────────────── */
+  function cargarJsPDF(callback) {
+    if (window.jspdf) { callback(); return; }
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js";
+    s.onload  = callback;
+    s.onerror = function() {
+      if (typeof Toast !== "undefined") Toast.warn("No se pudo cargar el exportador de PDF.");
+    };
+    document.head.appendChild(s);
   }
 
   /* ── Cargar QRCode.js desde CDN ──────────────────────────── */
@@ -404,6 +418,108 @@ var Carne = (function() {
       link.href      = canvas.toDataURL("image/png", 1.0);
       link.click();
       if (typeof Toast !== "undefined") Toast.success("✓ Carné descargado como PNG.");
+    },
+
+
+    /* Descargar como PDF tamaño carné (85.6×54mm — ISO/IEC 7810 ID-1) */
+    descargarPDF: function() {
+      var self = this;
+      var canvas = document.getElementById("carneCanvas");
+      if (!canvas) { if (typeof Toast!=="undefined") Toast.warn("Abre el carné primero."); return; }
+
+      var btnPDF = document.getElementById("carne-btn-pdf");
+      if (btnPDF) { btnPDF.textContent = "Generando PDF..."; btnPDF.disabled = true; }
+
+      cargarJsPDF(function() {
+        try {
+          var { jsPDF } = window.jspdf;
+
+          // ── Hoja A4 landscape con margen para impresión ──
+          var doc = new jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
+          var PW  = doc.internal.pageSize.getWidth();   // 297mm
+          var PH  = doc.internal.pageSize.getHeight();  // 210mm
+
+          var CW  = 85.6; // ancho carné ID-1
+          var CH  = 54;   // alto carné ID-1
+          var GAP = 6;    // margen entre carnés en la grilla
+
+          // Imagen del canvas a base64
+          var imgData = canvas.toDataURL("image/png", 1.0);
+
+          // ── PÁGINA 1: 6 carnés en grilla 3×2 para recortar ──
+          var cols = 3, rows = 2;
+          var totalW = cols * CW + (cols-1) * GAP;
+          var totalH = rows * CH + (rows-1) * GAP;
+          var startX = (PW - totalW) / 2;
+          var startY = (PH - totalH) / 2;
+
+          // Fondo blanco
+          doc.setFillColor(255,255,255);
+          doc.rect(0,0,PW,PH,"F");
+
+          // Título
+          doc.setFont("helvetica","bold");
+          doc.setFontSize(9);
+          doc.setTextColor(80);
+          doc.text("FONEVI — Carnés para imprimir y recortar (6 copias por hoja)", PW/2, startY - 8, {align:"center"});
+
+          // Líneas guía de recorte
+          doc.setDrawColor(180);
+          doc.setLineDashPattern([1.5,1.5], 0);
+          doc.setLineWidth(0.2);
+
+          for (var row = 0; row < rows; row++) {
+            for (var col = 0; col < cols; col++) {
+              var x = startX + col * (CW + GAP);
+              var y = startY + row * (CH + GAP);
+              doc.addImage(imgData, "PNG", x, y, CW, CH);
+              // Marco guía de recorte
+              doc.rect(x - 0.5, y - 0.5, CW + 1, CH + 1);
+            }
+          }
+
+          // Instrucción al pie
+          doc.setLineDashPattern([], 0);
+          doc.setFont("helvetica","normal");
+          doc.setFontSize(7);
+          doc.setTextColor(150);
+          doc.text("Imprimir en papel A4 · Recortar por las líneas punteadas · Plastificar para mayor durabilidad",
+            PW/2, startY + totalH + 8, {align:"center"});
+          doc.text("Tamaño estándar ISO/IEC 7810 ID-1 (85.6 × 54 mm) — compatible con fundas de carné estándar",
+            PW/2, startY + totalH + 13, {align:"center"});
+
+          // ── PÁGINA 2: carné individual grande (centrado) ──
+          doc.addPage("a4","landscape");
+          doc.setFillColor(255,255,255);
+          doc.rect(0,0,PW,PH,"F");
+
+          var bigW = CW * 2.2;
+          var bigH = CH * 2.2;
+          var bigX = (PW - bigW) / 2;
+          var bigY = (PH - bigH) / 2;
+
+          doc.addImage(imgData, "PNG", bigX, bigY, bigW, bigH);
+          doc.setFont("helvetica","bold");
+          doc.setFontSize(8);
+          doc.setTextColor(80);
+          doc.text("Vista previa ampliada — para verificar calidad antes de imprimir", PW/2, bigY - 6, {align:"center"});
+          doc.setFont("helvetica","normal");
+          doc.setFontSize(7);
+          doc.setTextColor(150);
+          doc.text("Para imprimir en tamaño real, usar la Página 1", PW/2, bigY + bigH + 7, {align:"center"});
+
+          // Guardar
+          var nombre = _socioActual ? _socioActual.nombre.replace(/\s+/g,"_") : "Socio";
+          doc.save("FONEVI_Carne_" + nombre + ".pdf");
+
+          if (typeof Toast !== "undefined") Toast.success("✓ PDF generado: 2 hojas (grilla 3×2 + vista previa).");
+        } catch(err) {
+          console.error("Error PDF carné:", err);
+          if (typeof Toast !== "undefined") Toast.warn("Error al generar PDF: " + err.message);
+        } finally {
+          if (btnPDF) { btnPDF.textContent = "📄 Descargar PDF"; btnPDF.disabled = false; }
+        }
+      });
     },
 
     imprimir: function() {
