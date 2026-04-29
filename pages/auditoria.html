@@ -43,29 +43,108 @@
         <button class="tab-btn" data-tab="cambios">Cambios de Datos</button>
       </div>
 
-      <!-- Filtros -->
-      <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap;">
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="searchAudit" placeholder="Buscar en logs..." />
+      <!-- Filtros rediseñados -->
+      <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
+
+        <!-- Fila 1: busqueda + exportar -->
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <div class="search-box" style="flex:1; min-width:180px;">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchAudit" placeholder="Buscar en logs..." oninput="aplicarFiltros()" />
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="exportarLogs()" style="display:flex; align-items:center; gap:6px;">
+            <span>⬇</span> Exportar CSV
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="limpiarFiltros()" style="display:flex; align-items:center; gap:6px;">
+            <span>✕</span> Limpiar
+          </button>
         </div>
-        <select class="form-control" id="filtroUsuario" style="width:180px;">
-          <option value="">Todos los usuarios</option>
-          <option value="Carlos Muñoz">Carlos Muñoz (Admin)</option>
-          <option value="Laura Jiménez">Laura Jiménez (Tesorero)</option>
-          <option value="Ana Torres">Ana Torres (Socio)</option>
-        </select>
-        <select class="form-control" id="filtroAccion" style="width:160px;">
-          <option value="">Todas las acciones</option>
-          <option value="crear">Crear</option>
-          <option value="editar">Editar</option>
-          <option value="eliminar">Eliminar</option>
-          <option value="login">Login</option>
-          <option value="aprobar">Aprobar</option>
-        </select>
-        <button class="btn btn-secondary btn-sm" onclick="aplicarFiltros()">Filtrar</button>
-        <button class="btn btn-secondary btn-sm" onclick="exportarLogs()">⬇ Exportar</button>
+
+        <!-- Fila 2: filtro usuarios -->
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; white-space:nowrap;">👤 Usuario:</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;" id="filtroUsuarioBtns">
+            <button class="filter-pill active" data-filtro="usuario" data-val="" onclick="setFiltro('usuario', this)">
+              Todos
+            </button>
+            <button class="filter-pill" data-filtro="usuario" data-val="Carlos Muñoz" onclick="setFiltro('usuario', this)" style="--pill-color:#e53e3e; --pill-bg:rgba(229,62,62,.1);">
+              🔴 Carlos Muñoz
+            </button>
+            <button class="filter-pill" data-filtro="usuario" data-val="Laura Jiménez" onclick="setFiltro('usuario', this)" style="--pill-color:#d97706; --pill-bg:rgba(217,119,6,.1);">
+              🟡 Laura Jiménez
+            </button>
+            <button class="filter-pill" data-filtro="usuario" data-val="Ana Torres" onclick="setFiltro('usuario', this)" style="--pill-color:#2563eb; --pill-bg:rgba(37,99,235,.1);">
+              🔵 Ana Torres
+            </button>
+          </div>
+        </div>
+
+        <!-- Fila 3: filtro acciones -->
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; white-space:nowrap;">⚡ Acción:</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;" id="filtroAccionBtns">
+            <button class="filter-pill active" data-filtro="accion" data-val="" onclick="setFiltro('accion', this)">
+              Todas
+            </button>
+            <button class="filter-pill" data-filtro="accion" data-val="crear" onclick="setFiltro('accion', this)" style="--pill-color:#16a34a; --pill-bg:rgba(22,163,74,.1);">
+              ✚ Crear
+            </button>
+            <button class="filter-pill" data-filtro="accion" data-val="editar" onclick="setFiltro('accion', this)" style="--pill-color:#d97706; --pill-bg:rgba(217,119,6,.1);">
+              ✏ Editar
+            </button>
+            <button class="filter-pill" data-filtro="accion" data-val="eliminar" onclick="setFiltro('accion', this)" style="--pill-color:#dc2626; --pill-bg:rgba(220,38,38,.1);">
+              🗑 Eliminar
+            </button>
+            <button class="filter-pill" data-filtro="accion" data-val="login" onclick="setFiltro('accion', this)" style="--pill-color:#2563eb; --pill-bg:rgba(37,99,235,.1);">
+              🔐 Login
+            </button>
+            <button class="filter-pill" data-filtro="accion" data-val="aprobar" onclick="setFiltro('accion', this)" style="--pill-color:#0d1f35; --pill-bg:rgba(13,31,53,.1);">
+              ✔ Aprobar
+            </button>
+          </div>
+        </div>
+
       </div>
+
+      <style>
+        .filter-pill {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 5px 13px; border-radius: 20px;
+          font-size: 12px; font-weight: 500; cursor: pointer;
+          border: 1.5px solid transparent;
+          background: var(--surface2, #f1f5f9);
+          color: var(--text, #0d1f35);
+          transition: all .18s ease;
+          white-space: nowrap;
+        }
+        .filter-pill:hover {
+          background: var(--pill-bg, rgba(13,31,53,.08));
+          border-color: var(--pill-color, var(--navy, #0d1f35));
+          color: var(--pill-color, var(--navy, #0d1f35));
+          transform: translateY(-1px);
+          box-shadow: 0 3px 9px rgba(0,0,0,.1);
+        }
+        .filter-pill.active {
+          background: var(--pill-bg, rgba(13,31,53,.1));
+          border-color: var(--pill-color, var(--navy, #0d1f35));
+          color: var(--pill-color, var(--navy, #0d1f35));
+          font-weight: 600;
+          box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+        /* Dark mode */
+        [data-theme="dark"] .filter-pill {
+          background: rgba(255,255,255,.07);
+          color: #e2e8f0;
+        }
+        [data-theme="dark"] .filter-pill:hover,
+        [data-theme="dark"] .filter-pill.active {
+          background: var(--pill-bg, rgba(255,255,255,.12));
+          border-color: var(--pill-color, #94a3b8);
+          color: var(--pill-color, #e2e8f0);
+        }
+      </style>
+
+
 
       <!-- Panel logs -->
       <div id="panel-logs">
@@ -255,14 +334,41 @@ function renderCambios() {
   `).join("");
 }
 
+/* Valor activo de cada grupo de filtros */
+const _filtros = { usuario: "", accion: "" };
+
+/* Cambia el botón activo y re-aplica filtros */
+function setFiltro(tipo, btn) {
+  const grupo = btn.closest("[id^=\"filtro\"]");
+  if (grupo) {
+    grupo.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active"));
+  }
+  btn.classList.add("active");
+  _filtros[tipo] = btn.dataset.val;
+  aplicarFiltros();
+}
+
 function aplicarFiltros() {
-  const usuario = document.getElementById("filtroUsuario").value;
-  const accion  = document.getElementById("filtroAccion").value;
+  const texto   = (document.getElementById("searchAudit").value || "").toLowerCase();
   let filtrado  = AUDIT_LOGS;
-  if (usuario) filtrado = filtrado.filter(l => l.usuario === usuario);
-  if (accion)  filtrado = filtrado.filter(l => l.accion === accion);
+  if (_filtros.usuario) filtrado = filtrado.filter(l => l.usuario === _filtros.usuario);
+  if (_filtros.accion)  filtrado = filtrado.filter(l => l.accion  === _filtros.accion);
+  if (texto) {
+    filtrado = filtrado.filter(l =>
+      (l.usuario + l.rol + l.accion + l.modulo + l.detalle + l.ip).toLowerCase().includes(texto)
+    );
+  }
   renderLogs(filtrado);
-  Toast.success(`${filtrado.length} registros encontrados.`);
+}
+
+function limpiarFiltros() {
+  _filtros.usuario = "";
+  _filtros.accion  = "";
+  document.getElementById("searchAudit").value = "";
+  document.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".filter-pill[data-val='']").forEach(b => b.classList.add("active"));
+  renderLogs(AUDIT_LOGS);
+  Toast.success("Filtros limpiados.");
 }
 
 function exportarLogs() {

@@ -266,9 +266,27 @@
 <script src="../js/app.js"></script>
 <script src="../js/search.js"></script>
 <script>
+/* ── Clave de persistencia ───────────────────────────── */
+const CFG_KEY = "fonevi_config";
+
+/* ── Restaurar configuración desde localStorage ─────── */
+(function restaurarConfig() {
+  try {
+    const saved = localStorage.getItem(CFG_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      Object.assign(DB.config, parsed);
+    }
+  } catch(e) { /* si hay datos corruptos, ignorar */ }
+})();
+
 document.addEventListener("DOMContentLoaded", () => {
   if (!Roles.proteger("configuracion")) return;
   buildLayout("Configuración", "Parámetros del sistema FONEVI", "");
+
+  /* Poblar formularios desde DB.config (incluyendo valores guardados) */
+  cargarFormularios();
+
   previsualizarTasa();
   renderImpactoCartera();
   renderUsuarios();
@@ -279,6 +297,28 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+/* Rellena los inputs con los valores actuales de DB.config */
+function cargarFormularios() {
+  const c = DB.config;
+  document.getElementById("cfg-nombre").value          = c.nombre          || "";
+  document.getElementById("cfg-nombre-completo").value = c.nombre_completo || "";
+  document.getElementById("cfg-nit").value             = c.nit             || "";
+  document.getElementById("cfg-rep").value             = c.representante   || "";
+  document.getElementById("cfg-periodo").value         = c.periodo_actual  || "";
+  document.getElementById("cfg-aporte-min").value      = c.aporte_minimo   || 120000;
+  document.getElementById("cfg-solidaridad").value     = c.aporte_solidaridad || 30000;
+  document.getElementById("cfg-tasa").value            = c.tasa_credito_mensual || 1.5;
+  document.getElementById("cfg-mora").value            = c.tasa_mora_diaria    || 0.1;
+  document.getElementById("cfg-mult").value            = c.max_credito_multiplicador || 3;
+}
+
+/* Persiste DB.config en localStorage */
+function persistirConfig() {
+  try {
+    localStorage.setItem(CFG_KEY, JSON.stringify(DB.config));
+  } catch(e) { /* quota exceeded u otros errores: ignorar */ }
+}
+
 function guardarConfig(seccion) {
   if (seccion === "general") {
     DB.config.nombre          = document.getElementById("cfg-nombre").value;
@@ -288,15 +328,17 @@ function guardarConfig(seccion) {
     DB.config.periodo_actual  = document.getElementById("cfg-periodo").value;
   }
   if (seccion === "ahorro") {
-    DB.config.aporte_minimo         = parseFloat(document.getElementById("cfg-aporte-min").value);
-    DB.config.aporte_solidaridad    = parseFloat(document.getElementById("cfg-solidaridad").value);
+    DB.config.aporte_minimo      = parseFloat(document.getElementById("cfg-aporte-min").value) || 0;
+    DB.config.aporte_solidaridad = parseFloat(document.getElementById("cfg-solidaridad").value) || 0;
   }
   if (seccion === "credito") {
-    DB.config.tasa_credito_mensual  = parseFloat(document.getElementById("cfg-tasa").value);
-    DB.config.tasa_mora_diaria      = parseFloat(document.getElementById("cfg-mora").value);
-    DB.config.max_credito_multiplicador = parseFloat(document.getElementById("cfg-mult").value);
+    DB.config.tasa_credito_mensual      = parseFloat(document.getElementById("cfg-tasa").value) || 0;
+    DB.config.tasa_mora_diaria          = parseFloat(document.getElementById("cfg-mora").value) || 0;
+    DB.config.max_credito_multiplicador = parseFloat(document.getElementById("cfg-mult").value) || 1;
     renderImpactoCartera();
+    previsualizarTasa();
   }
+  persistirConfig();  /* ← guarda en localStorage */
   Toast.success("Configuración guardada correctamente.");
 }
 

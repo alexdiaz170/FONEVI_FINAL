@@ -252,40 +252,116 @@
       border-radius: 2px; margin: 20px 0;
     }
 
-    /* Estadísticas */
+    /* ═══════════════════════════════════════════════════════
+       ESTADÍSTICAS — Tarjetas premium rediseñadas
+    ═══════════════════════════════════════════════════════ */
     .brand-stats {
-      display: grid; grid-template-columns: 1fr 1fr;
+      display: flex; flex-direction: column;
       gap: 10px; position: relative; z-index: 1;
       animation: slideRight .6s cubic-bezier(0.16,1,0.3,1) .3s both;
     }
+
+    /* Fila: 2 tarjetas side by side */
+    .stats-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+
     .stat-chip {
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 14px; padding: 14px 16px;
-      transition: all .25s ease; cursor: default;
+      border-radius: 16px; padding: 14px 16px;
+      transition: all .3s cubic-bezier(.16,1,.3,1); cursor: default;
       position: relative; overflow: hidden;
+      border: 1px solid transparent;
+      background-clip: padding-box;
     }
-    .stat-chip::before {
-      content: ''; position: absolute;
-      top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(201,146,42,.3), transparent);
-      opacity: 0; transition: opacity .25s;
+
+    /* Colores por variante */
+    .stat-chip.s-socios {
+      background: linear-gradient(135deg, rgba(37,99,168,.28) 0%, rgba(15,45,82,.45) 100%);
+      border-color: rgba(37,99,168,.35);
     }
-    .stat-chip:hover {
-      background: rgba(255,255,255,.09);
-      border-color: rgba(201,146,42,.22);
-      transform: translateY(-2px);
+    .stat-chip.s-ahorros {
+      background: linear-gradient(135deg, rgba(201,146,42,.28) 0%, rgba(154,98,0,.40) 100%);
+      border-color: rgba(201,146,42,.38);
     }
-    .stat-chip:hover::before { opacity: 1; }
+    .stat-chip.s-creditos {
+      background: linear-gradient(135deg, rgba(29,158,117,.25) 0%, rgba(8,80,65,.40) 100%);
+      border-color: rgba(29,158,117,.35);
+    }
+    .stat-chip.s-fund {
+      background: linear-gradient(135deg, rgba(139,92,246,.25) 0%, rgba(79,27,139,.38) 100%);
+      border-color: rgba(139,92,246,.35);
+    }
+
+    /* Glow al hover */
+    .stat-chip.s-socios:hover  { box-shadow: 0 8px 28px rgba(37,99,168,.35); border-color: rgba(37,99,168,.6); transform: translateY(-3px) scale(1.02); }
+    .stat-chip.s-ahorros:hover { box-shadow: 0 8px 28px rgba(201,146,42,.35); border-color: rgba(201,146,42,.6); transform: translateY(-3px) scale(1.02); }
+    .stat-chip.s-creditos:hover{ box-shadow: 0 8px 28px rgba(29,158,117,.35); border-color: rgba(29,158,117,.6); transform: translateY(-3px) scale(1.02); }
+    .stat-chip.s-fund:hover    { box-shadow: 0 8px 28px rgba(139,92,246,.35); border-color: rgba(139,92,246,.6); transform: translateY(-3px) scale(1.02); }
+
+    /* Ícono grande decorativo de fondo */
+    .stat-chip .sc-bg-icon {
+      position: absolute; right: -6px; bottom: -8px;
+      font-size: 54px; line-height: 1;
+      opacity: .10; pointer-events: none;
+      transition: opacity .3s, transform .3s;
+      user-select: none;
+    }
+    .stat-chip:hover .sc-bg-icon { opacity: .22; transform: scale(1.12) rotate(-8deg); }
+
+    /* Badge superior */
+    .sc-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 20px;
+      font-size: 9px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 10px;
+    }
+    .s-socios  .sc-badge { background: rgba(37,99,168,.30);  color: #7eb8f7; }
+    .s-ahorros .sc-badge { background: rgba(201,146,42,.28); color: #f0ca6e; }
+    .s-creditos.sc-badge, .s-creditos .sc-badge { background: rgba(29,158,117,.25); color: #5ee8b8; }
+    .s-fund    .sc-badge { background: rgba(139,92,246,.25); color: #c4b5fd; }
+
+    .sc-badge-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      animation: blink 2s ease-in-out infinite;
+    }
+    .s-socios  .sc-badge-dot { background: #7eb8f7; }
+    .s-ahorros .sc-badge-dot { background: #f0ca6e; }
+    .s-creditos .sc-badge-dot { background: #5ee8b8; }
+    .s-fund    .sc-badge-dot { background: #c4b5fd; }
+
+    /* Número principal */
     .stat-num {
       font-family: 'Playfair Display', serif;
-      font-size: 26px; font-weight: 600;
-      color: #e0af50; line-height: 1;
+      font-size: 28px; font-weight: 700;
+      line-height: 1; letter-spacing: -.5px;
+      transition: color .3s;
     }
+    .s-socios  .stat-num { color: #7eb8f7; }
+    .s-ahorros .stat-num { color: #f0ca6e; }
+    .s-creditos .stat-num { color: #5ee8b8; }
+    .s-fund    .stat-num { color: #c4b5fd; }
+
+    /* Etiqueta */
     .stat-lbl {
-      font-size: 10.5px; color: rgba(255,255,255,.38);
-      margin-top: 5px; letter-spacing: .3px;
+      font-size: 10px; font-weight: 600; letter-spacing: .5px;
+      text-transform: uppercase; margin-top: 5px;
+      color: rgba(255,255,255,.42);
     }
+
+    /* Barra de progreso inferior */
+    .sc-bar-wrap {
+      margin-top: 10px; height: 3px; border-radius: 2px;
+      background: rgba(255,255,255,.08); overflow: hidden;
+    }
+    .sc-bar {
+      height: 100%; border-radius: 2px;
+      width: 0%; transition: width 1.4s cubic-bezier(.16,1,.3,1);
+    }
+    .sc-bar.loaded { }
+    .s-socios  .sc-bar { background: linear-gradient(90deg, #2563a8, #7eb8f7); }
+    .s-ahorros .sc-bar { background: linear-gradient(90deg, #9a6200, #f0ca6e); }
+    .s-creditos .sc-bar { background: linear-gradient(90deg, #085041, #5ee8b8); }
+    .s-fund    .sc-bar { background: linear-gradient(90deg, #4f1b8b, #c4b5fd); }
 
     /* Indicador online */
     .online-badge {
@@ -582,24 +658,22 @@
       pointer-events: none; z-index: 3;
     }
 
-    /* ── Contador: estadísticas con shimmer ─────────────── */
-    .stat-chip {
-      position: relative; overflow: hidden;
-    }
+    /* ── Contador: shimmer sobre las tarjetas ─────────── */
     @keyframes statShimmer {
       0%   { transform: translateX(-100%); }
-      100% { transform: translateX(200%); }
+      100% { transform: translateX(300%); }
     }
     .stat-chip::after {
       content: '';
       position: absolute; inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+      background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.09) 50%, transparent 60%);
       transform: translateX(-100%);
-      animation: statShimmer 2.5s ease-in-out infinite;
+      animation: statShimmer 3s ease-in-out infinite;
+      pointer-events: none;
     }
-    .stat-chip:nth-child(2)::after { animation-delay: .4s; }
-    .stat-chip:nth-child(3)::after { animation-delay: .8s; }
-    .stat-chip:nth-child(4)::after { animation-delay: 1.2s; }
+    .stat-chip.s-ahorros::after  { animation-delay: .5s; }
+    .stat-chip.s-creditos::after { animation-delay: 1s; }
+    .stat-chip.s-fund::after     { animation-delay: 1.5s; }
 
     /* ── Entradas escalonadas del formulario ─────────────── */
     @keyframes fieldIn {
@@ -671,23 +745,54 @@
 
         <div>
           <div class="brand-stats">
-            <div class="stat-chip">
-              <div class="stat-num" id="animSocios">0</div>
-              <div class="stat-lbl">Socios activos</div>
-            </div>
-            <div class="stat-chip">
-              <div class="stat-num" id="animAhorros">$0</div>
-              <div class="stat-lbl">En ahorros</div>
-            </div>
-            <div class="stat-chip">
-              <div class="stat-num" id="animCreditos">0</div>
-              <div class="stat-lbl">Créditos activos</div>
-            </div>
-            <div class="stat-chip">
-              <div class="stat-num" id="animFund">0</div>
-              <div class="stat-lbl">Año de fundación</div>
-            </div>
-          </div>
+
+            <!-- Fila 1 -->
+            <div class="stats-row">
+
+              <!-- Socios -->
+              <div class="stat-chip s-socios">
+                <span class="sc-bg-icon">👥</span>
+                <div class="sc-badge"><span class="sc-badge-dot"></span>Activos</div>
+                <div class="stat-num" id="animSocios">0</div>
+                <div class="stat-lbl">Socios</div>
+                <div class="sc-bar-wrap"><div class="sc-bar" id="barSocios"></div></div>
+              </div>
+
+              <!-- Ahorros -->
+              <div class="stat-chip s-ahorros">
+                <span class="sc-bg-icon">💰</span>
+                <div class="sc-badge"><span class="sc-badge-dot"></span>Total</div>
+                <div class="stat-num" id="animAhorros">$0</div>
+                <div class="stat-lbl">Ahorros</div>
+                <div class="sc-bar-wrap"><div class="sc-bar" id="barAhorros"></div></div>
+              </div>
+
+            </div><!-- /stats-row -->
+
+            <!-- Fila 2 -->
+            <div class="stats-row">
+
+              <!-- Créditos -->
+              <div class="stat-chip s-creditos">
+                <span class="sc-bg-icon">📋</span>
+                <div class="sc-badge"><span class="sc-badge-dot"></span>Vigentes</div>
+                <div class="stat-num" id="animCreditos">0</div>
+                <div class="stat-lbl">Créditos</div>
+                <div class="sc-bar-wrap"><div class="sc-bar" id="barCreditos"></div></div>
+              </div>
+
+              <!-- Fundación -->
+              <div class="stat-chip s-fund">
+                <span class="sc-bg-icon">🏛️</span>
+                <div class="sc-badge"><span class="sc-badge-dot"></span>Desde</div>
+                <div class="stat-num" id="animFund">0</div>
+                <div class="stat-lbl">Fundación</div>
+                <div class="sc-bar-wrap"><div class="sc-bar" id="barFund"></div></div>
+              </div>
+
+            </div><!-- /stats-row -->
+
+          </div><!-- /brand-stats -->
 
           <div class="online-badge">
             <div class="online-dot"></div>
@@ -839,6 +944,14 @@
       animCount("animCreditos", 0, 38,  1200);
       animCount("animFund",     2015, 2020, 900);
       animCount("animAhorros",  0, 84,  1600, function(v) { return "$" + v + "M"; });
+
+      /* Barras de progreso */
+      setTimeout(function() {
+        document.getElementById("barSocios")  && (document.getElementById("barSocios").style.width   = "78%");
+        document.getElementById("barAhorros") && (document.getElementById("barAhorros").style.width  = "65%");
+        document.getElementById("barCreditos")&& (document.getElementById("barCreditos").style.width = "42%");
+        document.getElementById("barFund")    && (document.getElementById("barFund").style.width     = "90%");
+      }, 300);
     }, 600);
 
     /* ── Toggle contraseña ──────────────────────────── */
