@@ -295,8 +295,11 @@
 ═══════════════════════════════════════════════════════════ */
 var filtroActual = "todos";
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("socios")) return;
+
+  await window.DataSync?.init();
+
   buildLayout("Socios", "Gestión de miembros del fondo", "");
   renderTabla();
   filterTable("searchSocio", "tablaSocios");
@@ -332,26 +335,50 @@ function renderTabla() {
   }).join("");
 }
 
-function guardarNuevoSocio() {
+async function guardarNuevoSocio() {
   var nombre = document.getElementById("ns-nombre").value.trim();
   var doc    = document.getElementById("ns-doc").value.trim();
   if (!nombre || !doc) { Toast.warn("Nombre y documento son obligatorios."); return; }
 
+  var btn = document.querySelector("#modalNuevoSocio .btn-primary");
+  var prevText = btn.textContent;
+  btn.textContent = "Guardando...";
+  btn.disabled = true;
+
   var nuevo = {
-    id: "S" + String(DB.socios.length + 1).padStart(3, "0"),
-    nombre, documento: doc,
+    nombre: nombre,
+    documento: doc,
     email:    document.getElementById("ns-email").value.trim(),
     telefono: document.getElementById("ns-tel").value.trim(),
-    fecha_ingreso: document.getElementById("ns-fecha").value,
-    aporte_mensual: parseInt(document.getElementById("ns-aporte").value) || 120000,
-    ahorro_acumulado: 0, estado: "activo",
+    fechaIngreso: document.getElementById("ns-fecha").value || new Date().toISOString().split("T")[0],
+    aporteMensual: parseInt(document.getElementById("ns-aporte").value) || 120000,
     cargo: document.getElementById("ns-cargo").value.trim(),
     sede:  document.getElementById("ns-sede").value,
   };
-  DB.socios.push(nuevo);
-  Modal.close("modalNuevoSocio");
-  renderTabla();
-  Toast.success("✓ Socio " + nombre + " registrado.");
+
+  try {
+    const res = await API.socios.crear(nuevo);
+    if (res && res.ok) {
+      await DataSync.syncSocios();
+      Modal.close("modalNuevoSocio");
+      renderTabla();
+      Toast.success("✓ Socio " + nombre + " registrado.");
+      
+      // Limpiar form
+      document.getElementById("ns-nombre").value = "";
+      document.getElementById("ns-doc").value = "";
+      document.getElementById("ns-email").value = "";
+      document.getElementById("ns-tel").value = "";
+      document.getElementById("ns-cargo").value = "";
+    } else {
+      Toast.error(res?.mensaje || "Error al crear socio");
+    }
+  } catch (error) {
+    Toast.error("Error de conexión");
+  } finally {
+    btn.textContent = prevText;
+    btn.disabled = false;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -636,7 +663,7 @@ function procesarArchivo(file) {
   reader.readAsArrayBuffer(file);
 }
 
-function ejecutarImportacion() {
+async function ejecutarImportacion() {
   /* Validar campos requeridos mapeados */
   var sinReq = CAMPOS_SISTEMA.filter(function(c) {
     return c.req && importState.mapeo[c.key] === undefined;
@@ -645,6 +672,9 @@ function ejecutarImportacion() {
     Toast.warn("Debes mapear: " + sinReq.map(function(c){return c.label;}).join(", "));
     return;
   }
+
+  var foot = document.getElementById("importFooter");
+  if (foot) foot.innerHTML = '<button class="btn btn-primary" disabled>Importando... por favor espera</button>';
 
   var ok         = 0;
   var errores    = [];
@@ -656,7 +686,8 @@ function ejecutarImportacion() {
     if (s.documento) docsExistentes[String(s.documento).trim()] = true;
   });
 
-  importState.filas.forEach(function(fila, idx) {
+  for (let idx = 0; idx < importState.filas.length; idx++) {
+    var fila = importState.filas[idx];
     var nFila = idx + 2; /* +2 porque la fila 1 es el header */
     var m     = importState.mapeo;
 
@@ -669,9 +700,9 @@ function ejecutarImportacion() {
     var nombre = get("nombre");
     var doc    = get("documento");
 
-    if (!nombre) { errores.push({ fila:nFila, msg:"Nombre vacío" }); return; }
-    if (!doc)    { errores.push({ fila:nFila, msg:"Documento vacío" }); return; }
-    if (docsExistentes[doc]) { duplicados++; return; }
+    if (!nombre) { errores.push({ fila:nFila, msg:"Nombre vacío" }); continue; }
+    if (!doc)    { errores.push({ fila:nFila, msg:"Documento vacío" }); continue; }
+    if (docsExistentes[doc]) { duplicados++; continue; }
 
     /* Parsear fecha */
     var fechaRaw = get("fecha_ingreso");
@@ -695,26 +726,32 @@ function ejecutarImportacion() {
     var estadoRaw = get("estado","activo").toLowerCase();
     var estado    = ["activo","mora","pendiente","inactivo"].includes(estadoRaw) ? estadoRaw : "activo";
 
-    /* Generar ID único */
-    var nuevoId = "S" + String(DB.socios.length + ok + 1).padStart(3, "0");
-
-    DB.socios.push({
-      id: nuevoId,
+    var obj = {
       nombre:           nombre,
       documento:        doc,
       email:            get("email"),
       telefono:         get("telefono"),
       cargo:            get("cargo", "Docente"),
       sede:             get("sede", "Sede Central"),
-      fecha_ingreso:    fecha,
-      aporte_mensual:   aporteMes,
-      ahorro_acumulado: ahorro,
-      estado:           estado,
-    });
+      fechaIngreso:     fecha,
+      aporteMensual:    aporteMes,
+      // No mandamos ahorroAcumulado ni estado inicialmente
+    };
 
-    docsExistentes[doc] = true;
-    ok++;
-  });
+    try {
+      const res = await API.socios.crear(obj);
+      if (res && res.ok) {
+        docsExistentes[doc] = true;
+        ok++;
+      } else {
+        errores.push({ fila: nFila, msg: res?.mensaje || "Error al crear" });
+      }
+    } catch(e) {
+      errores.push({ fila: nFila, msg: "Error de conexión" });
+    }
+  }
+
+  await DataSync.syncSocios();
 
   importState.resultado = { ok, errores, duplicados, total: importState.filas.length };
   importState.paso      = 3;

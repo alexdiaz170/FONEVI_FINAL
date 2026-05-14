@@ -167,12 +167,14 @@
 <script src="../js/search.js"></script>
 <script src="../js/export.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   if (!Roles.proteger("reportes")) return;
+  await window.DataSync?.init();
   buildLayout("Reportes", "Genera reportes financieros", "");
 });
 
 function generarReporte(tipo) {
+  _tipoReporteActual = tipo;
   const visor    = document.getElementById("visorReporte");
   const titulo   = document.getElementById("reporteTitulo");
   const contenido = document.getElementById("reporteContenido");

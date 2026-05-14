@@ -1,0 +1,60 @@
+const express = require("express");
+const router = express.Router();
+const { prisma } = require("../lib/prisma");
+
+// GET /api/solidaridad/movimientos — Obtener todos los movimientos
+router.get("/movimientos", async (req, res) => {
+  try {
+    const movs = await prisma.solidaridadMovimiento.findMany({
+      orderBy: { fecha: "desc" },
+    });
+    res.json({ ok: true, datos: movs });
+  } catch (error) {
+    res.status(500).json({ ok: false, mensaje: "Error al listar movimientos" });
+  }
+});
+
+// GET /api/solidaridad/saldo — Obtener el saldo actual
+router.get("/saldo", async (req, res) => {
+  try {
+    const aggs = await prisma.solidaridadMovimiento.groupBy({
+      by: ["tipo"],
+      _sum: { monto: true },
+    });
+    let ingresos = 0; let egresos = 0;
+    aggs.forEach((agg) => {
+      if (agg.tipo === "ingreso") ingresos += (agg._sum.monto || 0);
+      if (agg.tipo === "egreso") egresos += (agg._sum.monto || 0);
+    });
+    res.json({ ok: true, saldo_actual: ingresos - egresos });
+  } catch (error) {
+    res.status(500).json({ ok: false, mensaje: "Error al calcular saldo" });
+  }
+});
+
+// POST /api/solidaridad/movimientos — Registrar un ingreso o egreso
+router.post("/movimientos", async (req, res) => {
+  try {
+    const { tipo, descripcion, monto, fecha, beneficiario } = req.body;
+    if (!tipo || !descripcion || !monto) {
+      return res.status(400).json({ ok: false, mensaje: "Faltan campos" });
+    }
+
+    const nuevo = await prisma.solidaridadMovimiento.create({
+      data: {
+        tipo,
+        descripcion,
+        monto: parseFloat(monto),
+        fecha: fecha ? new Date(fecha) : new Date(),
+        beneficiario: beneficiario || null,
+      },
+    });
+
+    res.status(201).json({ ok: true, datos: nuevo });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ ok: false, mensaje: "Error al registrar movimiento" });
+  }
+});
+
+module.exports = router;

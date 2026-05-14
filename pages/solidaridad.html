@@ -313,8 +313,10 @@ var filtroMov = "todos";
 /* ═══════════════════════════════════════════════════════════
    INICIO
 ═══════════════════════════════════════════════════════════ */
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("solidaridad")) return;
+
+  await window.DataSync?.init();
 
   buildLayout(
     "Fondo de Solidaridad",
@@ -529,7 +531,7 @@ function verificarSaldo() {
   }
 }
 
-function guardarAyuda() {
+async function guardarAyuda() {
   var ben   = document.getElementById("ay-ben").value.trim();
   var monto = parseFloat(document.getElementById("ay-monto").value) || 0;
   var tipo  = document.getElementById("ay-tipo").value;
@@ -540,43 +542,60 @@ function guardarAyuda() {
     Toast.warn("Saldo insuficiente en el fondo."); return;
   }
 
+  var btn = document.getElementById("btnGuardarAyuda");
+  btn.textContent = "Registrando...";
+  btn.disabled    = true;
+
   var info  = TIPOS[tipo] || TIPOS.otro;
   var socio = document.getElementById("ay-socio").value;
   var desc  = document.getElementById("ay-desc").value.trim();
 
   var nuevo = {
-    id:          "FS" + String(DB.solidaridad.movimientos.length + 1).padStart(3,"0"),
     tipo:        "egreso",
     descripcion: info.label + " — " + ben,
     monto:       monto,
-    fecha:       document.getElementById("ay-fecha").value,
-    beneficiario:socio || null,
-    obs:         desc,
+    fecha:       document.getElementById("ay-fecha").value || new Date().toISOString(),
+    beneficiario: socio || null
   };
 
-  DB.solidaridad.movimientos.push(nuevo);
-  DB.solidaridad.saldo_actual -= monto;
+  try {
+    const res = await API.solidaridad.crear(nuevo);
+    if (res && res.ok) {
+      await DataSync.syncSolidaridad();
 
-  Modal.close("modalNuevaAyuda");
-  renderKPIs();
-  renderSaldoPanel();
-  renderCategorias();
-  renderMovimientos(filtroMov);
+      btn.textContent = "Registrar ayuda";
+      btn.disabled    = false;
 
-  // Actualizar topbar subtitle
-  buildLayout(
-    "Fondo de Solidaridad",
-    "Saldo: " + DataHelper.formatCOP(DB.solidaridad.saldo_actual),
-    '<button class="btn btn-primary" onclick="Modal.open(\'modalNuevaAyuda\')">+ Registrar ayuda</button>'
-  );
+      Modal.close("modalNuevaAyuda");
+      renderKPIs();
+      renderSaldoPanel();
+      renderCategorias();
+      renderMovimientos(filtroMov);
 
-  Toast.success("✓ Ayuda de " + DataHelper.formatCOP(monto) + " registrada para " + ben + ".");
+      // Actualizar topbar subtitle
+      buildLayout(
+        "Fondo de Solidaridad",
+        "Saldo: " + DataHelper.formatCOP(DB.solidaridad.saldo_actual),
+        '<button class="btn btn-primary" onclick="Modal.open(\'modalNuevaAyuda\')">+ Registrar ayuda</button>'
+      );
+
+      Toast.success("✓ Ayuda de " + DataHelper.formatCOP(monto) + " registrada para " + ben + ".");
+    } else {
+      Toast.error(res?.mensaje || "Error al registrar ayuda");
+      btn.textContent = "Registrar ayuda";
+      btn.disabled    = false;
+    }
+  } catch (error) {
+    Toast.error("Error de conexión");
+    btn.textContent = "Registrar ayuda";
+    btn.disabled    = false;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
    REGISTRAR APORTE AL FONDO
 ═══════════════════════════════════════════════════════════ */
-function registrarAporte() {
+async function registrarAporte() {
   var socioId = document.getElementById("as-socio").value;
   var monto   = parseFloat(document.getElementById("as-monto").value) || 0;
   var periodo = document.getElementById("as-periodo").value;
@@ -585,19 +604,37 @@ function registrarAporte() {
   if (!monto)   { Toast.warn("Ingresa el monto del aporte."); return; }
 
   var nombre = DataHelper.getSocioNombre(socioId);
-  DB.solidaridad.movimientos.push({
-    id:          "FS" + String(DB.solidaridad.movimientos.length + 1).padStart(3,"0"),
+  var nuevo = {
     tipo:        "ingreso",
     descripcion: "Aporte solidaridad — " + nombre + " (" + periodo + ")",
     monto:       monto,
-    fecha:       new Date().toISOString().split("T")[0],
-  });
-  DB.solidaridad.saldo_actual += monto;
+    fecha:       new Date().toISOString(),
+    beneficiario: socioId
+  };
 
-  renderKPIs();
-  renderSaldoPanel();
-  renderMovimientos(filtroMov);
-  Toast.success("✓ Aporte de " + DataHelper.formatCOP(monto) + " registrado.");
+  try {
+    const res = await API.solidaridad.crear(nuevo);
+    if (res && res.ok) {
+      await DataSync.syncSolidaridad();
+
+      renderKPIs();
+      renderSaldoPanel();
+      renderMovimientos(filtroMov);
+      
+      // Actualizar topbar subtitle
+      buildLayout(
+        "Fondo de Solidaridad",
+        "Saldo: " + DataHelper.formatCOP(DB.solidaridad.saldo_actual),
+        '<button class="btn btn-primary" onclick="Modal.open(\'modalNuevaAyuda\')">+ Registrar ayuda</button>'
+      );
+
+      Toast.success("✓ Aporte de " + DataHelper.formatCOP(monto) + " registrado.");
+    } else {
+      Toast.error(res?.mensaje || "Error al registrar aporte");
+    }
+  } catch (error) {
+    Toast.error("Error de conexión");
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════

@@ -438,7 +438,8 @@ var avatarColorActual = 0;
 /* ═══════════════════════════════════════════════════════════
    INICIO
 ═══════════════════════════════════════════════════════════ */
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
+  await window.DataSync?.init();
   SOCIO = DataHelper.getSocio(SID);
 
   if (!SOCIO) {
@@ -708,7 +709,7 @@ function cancelarEdicion() {
   toggleEdicion(); // Cambia a false
 }
 
-function guardarCambios() {
+async function guardarCambios() {
   // Validar teléfono
   var tel = document.getElementById("inp_telefono");
   if (tel && tel.value && !/^[0-9]{7,11}$/.test(tel.value.replace(/\s/g,""))) {
@@ -718,12 +719,14 @@ function guardarCambios() {
 
   // Aplicar cambios al objeto SOCIO en memoria
   var hayChanges = false;
+  var bodyActualizar = {};
   CAMPOS_EDIT.forEach(function(c) {
     var inp = document.getElementById("inp_" + c.k);
     if (!inp) return;
     var nuevoVal = inp.value.trim();
     if (nuevoVal !== SOCIO[c.k]) {
       SOCIO[c.k] = nuevoVal;
+      bodyActualizar[c.k] = nuevoVal;
       hayChanges  = true;
     }
   });
@@ -740,26 +743,33 @@ function guardarCambios() {
   saveBtn.textContent = "Guardando...";
   saveBtn.disabled    = true;
 
-  setTimeout(function() {
-    // Actualizar el array DB.socios
-    var idx = DB.socios.findIndex(function(s) { return s.id === SID; });
-    if (idx >= 0) DB.socios[idx] = SOCIO;
+  try {
+    const res = await API.socios.actualizar(SID, bodyActualizar);
+    if (res && res.ok) {
+      await DataSync.syncSocios();
 
-    saveBtn.textContent = origText;
-    saveBtn.disabled    = false;
+      saveBtn.textContent = origText;
+      saveBtn.disabled    = false;
 
-    // Actualizar vistas
-    CAMPOS_EDIT.forEach(function(c) {
-      var valEl = document.getElementById("val_" + c.k);
-      if (valEl) valEl.textContent = SOCIO[c.k] || "—";
-    });
+      // Actualizar vistas
+      CAMPOS_EDIT.forEach(function(c) {
+        var valEl = document.getElementById("val_" + c.k);
+        if (valEl) valEl.textContent = SOCIO[c.k] || "—";
+      });
 
-    // Actualizar hero con nuevo cargo/sede
-    renderHero();
+      // Actualizar hero con nuevo cargo/sede
+      renderHero();
 
-    EDITANDO = true; toggleEdicion();
-    Toast.success("✓ Datos actualizados correctamente.");
-  }, 500);
+      EDITANDO = true; toggleEdicion();
+      Toast.success("✓ Datos actualizados correctamente.");
+    } else {
+      Toast.error(res?.mensaje || "Error al actualizar datos.");
+      saveBtn.textContent = origText; saveBtn.disabled = false;
+    }
+  } catch(e) {
+    Toast.error("Error de conexión");
+    saveBtn.textContent = origText; saveBtn.disabled = false;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════

@@ -375,8 +375,10 @@ var METODO_LABEL = {
 /* ═══════════════════════════════════════════════════════════
    INICIO
 ═══════════════════════════════════════════════════════════ */
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("aportes")) return;
+
+  await window.DataSync?.init();
 
   buildLayout(
     "Aportes",
@@ -609,39 +611,31 @@ function cancelarCambioEstado() {
   Modal.close("modalCambioEstado");
 }
 
-function confirmarCambioEstado() {
+async function confirmarCambioEstado() {
   if (!cambioEstadoPendiente) return;
 
   var aporte = DB.aportes.find(function(a){ return a.id === cambioEstadoPendiente.id; });
   if (!aporte) return;
 
   var estadoAnterior = aporte.estado;
-  aporte.estado      = cambioEstadoPendiente.nuevoEstado;
+  var nuevoEstado = cambioEstadoPendiente.nuevoEstado;
 
-  // Actualizar fecha si se marca como pagado
-  if (cambioEstadoPendiente.nuevoEstado === "pagado") {
-    var fechaEl = document.getElementById("cambioFecha");
-    aporte.fecha_pago = fechaEl ? fechaEl.value : new Date().toISOString().split("T")[0];
+  // Actualizar en el backend
+  var res = await API.aportes.actualizarEstado(aporte.id, nuevoEstado);
 
-    // Actualizar ahorro acumulado del socio si antes no estaba pagado
-    if (estadoAnterior !== "pagado") {
-      var socio = DB.socios.find(function(s){ return s.id === aporte.socio_id; });
-      if (socio) socio.ahorro_acumulado += aporte.monto;
-    }
+  if (res && res.ok) {
+    await DataSync.syncAportes();
+    await DataSync.syncSocios(); // por si se actualizó el ahorro
+
+    cambioEstadoPendiente = null;
+    Modal.close("modalCambioEstado");
+    renderKPIs();
+    renderRecaudo();
+    renderTabla();
+    Toast.success("✓ Estado actualizado correctamente.");
+  } else {
+    Toast.error(res?.mensaje || "Error al actualizar estado");
   }
-
-  // Si se revierte de pagado, descontar del ahorro
-  if (estadoAnterior === "pagado" && cambioEstadoPendiente.nuevoEstado !== "pagado") {
-    var socio2 = DB.socios.find(function(s){ return s.id === aporte.socio_id; });
-    if (socio2) socio2.ahorro_acumulado = Math.max(0, socio2.ahorro_acumulado - aporte.monto);
-  }
-
-  cambioEstadoPendiente = null;
-  Modal.close("modalCambioEstado");
-  renderKPIs();
-  renderRecaudo();
-  renderTabla();
-  Toast.success("✓ Estado actualizado correctamente.");
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -687,7 +681,7 @@ function verificarDuplicado() {
   }
 }
 
-function guardarAporte() {
+async function guardarAporte() {
   var socioId = document.getElementById("na-socio").value;
   var monto   = parseFloat(document.getElementById("na-monto").value);
   var periodo = document.getElementById("na-periodo").value;
@@ -702,7 +696,6 @@ function guardarAporte() {
   btn.disabled    = true;
 
   var nuevo = {
-    id:         "A" + String(DB.aportes.length + 1).padStart(3, "0"),
     socio_id:   socioId,
     periodo:    periodo,
     monto:      monto,
@@ -712,28 +705,35 @@ function guardarAporte() {
     obs:        document.getElementById("na-obs").value.trim(),
   };
 
-  DB.aportes.push(nuevo);
+  try {
+    const res = await API.aportes.registrar(nuevo);
 
-  // Actualizar ahorro si es pagado
-  if (estado === "pagado") {
-    var s = DataHelper.getSocio(socioId);
-    if (s) s.ahorro_acumulado += monto;
-  }
+    if (res && res.ok) {
+      await DataSync.syncAportes();
+      if (estado === "pagado") await DataSync.syncSocios();
 
-  setTimeout(function() {
+      btn.textContent = "Registrar aporte";
+      btn.disabled    = false;
+
+      Modal.close("modalNuevoAporte");
+      renderKPIs();
+      renderRecaudo();
+      renderTabla();
+
+      // Actualizar selector de período si es nuevo
+      poblarSelectPeriodos();
+
+      Toast.success("✓ Aporte de " + DataHelper.formatCOP(monto) + " registrado.");
+    } else {
+      Toast.error(res?.mensaje || "Error al registrar aporte");
+      btn.textContent = "Registrar aporte";
+      btn.disabled    = false;
+    }
+  } catch (error) {
+    Toast.error("Error de conexión");
     btn.textContent = "Registrar aporte";
     btn.disabled    = false;
-
-    Modal.close("modalNuevoAporte");
-    renderKPIs();
-    renderRecaudo();
-    renderTabla();
-
-    // Actualizar selector de período si es nuevo
-    poblarSelectPeriodos();
-
-    Toast.success("✓ Aporte de " + DataHelper.formatCOP(monto) + " registrado.");
-  }, 400);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -799,19 +799,18 @@ function poblarSelectPeriodoModal() {
   var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
                "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   var sel = document.getElementById("na-periodo");
-  // Generar 12 meses hacia atrás desde el período actual
+  
   var partes  = DB.config.periodo_actual.split(" ");
-  var mesIdx  = MESES.indexOf(partes[0]);
   var anio    = parseInt(partes[partes.length-1]);
   var opciones = [];
 
+  // Generar meses del año actual (Enero a Diciembre)
   for (var i = 0; i < 12; i++) {
-    var m = mesIdx - i;
-    var y = anio;
-    while (m < 0) { m += 12; y--; }
-    opciones.push(MESES[m] + " " + y);
+    opciones.push(MESES[i] + " " + anio);
   }
 
+  // Opcional: Agregar el año siguiente si estamos a final de año, o el año pasado si lo necesitan, 
+  // pero para este requerimiento específico, solo hasta diciembre del año actual.
   sel.innerHTML = opciones.map(function(p) {
     return '<option value="' + p + '" ' + (p === DB.config.periodo_actual ? "selected" : "") + '>' + p + '</option>';
   }).join("");

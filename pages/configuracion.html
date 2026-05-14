@@ -21,6 +21,104 @@
   <link rel="stylesheet" href="../css/transitions.css"/>
   <link rel="stylesheet" href="../css/darkmode.css"/>
   <link rel="stylesheet" href="../css/loading.css"/>
+  <style>
+    /* ══ CONFIG HERO ═══════════════════════════════════════ */
+    .cfg-hero {
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 60%, var(--navy-950) 100%);
+      border-radius: var(--r-xl); padding: 26px 32px; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 20px;
+      position: relative; overflow: hidden; box-shadow: var(--shadow-lg);
+    }
+    .cfg-hero::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.022) 1px, transparent 0);
+      background-size: 26px 26px; pointer-events: none;
+    }
+    .cfg-hero::after {
+      content: ''; position: absolute; width: 280px; height: 280px;
+      background: radial-gradient(circle, rgba(201,146,42,.15) 0%, transparent 70%);
+      border-radius: 50%; right: -50px; bottom: -90px; pointer-events: none;
+    }
+    .cfg-hero-icon {
+      width: 56px; height: 56px; border-radius: var(--r-lg); flex-shrink: 0;
+      background: linear-gradient(135deg, var(--gold-400), var(--gold-600));
+      display: flex; align-items: center; justify-content: center; font-size: 24px;
+      box-shadow: 0 4px 18px rgba(201,146,42,.4); position: relative; z-index: 1;
+    }
+    .cfg-hero-info { flex: 1; position: relative; z-index: 1; }
+    .cfg-hero-title { font-family: var(--font-display); font-size: 22px; font-weight: 400; color: #fff; letter-spacing: -.3px; margin-bottom: 4px; }
+    .cfg-hero-sub { font-size: 13px; color: rgba(255,255,255,.5); }
+    .cfg-hero-pills { display: flex; gap: 8px; position: relative; z-index: 1; }
+    .cfg-hero-pill {
+      padding: 5px 13px; border-radius: var(--r-full);
+      font-size: 11px; font-weight: 600; letter-spacing: .3px;
+      background: rgba(255,255,255,.1); color: rgba(255,255,255,.75);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .cfg-hero-pill.green { background: rgba(29,158,117,.25); color: #5dcaa5; border-color: rgba(29,158,117,.3); }
+
+    /* ══ CARD HEADERS CON ÍCONO ═════════════════════════════ */
+    .card-header-icon {
+      width: 32px; height: 32px; border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0; margin-right: 10px;
+    }
+    .card-header-icon.gold  { background: var(--gold-50);  border: 1px solid var(--gold-100); }
+    .card-header-icon.navy  { background: var(--navy-50);  border: 1px solid var(--navy-100); }
+    .card-header-icon.green { background: var(--green-50); border: 1px solid var(--green-100); }
+    .card-header-icon.red   { background: var(--red-50);   border: 1px solid var(--red-100); }
+    .card-header-icon.amber { background: var(--amber-50); border: 1px solid var(--amber-100); }
+    .card-header-left { display: flex; align-items: center; }
+
+    /* ══ INFO-ROW (panel sistema) ═══════════════════════════ */
+    .info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 11px 0; border-bottom: 1px solid var(--border-faint);
+      transition: background var(--t-fast);
+    }
+    .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .info-row-label { font-size: 13px; color: var(--text-secondary); }
+    .info-row-value { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+
+    /* ══ IMPACT CARD ════════════════════════════════════════ */
+    .impact-card {
+      background: var(--bg-subtle); border-radius: var(--r-md);
+      padding: 16px; text-align: center;
+      border: 1px solid var(--border-faint);
+      transition: all var(--t-base) var(--ease);
+    }
+    .impact-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .impact-card.current {
+      background: var(--navy-50); border: 1.5px solid var(--navy-200);
+      box-shadow: var(--shadow-sm);
+    }
+    .impact-label { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .impact-pct { font-family: var(--font-display); font-size: 22px; color: var(--text-primary); line-height: 1; }
+    .impact-pct.current { color: var(--navy-700); }
+    .impact-cuota { font-size: 13.5px; font-weight: 600; margin-top: 6px; color: var(--text-primary); }
+    .impact-cuota.current { color: var(--navy-700); }
+    .impact-badge { display: inline-block; margin-top: 6px; padding: 2px 9px; border-radius: var(--r-full); font-size: 10px; font-weight: 700; background: var(--navy-700); color: #fff; }
+
+    /* ══ TASA PREVIEW ═══════════════════════════════════════ */
+    .tasa-preview {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--navy-50); border: 1px solid var(--navy-100);
+      border-radius: var(--r-md); padding: 11px 14px; margin-bottom: 14px;
+    }
+    .tasa-preview-icon { font-size: 18px; flex-shrink: 0; }
+    .tasa-preview-text { font-size: 12.5px; color: var(--navy-700); line-height: 1.5; }
+
+    /* ══ USUARIO AVATAR EN TABLA ════════════════════════════ */
+    .u-avatar {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff; margin-right: 8px;
+      vertical-align: middle;
+    }
+    .u-avatar.admin    { background: linear-gradient(135deg, var(--navy-700), var(--navy-500)); }
+    .u-avatar.tesorero { background: linear-gradient(135deg, var(--gold-700),  var(--gold-400)); }
+    .u-avatar.socio    { background: linear-gradient(135deg, var(--green-600), var(--green-400)); }
+  </style>
 </head>
 <body>
 
@@ -28,9 +126,17 @@
   <div class="main-content">
     <div class="page-content">
 
-      <div class="page-header">
-        <h1>Configuración del Sistema</h1>
-        <p>Parámetros generales, roles y ajustes de FONEVI</p>
+      <!-- Hero -->
+      <div class="cfg-hero">
+        <div class="cfg-hero-icon">⚙️</div>
+        <div class="cfg-hero-info">
+          <div class="cfg-hero-title">Configuración del Sistema</div>
+          <div class="cfg-hero-sub">Parámetros generales, roles y ajustes de FONEVI</div>
+        </div>
+        <div class="cfg-hero-pills">
+          <span class="cfg-hero-pill green">● Sistema activo</span>
+          <span class="cfg-hero-pill">v1.0.0</span>
+        </div>
       </div>
 
       <!-- Tabs de configuración -->
@@ -44,7 +150,12 @@
       <!-- Panel General -->
       <div id="panel-general">
         <div class="card">
-          <div class="card-header"><span class="card-title">Información del Fondo</span></div>
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-header-icon navy">🏛️</div>
+              <span class="card-title">Información del Fondo</span>
+            </div>
+          </div>
           <div class="card-body">
             <div class="form-grid">
               <div class="form-group">
@@ -81,7 +192,12 @@
       <div id="panel-financiero" style="display:none;">
         <div class="grid-2">
           <div class="card">
-            <div class="card-header"><span class="card-title">Parámetros de Ahorro</span></div>
+            <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-header-icon gold">💰</div>
+              <span class="card-title">Parámetros de Ahorro</span>
+            </div>
+          </div>
             <div class="card-body">
               <div class="form-group" style="margin-bottom:14px;">
                 <label class="form-label">Aporte mínimo mensual ($)</label>
@@ -101,7 +217,12 @@
           </div>
 
           <div class="card">
-            <div class="card-header"><span class="card-title">Parámetros de Crédito</span></div>
+            <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-header-icon amber">📋</div>
+              <span class="card-title">Parámetros de Crédito</span>
+            </div>
+          </div>
             <div class="card-body">
               <div class="form-group" style="margin-bottom:14px;">
                 <label class="form-label">Tasa mensual de interés (%)</label>
@@ -129,7 +250,12 @@
 
         <!-- Simulador de impacto -->
         <div class="card" style="margin-top:16px;">
-          <div class="card-header"><span class="card-title">Impacto del cambio de tasa en la cartera</span></div>
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-header-icon navy">📊</div>
+              <span class="card-title">Impacto del cambio de tasa en la cartera</span>
+            </div>
+          </div>
           <div class="card-body" id="impactoCartera"></div>
         </div>
       </div>
@@ -138,7 +264,10 @@
       <div id="panel-usuarios" style="display:none;">
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Usuarios del sistema</span>
+            <div class="card-header-left">
+              <div class="card-header-icon navy">👥</div>
+              <span class="card-title">Usuarios del sistema</span>
+            </div>
             <button class="btn btn-primary btn-sm" onclick="Modal.open('modalNuevoUsuario')">+ Nuevo usuario</button>
           </div>
           <table class="data-table" id="tablaUsuarios">
@@ -154,28 +283,33 @@
       <div id="panel-sistema" style="display:none;">
         <div class="grid-2">
           <div class="card">
-            <div class="card-header"><span class="card-title">Estado del Sistema</span></div>
+            <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-header-icon green">🖥️</div>
+              <span class="card-title">Estado del Sistema</span>
+            </div>
+          </div>
             <div class="card-body">
-              <div style="display:flex; flex-direction:column; gap:12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span style="font-size:13px;">Versión del sistema</span>
+              <div>
+                <div class="info-row">
+                  <span class="info-row-label">Versión del sistema</span>
                   <span class="pill pill-green">v1.0.0</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span style="font-size:13px;">Base de datos</span>
+                <div class="info-row">
+                  <span class="info-row-label">Base de datos</span>
                   <span class="pill pill-green">Conectada</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span style="font-size:13px;">Último backup</span>
-                  <span style="font-size:13px; color:var(--muted);">21/03/2026 02:00</span>
+                <div class="info-row">
+                  <span class="info-row-label">Último backup</span>
+                  <span class="info-row-value">21/03/2026 02:00</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span style="font-size:13px;">Último cierre de período</span>
-                  <span style="font-size:13px; color:var(--muted);">28/02/2026</span>
+                <div class="info-row">
+                  <span class="info-row-label">Último cierre de período</span>
+                  <span class="info-row-value">28/02/2026</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span style="font-size:13px;">Total socios en BD</span>
-                  <span style="font-size:13px; font-weight:500;">127</span>
+                <div class="info-row">
+                  <span class="info-row-label">Total socios en BD</span>
+                  <span class="info-row-value">127</span>
                 </div>
               </div>
               <div class="form-actions">
@@ -186,7 +320,12 @@
           </div>
 
           <div class="card">
-            <div class="card-header"><span class="card-title">Cierre de Período</span></div>
+            <div class="card-header">
+            <div class="card-header-left">
+              <div class="card-header-icon red">🔒</div>
+              <span class="card-title">Cierre de Período</span>
+            </div>
+          </div>
             <div class="card-body">
               <div class="alert warn" style="margin-bottom:16px;">
                 <div class="alert-icon">⚠️</div>
@@ -280,8 +419,11 @@ const CFG_KEY = "fonevi_config";
   } catch(e) { /* si hay datos corruptos, ignorar */ }
 })();
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   if (!Roles.proteger("configuracion")) return;
+
+  await window.DataSync?.init();
+
   buildLayout("Configuración", "Parámetros del sistema FONEVI", "");
 
   /* Poblar formularios desde DB.config (incluyendo valores guardados) */
@@ -319,27 +461,40 @@ function persistirConfig() {
   } catch(e) { /* quota exceeded u otros errores: ignorar */ }
 }
 
-function guardarConfig(seccion) {
+async function guardarConfig(seccion) {
+  let dataToUpdate = [];
   if (seccion === "general") {
-    DB.config.nombre          = document.getElementById("cfg-nombre").value;
-    DB.config.nombre_completo = document.getElementById("cfg-nombre-completo").value;
-    DB.config.nit             = document.getElementById("cfg-nit").value;
-    DB.config.representante   = document.getElementById("cfg-rep").value;
-    DB.config.periodo_actual  = document.getElementById("cfg-periodo").value;
+    dataToUpdate.push({ clave: "nombre", valor: document.getElementById("cfg-nombre").value });
+    dataToUpdate.push({ clave: "nombre_completo", valor: document.getElementById("cfg-nombre-completo").value });
+    dataToUpdate.push({ clave: "nit", valor: document.getElementById("cfg-nit").value });
+    dataToUpdate.push({ clave: "representante", valor: document.getElementById("cfg-rep").value });
+    dataToUpdate.push({ clave: "periodo_actual", valor: document.getElementById("cfg-periodo").value });
   }
   if (seccion === "ahorro") {
-    DB.config.aporte_minimo      = parseFloat(document.getElementById("cfg-aporte-min").value) || 0;
-    DB.config.aporte_solidaridad = parseFloat(document.getElementById("cfg-solidaridad").value) || 0;
+    dataToUpdate.push({ clave: "aporte_minimo", valor: parseFloat(document.getElementById("cfg-aporte-min").value) || 0 });
+    dataToUpdate.push({ clave: "aporte_solidaridad", valor: parseFloat(document.getElementById("cfg-solidaridad").value) || 0 });
   }
   if (seccion === "credito") {
-    DB.config.tasa_credito_mensual      = parseFloat(document.getElementById("cfg-tasa").value) || 0;
-    DB.config.tasa_mora_diaria          = parseFloat(document.getElementById("cfg-mora").value) || 0;
-    DB.config.max_credito_multiplicador = parseFloat(document.getElementById("cfg-mult").value) || 1;
-    renderImpactoCartera();
-    previsualizarTasa();
+    dataToUpdate.push({ clave: "tasa_credito_mensual", valor: parseFloat(document.getElementById("cfg-tasa").value) || 0 });
+    dataToUpdate.push({ clave: "tasa_mora_diaria", valor: parseFloat(document.getElementById("cfg-mora").value) || 0 });
+    dataToUpdate.push({ clave: "max_credito_multiplicador", valor: parseFloat(document.getElementById("cfg-mult").value) || 1 });
   }
-  persistirConfig();  /* ← guarda en localStorage */
-  Toast.success("Configuración guardada correctamente.");
+
+  try {
+    for (const item of dataToUpdate) {
+      await API.config.actualizar(item.clave, item.valor);
+    }
+    await DataSync.syncConfig();
+
+    if (seccion === "credito") {
+      renderImpactoCartera();
+      previsualizarTasa();
+    }
+    persistirConfig(); /* ← guarda en localStorage también por precaución local */
+    Toast.success("Configuración guardada correctamente.");
+  } catch (error) {
+    Toast.error("Error al guardar la configuración.");
+  }
 }
 
 function resetConfig(seccion) {
@@ -358,9 +513,9 @@ function previsualizarTasa() {
   const ejemplo = 2000000;
   const cuota = DataHelper.calcularCuota(ejemplo, tasa, 12);
   document.getElementById("tasaPreview").innerHTML = `
-    <div style="background:var(--navy-light); border-radius:8px; padding:12px; font-size:12px; color:var(--navy);">
-      Ejemplo: crédito de ${DataHelper.formatCOP(ejemplo)} a 12 cuotas →
-      cuota mensual <strong>${DataHelper.formatCOP(Math.round(cuota))}</strong>
+    <div class="tasa-preview">
+      <span class="tasa-preview-icon">💡</span>
+      <span class="tasa-preview-text">Crédito de ${DataHelper.formatCOP(ejemplo)} a 12 cuotas → cuota mensual <strong>${DataHelper.formatCOP(Math.round(cuota))}</strong></span>
     </div>
   `;
 }
@@ -374,12 +529,11 @@ function renderImpactoCartera() {
         const cuota = DataHelper.calcularCuota(2000000, t, 12);
         const isCurrent = t === tasa;
         return `
-          <div style="background:${isCurrent ? 'var(--navy-light)' : 'var(--surface2)'}; border-radius:10px; padding:14px; text-align:center; border:${isCurrent ? '1.5px solid var(--navy)' : '0.5px solid var(--border)'};">
-            <div style="font-size:11px; color:var(--muted);">Tasa ${t.toFixed(1)}% mensual</div>
-            <div style="font-family:var(--font-display); font-size:20px; color:${isCurrent ? 'var(--navy)' : 'var(--text)'}; margin-top:4px;">${t.toFixed(1)}%</div>
-            <div style="font-size:12px; color:var(--muted); margin-top:6px;">Cuota $2M / 12 meses</div>
-            <div style="font-size:14px; font-weight:500; color:${isCurrent ? 'var(--navy)' : 'var(--text)'}; margin-top:4px;">${DataHelper.formatCOP(Math.round(cuota))}</div>
-            ${isCurrent ? '<div style="font-size:10px; color:var(--navy); margin-top:6px; font-weight:500;">← Actual</div>' : ''}
+          <div class="impact-card${isCurrent ? ' current' : ''}">
+            <div class="impact-label">Tasa ${t.toFixed(1)}% mensual</div>
+            <div class="impact-pct${isCurrent ? ' current' : ''}">${t.toFixed(1)}%</div>
+            <div class="impact-cuota${isCurrent ? ' current' : ''}">${DataHelper.formatCOP(Math.round(cuota))}</div>
+            ${isCurrent ? '<div class="impact-badge">← Actual</div>' : ''}
           </div>
         `;
       }).join("")}
@@ -388,20 +542,24 @@ function renderImpactoCartera() {
 }
 
 function renderUsuarios() {
-  document.getElementById("usuariosTbody").innerHTML = DB.usuarios.map(u => `
+  document.getElementById("usuariosTbody").innerHTML = DB.usuarios.map(u => {
+    const avatarClass = u.rol === 'administrador' ? 'admin' : u.rol === 'tesorero' ? 'tesorero' : 'socio';
+    const initials = u.nombre.split(' ').map(p => p[0]).slice(0,2).join('');
+    return `
     <tr>
       <td class="mono muted">${u.id}</td>
-      <td style="font-weight:500;">${u.nombre}</td>
+      <td style="font-weight:500;"><span class="u-avatar ${avatarClass}">${initials}</span>${u.nombre}</td>
       <td class="muted">${u.email}</td>
       <td><span class="pill ${u.rol === 'administrador' ? 'pill-red' : u.rol === 'tesorero' ? 'pill-amber' : 'pill-blue'}">${u.rol}</span></td>
       <td>${DataHelper.estadoPill(u.estado)}</td>
       <td>
-        <button class="btn btn-secondary btn-sm" onclick="toggleEstado('${u.id}')">
-          ${u.estado === 'activo' ? 'Desactivar' : 'Activar'}
+        <button class="btn ${u.estado === 'activo' ? 'btn-secondary' : 'btn-success'} btn-sm" onclick="toggleEstado('${u.id}')">
+          ${u.estado === 'activo' ? '⏸ Desactivar' : '▶ Activar'}
         </button>
       </td>
     </tr>
-  `).join("");
+  `;
+  }).join("");
 }
 
 function guardarUsuario() {

@@ -341,8 +341,10 @@ var chartDonaInst = null;
 /* ═══════════════════════════════════════════════════════════
    INICIO
 ═══════════════════════════════════════════════════════════ */
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("contabilidad")) return;
+
+  await window.DataSync?.init();
 
   buildLayout("Contabilidad", "Libro diario y control financiero del fondo", "");
 
@@ -666,7 +668,7 @@ function actualizarCategorias() {
   }).join("");
 }
 
-function guardarMovimiento() {
+async function guardarMovimiento() {
   var tipo  = document.getElementById("nm-tipo").value;
   var monto = parseFloat(document.getElementById("nm-monto").value) || 0;
   var desc  = document.getElementById("nm-desc").value.trim();
@@ -677,28 +679,37 @@ function guardarMovimiento() {
   var btn = document.querySelector("#modalNuevoMov .btn-primary");
   btn.textContent = "Registrando..."; btn.disabled = true;
 
-  setTimeout(function() {
-    DB.movimientos.push({
-      id:          "M" + String(DB.movimientos.length + 1).padStart(3,"0"),
-      tipo:        tipo,
-      categoria:   document.getElementById("nm-categoria").value,
-      descripcion: desc,
-      monto:       monto,
-      fecha:       document.getElementById("nm-fecha").value,
-      referencia:  document.getElementById("nm-ref").value.trim() || null,
-    });
+  var nuevo = {
+    tipo:        tipo,
+    categoria:   document.getElementById("nm-categoria").value,
+    descripcion: desc,
+    monto:       monto,
+    fecha:       document.getElementById("nm-fecha").value,
+    referencia:  document.getElementById("nm-ref").value.trim() || null,
+  };
 
+  try {
+    const res = await API.movimientos.crear(nuevo);
+    if (res && res.ok) {
+      await DataSync.syncMovimientos();
+      btn.textContent = "Registrar movimiento"; btn.disabled = false;
+      Modal.close("modalNuevoMov");
+      renderKPIs();
+      renderLibro();
+      // Actualizar el panel activo
+      if (tabActual === "grafico")    renderGrafico();
+      if (tabActual === "categorias") renderCategorias();
+      if (tabActual === "balance")    renderBalance();
+
+      Toast.success("✓ Movimiento registrado en el libro diario.");
+    } else {
+      Toast.error(res?.mensaje || "Error al crear movimiento");
+      btn.textContent = "Registrar movimiento"; btn.disabled = false;
+    }
+  } catch (error) {
+    Toast.error("Error de conexión");
     btn.textContent = "Registrar movimiento"; btn.disabled = false;
-    Modal.close("modalNuevoMov");
-    renderKPIs();
-    renderLibro();
-    // Actualizar el panel activo
-    if (tabActual === "grafico")    renderGrafico();
-    if (tabActual === "categorias") renderCategorias();
-    if (tabActual === "balance")    renderBalance();
-
-    Toast.success("✓ Movimiento registrado en el libro diario.");
-  }, 350);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -715,16 +726,26 @@ function solicitarEliminar(id) {
   Modal.open("modalEliminar");
 }
 
-function confirmarEliminar() {
+async function confirmarEliminar() {
   if (!idEliminar) return;
-  DB.movimientos = DB.movimientos.filter(function(m){ return m.id !== idEliminar; });
-  idEliminar = null;
-  Modal.close("modalEliminar");
-  renderKPIs(); renderLibro();
-  if (tabActual === "grafico")    renderGrafico();
-  if (tabActual === "categorias") renderCategorias();
-  if (tabActual === "balance")    renderBalance();
-  Toast.success("Movimiento eliminado.");
+  
+  try {
+    const res = await API.movimientos.eliminar(idEliminar);
+    if (res && res.ok) {
+      await DataSync.syncMovimientos();
+      idEliminar = null;
+      Modal.close("modalEliminar");
+      renderKPIs(); renderLibro();
+      if (tabActual === "grafico")    renderGrafico();
+      if (tabActual === "categorias") renderCategorias();
+      if (tabActual === "balance")    renderBalance();
+      Toast.success("Movimiento eliminado.");
+    } else {
+      Toast.error(res?.mensaje || "Error al eliminar");
+    }
+  } catch(e) {
+    Toast.error("Error de conexión");
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════

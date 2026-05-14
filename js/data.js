@@ -23,17 +23,17 @@ const DB = {
   usuarios: [
     {
       id: "U001", nombre: "Carlos Muñoz", email: "admin@fonevi.edu.co",
-      password: "admin123", rol: "administrador",
+      password: "Admin2026!", rol: "administrador",
       estado: "activo", avatar: "CM"
     },
     {
       id: "U002", nombre: "Laura Jiménez", email: "tesorero@fonevi.edu.co",
-      password: "tesorer123", rol: "tesorero",
+      password: "Tesorero2026!", rol: "tesorero",
       estado: "activo", avatar: "LJ"
     },
     {
       id: "U003", nombre: "Ana Torres", email: "ana.torres@fonevi.edu.co",
-      password: "socio123", rol: "socio",
+      password: "Socio2026!", rol: "socio",
       estado: "activo", avatar: "AT"
     }
   ],
@@ -268,5 +268,75 @@ const DataHelper = {
     };
     const s = map[estado] || { cls: "pill-navy", label: estado };
     return `<span class="pill ${s.cls}">${s.label}</span>`;
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   DATA SYNC (MIGRACIÓN A BACKEND)
+   Sincroniza los arrays locales (DB) con la API real
+═══════════════════════════════════════════════════════ */
+window.DataSync = {
+  async init() {
+    if (!window.API) return; // Por si carga antes
+    // Intentar ping al servidor para asegurar estado offline/online
+    try {
+      await API.ping();
+    } catch(e) {}
+    
+    if (API.MODO_OFFLINE) return;
+
+    try {
+      const [socios, aportes, creditos, config, sol, movs, notifs] = await Promise.all([
+        API.socios.listar(),
+        API.aportes.listar(),
+        API.creditos.listar(),
+        API.config.obtener(),
+        API.solidaridad.listar(),
+        API.movimientos.listar(),
+        API.notificaciones.listar()
+      ]);
+
+      if (socios?.ok) DB.socios = socios.datos;
+      if (aportes?.ok) DB.aportes = aportes.datos;
+      if (creditos?.ok) DB.creditos = creditos.datos;
+      if (config?.ok) DB.config = config.datos;
+      if (sol?.ok) {
+        DB.solidaridad.movimientos = sol.datos;
+        const saldoRes = await API.solidaridad.saldo();
+        DB.solidaridad.saldo_actual = saldoRes.saldo_actual || 0;
+      }
+      if (movs?.ok) DB.movimientos = movs.datos;
+      if (notifs?.ok) DB.notificaciones = notifs.datos;
+    } catch(e) {
+      console.warn("DataSync init error:", e);
+    }
+  },
+
+  async syncAportes() {
+    if (API.MODO_OFFLINE) return;
+    const res = await API.aportes.listar();
+    if (res.ok) DB.aportes = res.datos;
+  },
+  async syncCreditos() {
+    if (API.MODO_OFFLINE) return;
+    const res = await API.creditos.listar();
+    if (res.ok) DB.creditos = res.datos;
+  },
+  async syncSolidaridad() {
+    if (API.MODO_OFFLINE) return;
+    const res = await API.solidaridad.listar();
+    if (res.ok) DB.solidaridad.movimientos = res.datos;
+    const saldoRes = await API.solidaridad.saldo();
+    DB.solidaridad.saldo_actual = saldoRes.saldo_actual || 0;
+  },
+  async syncSocios() {
+    if (API.MODO_OFFLINE) return;
+    const res = await API.socios.listar();
+    if (res.ok) DB.socios = res.datos;
+  },
+  async syncMovimientos() {
+    if (API.MODO_OFFLINE) return;
+    const res = await API.movimientos.listar();
+    if (res.ok) DB.movimientos = res.datos;
   }
 };

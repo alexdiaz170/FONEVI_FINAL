@@ -297,8 +297,10 @@ var waActualId     = null;     // socioId para WhatsApp
 /* ═══════════════════════════════════════════════════════════
    INICIO
 ═══════════════════════════════════════════════════════════ */
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("aportes")) return;
+
+  await window.DataSync?.init();
 
   buildLayout(
     "Panel de Mora",
@@ -700,21 +702,27 @@ async function confirmarWA() {
 /* ═══════════════════════════════════════════════════════════
    CAMBIAR ESTADO
 ═══════════════════════════════════════════════════════════ */
-function cambiarEstadoMora(socioId, nuevoEstado) {
-  DB.aportes.forEach(function(a) {
-    if (a.socio_id === socioId && ["mora","vencido"].includes(a.estado)) {
-      a.estado = nuevoEstado;
-      if (nuevoEstado === "pagado") {
-        a.fecha_pago = new Date().toISOString().split("T")[0];
-        var s = DataHelper.getSocio(socioId);
-        if (s) s.ahorro_acumulado += a.monto;
-      }
+async function cambiarEstadoMora(socioId, nuevoEstado) {
+  const aps = DB.aportes.filter(a => a.socio_id === socioId && ["mora","vencido"].includes(a.estado));
+  if (aps.length === 0) return;
+
+  try {
+    for (const a of aps) {
+      await API.aportes.actualizarEstado(a.id, nuevoEstado);
     }
-  });
-  renderKPIs();
-  renderSidebar();
-  renderMorosos(filtroActual);
-  Toast.success("✓ Estado actualizado para " + DataHelper.getSocioNombre(socioId) + ".");
+    
+    await DataSync.syncAportes();
+    if (nuevoEstado === "pagado") {
+      await DataSync.syncSocios();
+    }
+    
+    renderKPIs();
+    renderSidebar();
+    renderMorosos(filtroActual);
+    Toast.success("✓ Estado actualizado para " + DataHelper.getSocioNombre(socioId) + ".");
+  } catch(e) {
+    Toast.error("Error al actualizar estados.");
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════

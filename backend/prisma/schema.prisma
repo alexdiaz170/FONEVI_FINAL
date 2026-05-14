@@ -1,0 +1,178 @@
+// ─────────────────────────────────────────────────────────────
+// FONEVI — Schema Prisma (SQLite para desarrollo local)
+// Para producción: cambiar provider a "postgresql" y añadir
+// @db.Decimal(12,2) en campos de dinero
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Modelos ──────────────────────────────────────────────────
+// SQLite no soporta enums → se usan String con validación en el servidor
+
+model Usuario {
+  id         String   @id @default(uuid())
+  nombre     String
+  email      String   @unique
+  password   String
+  rol        String   @default("socio")       // administrador | tesorero | socio
+  estado     String   @default("activo")      // activo | inactivo
+  avatar     String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt              @map("updated_at")
+
+  auditorias Auditoria[]
+
+  @@map("usuarios")
+}
+
+model Socio {
+  id               String   @id @default(uuid())
+  codigo           String   @unique
+  nombre           String
+  documento        String   @unique
+  email            String?
+  telefono         String?
+  fechaIngreso     DateTime @map("fecha_ingreso")
+  aporteMensual    Float    @map("aporte_mensual")
+  ahorroAcumulado  Float    @map("ahorro_acumulado") @default(0)
+  estado           String   @default("activo")  // activo | mora | pendiente | retirado
+  cargo            String?
+  sede             String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt           @map("updated_at")
+
+  aportes  Aporte[]
+  creditos Credito[]
+
+  @@map("socios")
+}
+
+model Periodo {
+  id        Int      @id @default(autoincrement())
+  nombre    String   @unique
+  anio      Int
+  mes       Int
+  activo    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  aportes Aporte[]
+
+  @@map("periodos")
+}
+
+model Aporte {
+  id        String    @id @default(uuid())
+  socioId   String    @map("socio_id")
+  periodoId Int       @map("periodo_id")
+  monto     Float
+  fechaPago DateTime? @map("fecha_pago")
+  estado    String    @default("pendiente")  // pagado | pendiente | mora | vencido
+  metodo    String?
+  notas     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt      @map("updated_at")
+
+  socio   Socio   @relation(fields: [socioId],   references: [id])
+  periodo Periodo @relation(fields: [periodoId], references: [id])
+
+  @@map("aportes")
+}
+
+model Credito {
+  id              String   @id @default(uuid())
+  socioId         String   @map("socio_id")
+  monto           Float
+  tasaMensual     Float    @map("tasa_mensual")
+  cuotas          Int
+  cuotasPagadas   Int      @map("cuotas_pagadas") @default(0)
+  saldoCapital    Float    @map("saldo_capital")
+  fechaDesembolso DateTime @map("fecha_desembolso")
+  estado          String   @default("activo")     // activo | mora | pagado | rechazado
+  proposito       String?
+  aprobadoPor     String?  @map("aprobado_por")
+  notas           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt      @map("updated_at")
+
+  socio Socio @relation(fields: [socioId], references: [id])
+
+  @@map("creditos")
+}
+
+model Notificacion {
+  id        String   @id @default(uuid())
+  tipo      String
+  titulo    String
+  mensaje   String
+  leida     Boolean  @default(false)
+  urgente   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notificaciones")
+}
+
+model Configuracion {
+  clave     String   @id
+  valor     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("configuracion")
+}
+
+model Movimiento {
+  id          String   @id @default(uuid())
+  tipo        String
+  categoria   String
+  descripcion String
+  monto       Float
+  fecha       DateTime
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("movimientos")
+}
+
+model SolidaridadMovimiento {
+  id           String   @id @default(uuid())
+  tipo         String
+  descripcion  String
+  monto        Float
+  fecha        DateTime
+  beneficiario String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("solidaridad_movimientos")
+}
+
+model Auditoria {
+  id         String   @id @default(uuid())
+  usuarioId  String?  @map("usuario_id")
+  accion     String
+  tabla      String?
+  registroId String?  @map("registro_id")
+  detalle    String?  // JSON serializado como texto en SQLite
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id])
+
+  @@map("auditoria")
+}
+
+model WaLog {
+  id          String   @id @default(uuid())
+  numero      String
+  template    String
+  estado      String
+  messageId   String?  @map("message_id")
+  enviadoEn   DateTime @map("enviado_en")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("wa_logs")
+}

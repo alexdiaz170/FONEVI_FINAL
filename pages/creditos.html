@@ -406,8 +406,10 @@ var busquedaActual = "";
 /* ═══════════════════════════════════════════════════════════
    INICIO
 ═══════════════════════════════════════════════════════════ */
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("creditos")) return;
+
+  await window.DataSync?.init();
 
   buildLayout(
     "Créditos",
@@ -696,7 +698,7 @@ function statPago(label, val) {
   '</div>';
 }
 
-function confirmarPago() {
+async function confirmarPago() {
   var c = DB.creditos.find(function(x) { return x.id === creditoPagoActual; });
   if (!c) return;
 
@@ -704,55 +706,46 @@ function confirmarPago() {
   btn.textContent = "Procesando...";
   btn.disabled    = true;
 
-  // Calcular cuota y capital a abono
-  var cuota   = Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas));
-  var r       = c.tasa_mensual / 100;
-  var interes = Math.round(c.saldo_capital * r);
-  var capital = Math.round(cuota - interes);
+  try {
+    const res = await API.creditos.pagarCuota(c.id, c.cuotas_pagadas + 1);
 
-  // Actualizar el crédito en data
-  c.cuotas_pagadas += 1;
-  c.saldo_capital   = Math.max(0, c.saldo_capital - capital);
+    if (res && res.ok) {
+      // Registrar en movimientos contables
+      var cuota = Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas));
+      await API.movimientos.crear({
+        tipo:         "ingreso",
+        categoria:    "Abono Crédito",
+        descripcion:  "Cuota " + (c.cuotas_pagadas + 1) + "/" + c.cuotas + " — Crédito #" + c.id,
+        monto:        cuota,
+        fecha:        document.getElementById("pg-fecha").value || new Date().toISOString()
+      });
 
-  // Si se terminaron las cuotas → pagado
-  if (c.cuotas_pagadas >= c.cuotas || c.saldo_capital <= 0) {
-    c.estado        = "pagado";
-    c.saldo_capital = 0;
-  } else if (c.estado === "mora") {
-    // Volver a activo al registrar pago
-    c.estado = "activo";
-  }
+      await DataSync.syncCreditos();
+      await DataSync.syncMovimientos();
 
-  // Registrar en movimientos contables
-  if (DB.movimientos) {
-    DB.movimientos.push({
-      id:           "M" + Date.now(),
-      tipo:         "ingreso",
-      categoria:    "Abono Crédito",
-      descripcion:  "Cuota " + c.cuotas_pagadas + "/" + c.cuotas + " — Crédito #" + c.id,
-      monto:        cuota,
-      fecha:        document.getElementById("pg-fecha").value,
-      referencia:   c.id,
-      ref_tabla:    "creditos",
-      registrado_por: Auth.getSession()?.id || "U001"
-    });
-  }
+      btn.textContent = "✓ Confirmar pago";
+      btn.disabled    = false;
+      Modal.close("modalPago");
 
-  // Notificar
-  setTimeout(function() {
+      var crMod = DB.creditos.find(function(x) { return x.id === creditoPagoActual; });
+      var mensaje = crMod?.estado === "pagado"
+        ? "🎉 Crédito #" + c.id + " liquidado completamente."
+        : "✓ Cuota registrada correctamente.";
+      Toast.success(mensaje);
+
+      renderKPIs();
+      renderMoraPanel();
+      renderCreditos(filtroActual);
+    } else {
+      Toast.error(res?.mensaje || "Error al registrar pago");
+      btn.textContent = "✓ Confirmar pago";
+      btn.disabled    = false;
+    }
+  } catch (error) {
+    Toast.error("Error de conexión");
     btn.textContent = "✓ Confirmar pago";
     btn.disabled    = false;
-    Modal.close("modalPago");
-
-    var mensaje = c.estado === "pagado"
-      ? "🎉 Crédito #" + c.id + " liquidado completamente."
-      : "✓ Cuota " + c.cuotas_pagadas + "/" + c.cuotas + " registrada correctamente.";
-    Toast.success(mensaje);
-
-    renderKPIs();
-    renderMoraPanel();
-    renderCreditos(filtroActual);
-  }, 600);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -891,7 +884,7 @@ function verificarCapacidad() {
   }
 }
 
-function guardarCredito() {
+async function guardarCredito() {
   var socioId  = document.getElementById("nc-socio").value;
   var monto    = parseFloat(document.getElementById("nc-monto").value);
   var cuotas   = parseInt(document.getElementById("nc-cuotas").value)   || 12;
@@ -904,37 +897,46 @@ function guardarCredito() {
   btn.textContent = "Procesando...";
   btn.disabled    = true;
 
-  var nuevoId = "C" + (100 + DB.creditos.length);
-  DB.creditos.push({
-    id:              nuevoId,
+  var nuevo = {
     socio_id:        socioId,
     monto:           monto,
     tasa_mensual:    DB.config.tasa_credito_mensual,
     cuotas:          cuotas,
-    cuotas_pagadas:  0,
-    fecha_desembolso: fecha || new Date().toISOString().split("T")[0],
-    estado:          "activo",
     proposito:       proposito,
-    aprobado_por:    Auth.getSession()?.id || "U001",
-    saldo_capital:   monto
-  });
+    fecha_desembolso: fecha || new Date().toISOString().split("T")[0]
+  };
 
-  setTimeout(function() {
+  try {
+    const res = await API.creditos.crear(nuevo);
+    
+    if (res && res.ok) {
+      await DataSync.syncCreditos();
+      
+      btn.textContent = "Aprobar y desembolsar";
+      btn.disabled    = false;
+      Modal.close("modalNuevoCredito");
+      renderKPIs();
+      renderCreditos(filtroActual);
+      Toast.success("✓ Crédito " + res.datos.id + " aprobado y desembolsado.");
+    } else {
+      Toast.error(res?.mensaje || "Error al crear crédito");
+      btn.textContent = "Aprobar y desembolsar";
+      btn.disabled    = false;
+    }
+  } catch (error) {
+    Toast.error("Error de conexión");
     btn.textContent = "Aprobar y desembolsar";
     btn.disabled    = false;
-    Modal.close("modalNuevoCredito");
-    renderKPIs();
-    renderCreditos(filtroActual);
-    Toast.success("✓ Crédito " + nuevoId + " aprobado y desembolsado.");
-  }, 500);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
    ESTADO DE MORA
 ═══════════════════════════════════════════════════════════ */
-function pasarActivo(creditoId) {
+async function pasarActivo(creditoId) {
   var c = DB.creditos.find(function(x) { return x.id === creditoId; });
   if (!c) return;
+  // TODO: Añadir API si hay endpoint, de lo contrario solo actualizamos local o usamos API genérica si la hubiera
   c.estado = "activo";
   renderKPIs();
   renderMoraPanel();

@@ -10,7 +10,7 @@
 const API = {
 
   /* ── Configuración ────────────────────────────────────── */
-  BASE_URL:    "http://localhost:3000/api",
+  BASE_URL:    "http://127.0.0.1:3000/api",
   TIMEOUT_MS:  8000,   // 8 segundos antes de timeout
   TOKEN_KEY:   "fonevi_token",
   SESSION_KEY: "fonevi_session",
@@ -42,33 +42,33 @@ const API = {
 
   /* ── Petición base con timeout + manejo de errores ───── */
   async _request(method, endpoint, body = null) {
-
-    // Si ya sabemos que estamos offline → usar fallback directo
-    if (this.MODO_OFFLINE) {
-      return this._fallback(method, endpoint, body);
-    }
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.TIMEOUT_MS);
-
-    const opts = {
-      method,
-      headers: this._headers(),
-      signal: controller.signal,
-    };
-    if (body) opts.body = JSON.stringify(body);
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12000); // 12 segundos
 
     try {
-      const res  = await fetch(this.BASE_URL + endpoint, opts);
+      const res = await fetch(this.BASE_URL + endpoint, {
+        method,
+        headers: this._headers(),
+        body: body ? JSON.stringify(body) : null,
+        signal: ctrl.signal
+      });
+
       clearTimeout(timer);
+
       const data = await res.json();
 
-      // Token expirado → limpiar sesión y redirigir
       if (res.status === 401) {
+        console.error("API: 401 Unauthorized en " + endpoint, data);
+        // NO redirigir de inmediato si es una petición de GUARDAR
+        if (method === "POST" || method === "PUT") {
+            const err = new Error(data.mensaje || "Sesión inválida");
+            err.status = 401;
+            throw err;
+        }
         this.clearSession();
-        const enPages = window.location.pathname.includes("/pages/") ||
-                        window.location.pathname.includes("/app/");
-        window.location.href = enPages ? "../index.html" : "index.html";
+        var enPages = window.location.pathname.includes("/pages/") ||
+                      window.location.pathname.includes("/app/");
+        window.location.href = enPages ? "../index.html?error=session" : "index.html?error=session";
         return null;
       }
 
@@ -79,7 +79,6 @@ const API = {
         throw err;
       }
 
-      // Servidor respondió → asegurarse de no estar en modo offline
       this.MODO_OFFLINE = false;
       return data;
 
@@ -97,9 +96,12 @@ const API = {
         const banner = document.getElementById("offlineBanner");
         if (banner) banner.classList.add("show");
 
-        return this._fallback(method, endpoint, body);
+        // Fallback no debe redirigir a 401 si no encuentra la ruta
+        const fbResult = await this._fallback(method, endpoint, body);
+        return fbResult;
       }
 
+      // Si es otro error de red, lanzarlo
       throw err;
     }
   },
@@ -109,6 +111,7 @@ const API = {
   post:   (ep, body) => API._request("POST",   ep, body),
   put:    (ep, body) => API._request("PUT",    ep, body),
   delete: (ep)       => API._request("DELETE", ep),
+  ping:   ()         => API._request("GET",    "/health"),
 
   /* ── FALLBACK LOCAL (usa data.js cuando no hay servidor) ── */
   async _fallback(method, endpoint, body) {
@@ -363,9 +366,47 @@ const API = {
       return { ok: true, resultado: { simulado: true, numero: "57"+tel, socio: s.nombre } };
     }
 
-    // Endpoint no mapeado
+    // ── POST /solidaridad/movimientos ────────────────────
+    if (endpoint === "/solidaridad/movimientos" && method === "POST") {
+      const nuevo = { ...body, id: "SM" + Date.now(), created_at: new Date().toISOString() };
+      if (!DB._solidaridad) DB._solidaridad = [];
+      DB._solidaridad.push(nuevo);
+      return { ok: true, datos: nuevo, mensaje: "Ayuda registrada (offline)" };
+    }
+
+    // ── GET /solidaridad/saldo ────────────────────────────
+    if (endpoint === "/solidaridad/saldo" && method === "GET") {
+      return { ok: true, saldo_actual: 5000000 }; // Saldo simulado offline
+    }
+
+    // ── POST /creditos ────────────────────────────────────
+    if (endpoint === "/creditos" && method === "POST") {
+      const nuevo = { ...body, id: "C" + String(DB.creditos.length+1).padStart(3,"0"),
+                      estado: "activo", cuotas_pagadas: 0, saldo_capital: body.monto,
+                      created_at: new Date().toISOString() };
+      DB.creditos.push(nuevo);
+      return { ok: true, datos: nuevo, mensaje: "Crédito aprobado (offline)" };
+    }
+
+    // ── PUT /aportes/:id/estado ───────────────────────────
+    if (endpoint.includes("/aportes/") && endpoint.includes("/estado") && method === "PUT") {
+      const id = endpoint.match(/\/aportes\/(.+)\/estado/)[1];
+      const idx = DB.aportes.findIndex(a => a.id === id);
+      if (idx >= 0) {
+        const a = DB.aportes[idx];
+        const viejo = a.estado;
+        a.estado = body.estado;
+        if (viejo !== "pagado" && body.estado === "pagado") {
+           const s = DataHelper.getSocio(a.socio_id);
+           if (s) s.ahorro_acumulado += a.monto;
+        }
+      }
+      return { ok: true, mensaje: "Estado actualizado (offline)" };
+    }
+
+    // ── Endpoint no mapeado ───────────────────────────────
     console.warn("[Offline] Endpoint no mapeado:", method, endpoint);
-    return { ok: true, datos: [], mensaje: "Modo offline — datos locales" };
+    return { ok: false, mensaje: "Función no disponible en modo offline" };
   },
 
   /* ── Verificar si el servidor está disponible ─────────── */
@@ -458,5 +499,17 @@ const API = {
     recordatorios: ()     => API.post("/whatsapp/recordatorios", {}),
     alertasMora:   ()     => API.post("/whatsapp/alertas-mora", {}),
     individual:    (b)    => API.post("/whatsapp/individual", b),
+  },
+
+  solidaridad: {
+    listar: (tipo="") => API.get(`/solidaridad/movimientos${tipo ? '?tipo='+tipo : ''}`),
+    saldo:  ()        => API.get("/solidaridad/saldo"),
+    crear:  (body)    => API.post("/solidaridad/movimientos", body),
+  },
+
+  movimientos: {
+    listar:   (p={}) => API.get("/movimientos?" + new URLSearchParams(p)),
+    crear:    (body) => API.post("/movimientos", body),
+    eliminar: (id)   => API.delete(`/movimientos/${id}`),
   },
 };

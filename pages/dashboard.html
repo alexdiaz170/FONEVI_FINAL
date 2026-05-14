@@ -133,13 +133,16 @@
 <script src="../js/charts.js"></script>
 <script src="../js/loading.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
   var s = Auth.getSession();
   // Redirigir socio a su vista personal
   if (s && s.rol === "socio") {
     window.location.href = "mi-cuenta.html";
     return;
   }
+  
+  await window.DataSync?.init();
+
   buildLayout(
     "Panel de Control",
     "Bienvenido, " + (s ? s.nombre.split(" ")[0] : "") + " \u2014 " + DB.config.periodo_actual,

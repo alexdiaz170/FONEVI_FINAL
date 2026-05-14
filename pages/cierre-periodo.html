@@ -213,8 +213,10 @@ var PASOS_CONFIG = [
 /* ═══════════════════════════════════════════════════════════
    INICIO
 ═══════════════════════════════════════════════════════════ */
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("aportes")) return;
+
+  await window.DataSync?.init();
 
   buildLayout(
     "Cierre de Período",
@@ -640,33 +642,36 @@ function accionItem(ico, txt) {
 /* ═══════════════════════════════════════════════════════════
    EJECUTAR CIERRE REAL
 ═══════════════════════════════════════════════════════════ */
-function ejecutarCierre() {
+async function ejecutarCierre() {
   var actual    = DB.config.periodo_actual;
   var siguiente = calcularSiguientePeriodo(actual);
 
   var btn = document.getElementById("btnSiguiente");
   btn.textContent = "Procesando..."; btn.disabled = true;
 
-  setTimeout(function() {
+  try {
     // 1. Marcar pendientes del período como vencidos
-    DB.aportes.forEach(function(a) {
-      if (a.periodo === actual && ["pendiente"].includes(a.estado)) {
-        a.estado = "vencido";
-      }
-    });
+    const vencidos = DB.aportes.filter(a => a.periodo === actual && a.estado === "pendiente");
+    for (const a of vencidos) {
+      await API.aportes.actualizarEstado(a.id, "vencido");
+    }
 
     // 2. Registrar movimiento contable del cierre
-    DB.movimientos.push({
-      id:          "M" + String(DB.movimientos.length + 1).padStart(3,"0"),
-      tipo:        "ingreso",
-      categoria:   "Aportes",
-      descripcion: "Cierre período " + actual + " — Aportes recaudados",
-      monto:       datosCalculo ? datosCalculo.totalAp : 0,
-      fecha:       new Date().toISOString().split("T")[0],
-    });
+    if (datosCalculo && datosCalculo.totalAp > 0) {
+      await API.movimientos.crear({
+        tipo:        "ingreso",
+        categoria:   "Aportes",
+        descripcion: "Cierre período " + actual + " — Aportes recaudados",
+        monto:       datosCalculo.totalAp,
+        fecha:       new Date().toISOString().split("T")[0],
+      });
+    }
 
     // 3. Actualizar período activo
-    DB.config.periodo_actual = siguiente;
+    await API.config.actualizar("periodo_actual", siguiente);
+
+    // 4. Sincronizar datos locales
+    await window.DataSync?.init();
 
     btn.textContent = "✓ Cerrado";
 
@@ -689,7 +694,10 @@ function ejecutarCierre() {
     document.getElementById("btnSiguiente").style.display = "none";
     document.getElementById("btnAnterior").style.display  = "none";
     Toast.success("✓ Período " + actual + " cerrado. Nuevo período: " + siguiente);
-  }, 1000);
+  } catch(e) {
+    Toast.error("Error al procesar cierre.");
+    btn.textContent = "✓ Confirmar y cerrar período"; btn.disabled = false;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
