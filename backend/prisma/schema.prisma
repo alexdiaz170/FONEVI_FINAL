@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -40,8 +40,8 @@ model Socio {
   email            String?
   telefono         String?
   fechaIngreso     DateTime @map("fecha_ingreso")
-  aporteMensual    Float    @map("aporte_mensual")
-  ahorroAcumulado  Float    @map("ahorro_acumulado") @default(0)
+  aporteMensual    Decimal  @map("aporte_mensual") @db.Decimal(15, 2)
+  ahorroAcumulado  Decimal  @map("ahorro_acumulado") @default(0) @db.Decimal(15, 2)
   estado           String   @default("activo")  // activo | mora | pendiente | retirado
   cargo            String?
   sede             String?
@@ -71,7 +71,7 @@ model Aporte {
   id        String    @id @default(uuid())
   socioId   String    @map("socio_id")
   periodoId Int       @map("periodo_id")
-  monto     Float
+  monto     Decimal  @db.Decimal(15, 2)
   fechaPago DateTime? @map("fecha_pago")
   estado    String    @default("pendiente")  // pagado | pendiente | mora | vencido
   metodo    String?
@@ -88,11 +88,11 @@ model Aporte {
 model Credito {
   id              String   @id @default(uuid())
   socioId         String   @map("socio_id")
-  monto           Float
-  tasaMensual     Float    @map("tasa_mensual")
+  monto           Decimal  @db.Decimal(15, 2)
+  tasaMensual     Decimal  @map("tasa_mensual") @db.Decimal(5, 2)
   cuotas          Int
   cuotasPagadas   Int      @map("cuotas_pagadas") @default(0)
-  saldoCapital    Float    @map("saldo_capital")
+  saldoCapital    Decimal  @map("saldo_capital") @db.Decimal(15, 2)
   fechaDesembolso DateTime @map("fecha_desembolso")
   estado          String   @default("activo")     // activo | mora | pagado | rechazado
   proposito       String?
@@ -131,7 +131,7 @@ model Movimiento {
   tipo        String
   categoria   String
   descripcion String
-  monto       Float
+  monto       Decimal  @db.Decimal(15, 2)
   fecha       DateTime
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -142,7 +142,7 @@ model SolidaridadMovimiento {
   id           String   @id @default(uuid())
   tipo         String
   descripcion  String
-  monto        Float
+  monto        Decimal  @db.Decimal(15, 2)
   fecha        DateTime
   beneficiario String?
   createdAt    DateTime @default(now()) @map("created_at")

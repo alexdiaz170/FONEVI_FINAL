@@ -418,7 +418,7 @@ function renderKPIs() {
   var pagados   = todos.filter(function(a){ return a.estado === "pagado"; });
   var pendientes= todos.filter(function(a){ return a.estado === "pendiente"; });
   var mora      = todos.filter(function(a){ return ["mora","vencido"].includes(a.estado); });
-  var totalRec  = pagados.reduce(function(t,a){ return t + a.monto; }, 0);
+  var totalRec  = pagados.reduce(function(t,a){ return t + Number(a.monto || 0); }, 0);
 
   document.getElementById("kpiAportes").innerHTML = [
     { label:"Aportes pagados",   value: pagados.length,              sub:"Total en sistema",    cls:"green", icon:"✓" },
@@ -444,8 +444,8 @@ function renderRecaudo() {
   var pagados  = lista.filter(function(a){ return a.estado === "pagado"; });
   var pend     = lista.filter(function(a){ return a.estado === "pendiente"; });
   var morosos  = lista.filter(function(a){ return ["mora","vencido"].includes(a.estado); });
-  var totalPag = pagados.reduce(function(t,a){ return t + a.monto; }, 0);
-  var totalPer = lista.reduce(function(t,a){ return t + a.monto; }, 0);
+  var totalPag = pagados.reduce(function(t,a){ return t + Number(a.monto || 0); }, 0);
+  var totalPer = lista.reduce(function(t,a){ return t + Number(a.monto || 0); }, 0);
   var pct      = totalPer > 0 ? Math.round(totalPag / totalPer * 100) : 0;
 
   document.getElementById("recaudoMonto").textContent = DataHelper.formatCOP(totalPag);
@@ -527,10 +527,10 @@ function renderTabla() {
     var trCls  = esMora ? "fila-mora" : "";
 
     return '<tr class="' + trCls + '">' +
-      '<td class="mono muted" style="font-size:11px;">' + a.id + '</td>' +
-      '<td style="font-weight:500;">' + DataHelper.getSocioNombre(a.socio_id) + '</td>' +
-      '<td>' + a.periodo + '</td>' +
-      '<td style="font-weight:600;">' + DataHelper.formatCOP(a.monto) + '</td>' +
+      '<td class="mono muted" style="font-size:10px;max-width:60px;overflow:hidden;text-overflow:ellipsis;">' + a.id + '</td>' +
+      '<td style="font-weight:500;">' + (a.socio_nombre || DataHelper.getSocioNombre(a.socio_id)) + '</td>' +
+      '<td>' + (a.periodo_nombre || a.periodo) + '</td>' +
+      '<td style="font-weight:600;">' + DataHelper.formatCOP(Number(a.monto)) + '</td>' +
       '<td class="muted">' + (a.fecha_pago ? DataHelper.formatFecha(a.fecha_pago) : '<span style="color:var(--text-faint);">—</span>') + '</td>' +
       '<td class="muted">' + (METODO_LABEL[a.metodo] || a.metodo || "—") + '</td>' +
       '<td>' + DataHelper.estadoPill(a.estado) + '</td>' +

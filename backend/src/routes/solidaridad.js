@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const { prisma } = require("../lib/prisma");
+const { requireAuth } = require("../middleware/auth");
 
 // GET /api/solidaridad/movimientos — Obtener todos los movimientos
-router.get("/movimientos", async (req, res) => {
+router.get("/movimientos", requireAuth, async (req, res) => {
   try {
     const movs = await prisma.solidaridadMovimiento.findMany({
       orderBy: { fecha: "desc" },
@@ -15,7 +16,7 @@ router.get("/movimientos", async (req, res) => {
 });
 
 // GET /api/solidaridad/saldo — Obtener el saldo actual
-router.get("/saldo", async (req, res) => {
+router.get("/saldo", requireAuth, async (req, res) => {
   try {
     const aggs = await prisma.solidaridadMovimiento.groupBy({
       by: ["tipo"],
@@ -23,8 +24,8 @@ router.get("/saldo", async (req, res) => {
     });
     let ingresos = 0; let egresos = 0;
     aggs.forEach((agg) => {
-      if (agg.tipo === "ingreso") ingresos += (agg._sum.monto || 0);
-      if (agg.tipo === "egreso") egresos += (agg._sum.monto || 0);
+      if (agg.tipo === "ingreso") ingresos += Number(agg._sum.monto || 0);
+      if (agg.tipo === "egreso") egresos += Number(agg._sum.monto || 0);
     });
     res.json({ ok: true, saldo_actual: ingresos - egresos });
   } catch (error) {
@@ -33,7 +34,7 @@ router.get("/saldo", async (req, res) => {
 });
 
 // POST /api/solidaridad/movimientos — Registrar un ingreso o egreso
-router.post("/movimientos", async (req, res) => {
+router.post("/movimientos", requireAuth, async (req, res) => {
   try {
     const { tipo, descripcion, monto, fecha, beneficiario } = req.body;
     if (!tipo || !descripcion || !monto) {
@@ -50,7 +51,7 @@ router.post("/movimientos", async (req, res) => {
       },
     });
 
-    res.status(201).json({ ok: true, datos: nuevo });
+    res.status(201).json({ ok: true, datos: { ...nuevo, monto: Number(nuevo.monto) } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ ok: false, mensaje: "Error al registrar movimiento" });

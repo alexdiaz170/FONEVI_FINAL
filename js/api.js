@@ -89,7 +89,8 @@ const API = {
       if (err.name === "AbortError" || err.message === "Failed to fetch" ||
           err.message.includes("NetworkError") || err.message.includes("net::")) {
 
-        console.warn("API: servidor no disponible → modo offline (data.js)");
+        console.warn("API: Error de conexión detectado. Revisa si el servidor está corriendo en localhost:3000 y si no hay bloqueos de CORS.", err);
+        console.warn("API: Activando modo offline (data.js)");
         this.MODO_OFFLINE = true;
 
         // Mostrar banner si existe
@@ -413,13 +414,15 @@ const API = {
   async ping() {
     try {
       const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 1500);
-      const res = await fetch(this.BASE_URL.replace("/api","") + "/api/health",
+      setTimeout(() => ctrl.abort(), 3000); // Subimos a 3s para evitar falsos negativos
+      const res = await fetch(this.BASE_URL.replace("/api","") + "/api/health?t=" + Date.now(),
                               { signal: ctrl.signal });
       const data = await res.json();
       this.MODO_OFFLINE = !data.ok;
+      if (data.ok) console.log("API: Conexión establecida con el servidor real.");
       return data.ok;
     } catch(e) {
+      console.warn("API: El servidor real no responde. Usando modo offline.", e.message);
       this.MODO_OFFLINE = true;
       return false;
     }

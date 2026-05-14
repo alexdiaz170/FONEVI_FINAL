@@ -20,21 +20,12 @@
 
   <!-- Favicon + PWA -->
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="icon" href="icons/icon-32x32.svg" sizes="32x32" type="image/svg+xml" />
-  <link rel="icon" href="icons/icon-16x16.svg" sizes="16x16" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icons/icon-180x180.svg" sizes="180x180" />
-  <link rel="apple-touch-icon" href="icons/icon-152x152.svg" sizes="152x152" />
   <link rel="manifest" href="manifest.json" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="FONEVI" />
   <meta name="theme-color" content="#0a1f3c" />
-  <meta name="description" content="Sistema de gestión del Fondo de Empleados Docentes FONEVI" />
 
   <style>
     /* ═══════════════════════════════════════════════════════
-       BASE
+       BASE & RESET
     ═══════════════════════════════════════════════════════ */
     *,
     *::before,
@@ -44,332 +35,182 @@
       padding: 0;
     }
 
-    html {
-      -webkit-font-smoothing: antialiased;
-    }
-
     body {
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       background: #050f1e;
       min-height: 100vh;
       overflow: hidden;
       position: relative;
+      color: #fff;
     }
 
     /* ═══════════════════════════════════════════════════════
-       FONDO ANIMADO — capas de profundidad
+       FONDO PREMIUM
     ═══════════════════════════════════════════════════════ */
     .bg-scene {
       position: fixed;
       inset: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 20% 50%, rgba(21, 61, 110, .55) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 80% at 80% 20%, rgba(201, 146, 42, .08) 0%, transparent 55%),
-        radial-gradient(ellipse 50% 50% at 50% 100%, rgba(5, 15, 30, .9) 0%, transparent 60%);
-      background-color: #050f1e;
+      background: radial-gradient(ellipse 80% 60% at 20% 50%, rgba(21, 61, 110, .55) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 20%, rgba(201, 146, 42, .08) 0%, transparent 55%), radial-gradient(ellipse 50% 50% at 50% 100%, rgba(5, 15, 30, .9) 0%, transparent 60%);
+      z-index: -1;
     }
 
-    /* Cuadrícula animada */
     .bg-grid {
       position: fixed;
       inset: 0;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, .022) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, .022) 1px, transparent 1px);
+      background-image: linear-gradient(rgba(255, 255, 255, .02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .02) 1px, transparent 1px);
       background-size: 60px 60px;
-      animation: gridDrift 20s ease-in-out infinite alternate;
+      animation: gridDrift 20s linear infinite;
+      z-index: -1;
     }
 
     @keyframes gridDrift {
       from {
-        transform: translateY(0) translateX(0);
+        transform: translateY(0);
       }
 
       to {
-        transform: translateY(-20px) translateX(-10px);
+        transform: translateY(60px);
       }
     }
 
-    /* Orbes flotantes */
     .orb {
       position: fixed;
       border-radius: 50%;
-      filter: blur(60px);
+      filter: blur(80px);
       pointer-events: none;
-      will-change: transform;
+      opacity: 0.5;
+      z-index: -1;
     }
 
     .orb-1 {
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(21, 61, 110, .45) 0%, transparent 70%);
-      top: -100px;
-      left: -100px;
-      animation: orbFloat1 18s ease-in-out infinite;
+      width: 600px;
+      height: 600px;
+      background: rgba(21, 61, 110, 0.4);
+      top: -200px;
+      left: -200px;
+      animation: float 20s infinite alternate;
     }
 
     .orb-2 {
-      width: 350px;
-      height: 350px;
-      background: radial-gradient(circle, rgba(201, 146, 42, .12) 0%, transparent 70%);
-      bottom: 0;
-      right: 10%;
-      animation: orbFloat2 22s ease-in-out infinite;
+      width: 400px;
+      height: 400px;
+      background: rgba(201, 146, 42, 0.1);
+      bottom: -100px;
+      right: -100px;
+      animation: float 15s infinite alternate-reverse;
     }
 
-    .orb-3 {
-      width: 250px;
-      height: 250px;
-      background: radial-gradient(circle, rgba(29, 158, 117, .10) 0%, transparent 70%);
-      top: 40%;
-      right: 30%;
-      animation: orbFloat3 15s ease-in-out infinite;
-    }
-
-    @keyframes orbFloat1 {
-
-      0%,
-      100% {
-        transform: translate(0, 0) scale(1);
-      }
-
-      33% {
-        transform: translate(60px, 40px) scale(1.1);
-      }
-
-      66% {
-        transform: translate(-30px, 70px) scale(.95);
-      }
-    }
-
-    @keyframes orbFloat2 {
-
-      0%,
-      100% {
-        transform: translate(0, 0) scale(1);
-      }
-
-      50% {
-        transform: translate(-80px, -60px) scale(1.15);
-      }
-    }
-
-    @keyframes orbFloat3 {
-
-      0%,
-      100% {
+    @keyframes float {
+      from {
         transform: translate(0, 0);
       }
 
-      50% {
-        transform: translate(50px, -40px);
+      to {
+        transform: translate(100px, 50px);
       }
     }
 
-    /* Partículas flotantes */
     .particles {
       position: fixed;
       inset: 0;
-      overflow: hidden;
       pointer-events: none;
+      z-index: -1;
     }
 
     .particle {
       position: absolute;
+      background: rgba(201, 146, 42, 0.4);
       border-radius: 50%;
-      background: rgba(201, 146, 42, .5);
-      animation: particleRise linear infinite;
+      animation: rise 15s infinite linear;
     }
 
-    @keyframes particleRise {
-      0% {
-        transform: translateY(100vh) scale(0);
+    @keyframes rise {
+      from {
+        transform: translateY(110vh);
         opacity: 0;
       }
 
-      10% {
-        opacity: 1;
-      }
-
-      90% {
-        opacity: .6;
-      }
-
-      100% {
-        transform: translateY(-20vh) scale(1);
-        opacity: 0;
+      to {
+        transform: translateY(-10vh);
+        opacity: 0.5;
       }
     }
 
     /* ═══════════════════════════════════════════════════════
-       LAYOUT PRINCIPAL
+       LAYOUT
     ═══════════════════════════════════════════════════════ */
     .login-scene {
-      position: relative;
-      z-index: 10;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 20px;
     }
 
     .login-card {
       display: grid;
       grid-template-columns: 1.1fr 1fr;
-      max-width: 980px;
+      max-width: 1000px;
       width: 100%;
-      border-radius: 28px;
+      border-radius: 32px;
       overflow: hidden;
-      background: rgba(255, 255, 255, .03);
-      border: 1px solid rgba(255, 255, 255, .09);
-      box-shadow:
-        0 40px 100px rgba(0, 0, 0, .55),
-        0 0 0 1px rgba(255, 255, 255, .05),
-        inset 0 1px 0 rgba(255, 255, 255, .08);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      animation: cardIn .7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5);
     }
 
-    @keyframes cardIn {
-      from {
-        opacity: 0;
-        transform: translateY(32px) scale(.97);
-        filter: blur(4px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-        filter: blur(0);
-      }
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       PANEL IZQUIERDO — MARCA
-    ═══════════════════════════════════════════════════════ */
+    /* PANEL IZQUIERDO */
     .brand-panel {
-      padding: 52px 48px;
+      padding: 60px;
+      background: linear-gradient(135deg, rgba(15, 45, 82, 0.8), rgba(5, 15, 30, 0.9));
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       position: relative;
-      overflow: hidden;
-      background: linear-gradient(145deg, rgba(15, 45, 82, .9) 0%, rgba(5, 15, 30, .95) 100%);
-      border-right: 1px solid rgba(255, 255, 255, .07);
     }
 
-    /* Brillo superior izquierdo */
-    .brand-panel::before {
-      content: '';
-      position: absolute;
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, rgba(201, 146, 42, .12) 0%, transparent 65%);
-      top: -80px;
-      left: -80px;
-      pointer-events: none;
-    }
-
-    /* Líneas decorativas */
-    .brand-panel::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image: repeating-linear-gradient(-45deg,
-          transparent, transparent 40px,
-          rgba(255, 255, 255, .012) 40px, rgba(255, 255, 255, .012) 41px);
-      pointer-events: none;
-    }
-
-    /* Logo */
     .brand-logo {
       display: flex;
       align-items: center;
-      gap: 16px;
-      position: relative;
-      z-index: 1;
-      animation: slideRight .6s cubic-bezier(0.16, 1, 0.3, 1) .1s both;
-    }
-
-    @keyframes slideRight {
-      from {
-        opacity: 0;
-        transform: translateX(-20px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
+      gap: 15px;
     }
 
     .brand-emblem {
-      width: 58px;
-      height: 58px;
-      background: linear-gradient(135deg, #e0af50 0%, #c9922a 55%, #9a6200 100%);
-      border-radius: 16px;
+      width: 55px;
+      height: 55px;
+      background: linear-gradient(135deg, #e0af50, #9a6200);
+      border-radius: 15px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Playfair Display', serif;
-      font-size: 30px;
-      font-weight: 700;
-      color: #fff;
-      box-shadow: 0 8px 28px rgba(201, 146, 42, .5), inset 0 1px 0 rgba(255, 255, 255, .3);
-      flex-shrink: 0;
-      position: relative;
-    }
-
-    .brand-emblem::after {
-      content: '';
-      position: absolute;
-      inset: 2px;
-      border-radius: 13px;
-      border: 1px solid rgba(255, 255, 255, .15);
-    }
-
-    .brand-id {
-      line-height: 1.2;
+      font-size: 28px;
+      font-weight: 800;
+      font-family: 'Playfair Display';
+      box-shadow: 0 10px 20px rgba(154, 98, 0, 0.3);
     }
 
     .brand-name {
-      font-family: 'Playfair Display', serif;
       font-size: 28px;
+      font-family: 'Playfair Display';
       font-weight: 700;
-      color: #fff;
-      letter-spacing: .5px;
+      letter-spacing: 1px;
     }
 
-    .brand-tagline-short {
+    .brand-tagline {
       font-size: 10px;
-      color: rgba(255, 255, 255, .35);
-      letter-spacing: 2.5px;
       text-transform: uppercase;
-      margin-top: 3px;
-    }
-
-    /* Titular central */
-    .brand-headline {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 40px 0;
-      position: relative;
-      z-index: 1;
-      animation: slideRight .6s cubic-bezier(0.16, 1, 0.3, 1) .2s both;
+      letter-spacing: 3px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 5px;
     }
 
     .brand-headline h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 36px;
+      font-size: 42px;
+      font-family: 'Playfair Display';
       font-weight: 400;
-      color: #fff;
-      line-height: 1.25;
-      letter-spacing: -.5px;
-      margin-bottom: 18px;
+      line-height: 1.1;
+      margin-bottom: 20px;
     }
 
     .brand-headline h2 em {
@@ -378,411 +219,116 @@
     }
 
     .brand-headline p {
-      font-size: 13.5px;
-      color: rgba(255, 255, 255, .42);
-      line-height: 1.8;
-      max-width: 300px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+      line-height: 1.6;
+      max-width: 320px;
     }
 
-    /* Separador dorado */
     .brand-divider {
-      width: 48px;
-      height: 3px;
-      background: linear-gradient(90deg, #c9922a, #e0af50);
+      width: 50px;
+      height: 4px;
+      background: #c9922a;
       border-radius: 2px;
-      margin: 20px 0;
+      margin: 25px 0;
     }
 
-    /* ═══════════════════════════════════════════════════════
-       ESTADÍSTICAS — Tarjetas premium rediseñadas
-    ═══════════════════════════════════════════════════════ */
+    /* STATS */
     .brand-stats {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      position: relative;
-      z-index: 1;
-      animation: slideRight .6s cubic-bezier(0.16, 1, 0.3, 1) .3s both;
-    }
-
-    /* Fila: 2 tarjetas side by side */
-    .stats-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 12px;
     }
 
     .stat-chip {
-      border-radius: 16px;
-      padding: 14px 16px;
-      transition: all .3s cubic-bezier(.16, 1, .3, 1);
-      cursor: default;
-      position: relative;
-      overflow: hidden;
-      border: 1px solid transparent;
-      background-clip: padding-box;
-    }
-
-    /* Colores por variante */
-    .stat-chip.s-socios {
-      background: linear-gradient(135deg, rgba(37, 99, 168, .28) 0%, rgba(15, 45, 82, .45) 100%);
-      border-color: rgba(37, 99, 168, .35);
-    }
-
-    .stat-chip.s-ahorros {
-      background: linear-gradient(135deg, rgba(201, 146, 42, .28) 0%, rgba(154, 98, 0, .40) 100%);
-      border-color: rgba(201, 146, 42, .38);
-    }
-
-    .stat-chip.s-creditos {
-      background: linear-gradient(135deg, rgba(29, 158, 117, .25) 0%, rgba(8, 80, 65, .40) 100%);
-      border-color: rgba(29, 158, 117, .35);
-    }
-
-    .stat-chip.s-fund {
-      background: linear-gradient(135deg, rgba(139, 92, 246, .25) 0%, rgba(79, 27, 139, .38) 100%);
-      border-color: rgba(139, 92, 246, .35);
-    }
-
-    /* Glow al hover */
-    .stat-chip.s-socios:hover {
-      box-shadow: 0 8px 28px rgba(37, 99, 168, .35);
-      border-color: rgba(37, 99, 168, .6);
-      transform: translateY(-3px) scale(1.02);
-    }
-
-    .stat-chip.s-ahorros:hover {
-      box-shadow: 0 8px 28px rgba(201, 146, 42, .35);
-      border-color: rgba(201, 146, 42, .6);
-      transform: translateY(-3px) scale(1.02);
-    }
-
-    .stat-chip.s-creditos:hover {
-      box-shadow: 0 8px 28px rgba(29, 158, 117, .35);
-      border-color: rgba(29, 158, 117, .6);
-      transform: translateY(-3px) scale(1.02);
-    }
-
-    .stat-chip.s-fund:hover {
-      box-shadow: 0 8px 28px rgba(139, 92, 246, .35);
-      border-color: rgba(139, 92, 246, .6);
-      transform: translateY(-3px) scale(1.02);
-    }
-
-    /* Ícono grande decorativo de fondo */
-    .stat-chip .sc-bg-icon {
-      position: absolute;
-      right: -6px;
-      bottom: -8px;
-      font-size: 54px;
-      line-height: 1;
-      opacity: .10;
-      pointer-events: none;
-      transition: opacity .3s, transform .3s;
-      user-select: none;
-    }
-
-    .stat-chip:hover .sc-bg-icon {
-      opacity: .22;
-      transform: scale(1.12) rotate(-8deg);
-    }
-
-    /* Badge superior */
-    .sc-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 9px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
       border-radius: 20px;
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      margin-bottom: 10px;
+      padding: 15px;
+      transition: 0.3s;
     }
 
-    .s-socios .sc-badge {
-      background: rgba(37, 99, 168, .30);
-      color: #7eb8f7;
+    .stat-chip:hover {
+      transform: translateY(-5px);
+      background: rgba(255, 255, 255, 0.06);
     }
 
-    .s-ahorros .sc-badge {
-      background: rgba(201, 146, 42, .28);
-      color: #f0ca6e;
-    }
-
-    .s-creditos.sc-badge,
-    .s-creditos .sc-badge {
-      background: rgba(29, 158, 117, .25);
-      color: #5ee8b8;
-    }
-
-    .s-fund .sc-badge {
-      background: rgba(139, 92, 246, .25);
-      color: #c4b5fd;
-    }
-
-    .sc-badge-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      animation: blink 2s ease-in-out infinite;
-    }
-
-    .s-socios .sc-badge-dot {
-      background: #7eb8f7;
-    }
-
-    .s-ahorros .sc-badge-dot {
-      background: #f0ca6e;
-    }
-
-    .s-creditos .sc-badge-dot {
-      background: #5ee8b8;
-    }
-
-    .s-fund .sc-badge-dot {
-      background: #c4b5fd;
-    }
-
-    /* Número principal */
     .stat-num {
-      font-family: 'Playfair Display', serif;
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 700;
-      line-height: 1;
-      letter-spacing: -.5px;
-      transition: color .3s;
+      font-family: 'Playfair Display';
+      color: #e0af50;
     }
 
-    .s-socios .stat-num {
-      color: #7eb8f7;
-    }
-
-    .s-ahorros .stat-num {
-      color: #f0ca6e;
-    }
-
-    .s-creditos .stat-num {
-      color: #5ee8b8;
-    }
-
-    .s-fund .stat-num {
-      color: #c4b5fd;
-    }
-
-    /* Etiqueta */
     .stat-lbl {
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: .5px;
+      font-size: 9px;
       text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.4);
       margin-top: 5px;
-      color: rgba(255, 255, 255, .42);
+      letter-spacing: 1px;
     }
 
-    /* Barra de progreso inferior */
     .sc-bar-wrap {
-      margin-top: 10px;
       height: 3px;
+      background: rgba(255, 255, 255, 0.1);
       border-radius: 2px;
-      background: rgba(255, 255, 255, .08);
+      margin-top: 10px;
       overflow: hidden;
     }
 
     .sc-bar {
       height: 100%;
+      background: #c9922a;
       border-radius: 2px;
-      width: 0%;
-      transition: width 1.4s cubic-bezier(.16, 1, .3, 1);
+      width: 0;
+      transition: width 2s cubic-bezier(0.1, 1, 0.3, 1);
     }
 
-    .sc-bar.loaded {}
-
-    .s-socios .sc-bar {
-      background: linear-gradient(90deg, #2563a8, #7eb8f7);
-    }
-
-    .s-ahorros .sc-bar {
-      background: linear-gradient(90deg, #9a6200, #f0ca6e);
-    }
-
-    .s-creditos .sc-bar {
-      background: linear-gradient(90deg, #085041, #5ee8b8);
-    }
-
-    .s-fund .sc-bar {
-      background: linear-gradient(90deg, #4f1b8b, #c4b5fd);
-    }
-
-    /* Indicador online */
-    .online-badge {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      margin-top: 20px;
-      animation: slideRight .6s cubic-bezier(0.16, 1, 0.3, 1) .4s both;
-    }
-
-    .online-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #1d9e75;
-      box-shadow: 0 0 8px rgba(29, 158, 117, .7);
-      animation: blink 2s ease-in-out infinite;
-    }
-
-    @keyframes blink {
-
-      0%,
-      100% {
-        opacity: 1;
-        transform: scale(1)
-      }
-
-      50% {
-        opacity: .5;
-        transform: scale(.8)
-      }
-    }
-
-    .online-text {
-      font-size: 11px;
-      color: rgba(255, 255, 255, .35);
-      letter-spacing: .3px;
-    }
-
-    /* ═══════════════════════════════════════════════════════
-       PANEL DERECHO — FORMULARIO
-    ═══════════════════════════════════════════════════════ */
+    /* PANEL DERECHO */
     .form-panel {
-      padding: 52px 48px;
-      background: rgba(255, 255, 255, .97);
+      padding: 60px;
+      background: #fff;
+      color: #0f172a;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      animation: fadeUp .6s cubic-bezier(0.16, 1, 0.3, 1) .15s both;
     }
 
-    @keyframes fadeUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    [data-theme="dark"] .form-panel {
-      background: rgba(22, 27, 36, .97);
-    }
-
-    /* Saludo */
     .form-greeting {
       font-size: 11px;
-      font-weight: 600;
-      color: #c9922a;
+      font-weight: 700;
+      color: #9a6200;
       text-transform: uppercase;
       letter-spacing: 2px;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .form-greeting::before {
-      content: '';
-      display: block;
-      width: 20px;
-      height: 2px;
-      background: #c9922a;
-      border-radius: 1px;
+      margin-bottom: 10px;
     }
 
     .form-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 30px;
-      font-weight: 600;
-      color: #0d1f35;
-      letter-spacing: -.5px;
-      line-height: 1.2;
-      margin-bottom: 6px;
-    }
-
-    [data-theme="dark"] .form-title {
-      color: #e2e8f0;
+      font-size: 32px;
+      font-family: 'Playfair Display';
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
     }
 
     .form-subtitle {
-      font-size: 13.5px;
-      color: #7a95b0;
-      margin-bottom: 32px;
-      line-height: 1.6;
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 35px;
     }
 
-    /* Error */
-    .form-error {
-      background: #fef2f2;
-      color: #7a1f1f;
-      border: 1px solid #f7d0d0;
-      border-left: 3px solid #a32d2d;
-      border-radius: 10px;
-      padding: 11px 15px;
-      font-size: 12.5px;
-      font-weight: 500;
-      margin-bottom: 18px;
-      display: none;
-      animation: shakeIt .4s ease;
-    }
-
-    @keyframes shakeIt {
-
-      0%,
-      100% {
-        transform: translateX(0)
-      }
-
-      20%,
-      60% {
-        transform: translateX(-5px)
-      }
-
-      40%,
-      80% {
-        transform: translateX(5px)
-      }
-    }
-
-    [data-theme="dark"] .form-error {
-      background: rgba(163, 45, 45, .15);
-      color: #f87171;
-      border-color: rgba(163, 45, 45, .3);
-      border-left-color: #a32d2d;
-    }
-
-    /* Campos */
     .field {
-      margin-bottom: 18px;
+      margin-bottom: 22px;
     }
 
     .field-label {
       display: block;
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 600;
-      color: #4a6080;
-      text-transform: uppercase;
-      letter-spacing: .8px;
+      color: #475569;
       margin-bottom: 8px;
-    }
-
-    [data-theme="dark"] .field-label {
-      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .field-wrap {
@@ -791,774 +337,359 @@
 
     .field-icon {
       position: absolute;
-      left: 14px;
+      left: 15px;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 15px;
-      pointer-events: none;
-      opacity: .45;
+      color: #94a3b8;
     }
 
     .field-input {
       width: 100%;
-      padding: 13px 14px 13px 42px;
-      background: #f7fafd;
-      border: 1.5px solid rgba(15, 45, 82, .1);
-      border-radius: 12px;
+      height: 52px;
+      padding: 0 15px 0 45px;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
       font-size: 14px;
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-      color: #0d1f35;
-      outline: none;
-      transition: all .2s ease;
-    }
-
-    .field-input:hover {
-      border-color: rgba(15, 45, 82, .2);
-      background: #fff;
+      transition: 0.2s;
     }
 
     .field-input:focus {
       border-color: #c9922a;
-      background: #fff;
-      box-shadow: 0 0 0 3px rgba(201, 146, 42, .12);
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(201, 146, 42, 0.1);
     }
 
-    [data-theme="dark"] .field-input {
-      background: rgba(30, 40, 55, .8);
-      border-color: rgba(148, 163, 184, .12);
-      color: #e2e8f0;
-    }
-
-    [data-theme="dark"] .field-input:focus {
-      border-color: #c9922a;
-      background: rgba(30, 40, 55, .95);
-    }
-
-    /* Mostrar/ocultar contraseña */
-    .toggle-pass {
-      position: absolute;
-      right: 13px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 15px;
-      opacity: .4;
-      padding: 4px;
-      transition: opacity .15s;
-    }
-
-    .toggle-pass:hover {
-      opacity: .8;
-    }
-
-    /* Botón principal */
     .btn-login {
       width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #153d6e 0%, #0a1f3c 100%);
+      height: 54px;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
       color: #fff;
       border: none;
-      border-radius: 12px;
-      font-size: 14.5px;
-      font-weight: 600;
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 700;
       cursor: pointer;
-      margin-top: 6px;
-      position: relative;
-      overflow: hidden;
-      transition: all .25s ease;
-      box-shadow: 0 6px 20px rgba(10, 31, 60, .35), inset 0 1px 0 rgba(255, 255, 255, .08);
-      letter-spacing: .2px;
-    }
-
-    .btn-login::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(255, 255, 255, .08) 0%, transparent 60%);
-      pointer-events: none;
+      transition: 0.3s;
+      margin-top: 10px;
     }
 
     .btn-login:hover {
-      background: linear-gradient(135deg, #1a4a7a 0%, #0f2d52 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 10px 28px rgba(10, 31, 60, .45);
-    }
-
-    .btn-login:active {
-      transform: translateY(0) scale(.99);
-      box-shadow: 0 4px 14px rgba(10, 31, 60, .3);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
     }
 
     .btn-login:disabled {
-      opacity: .7;
+      opacity: 0.6;
       cursor: not-allowed;
       transform: none;
     }
 
-    /* Ripple del botón */
-    .btn-login .ripple {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, .2);
-      transform: scale(0);
-      animation: btnRipple .5s linear;
-      pointer-events: none;
-    }
-
-    @keyframes btnRipple {
-      to {
-        transform: scale(4);
-        opacity: 0;
-      }
-    }
-
-    /* Separador */
     .form-sep {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 22px 0 16px;
+      position: relative;
+      text-align: center;
+      margin: 35px 0;
     }
 
-    .form-sep::before,
-    .form-sep::after {
+    .form-sep::before {
       content: '';
-      flex: 1;
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 100%;
       height: 1px;
-      background: rgba(15, 45, 82, .1);
-    }
-
-    [data-theme="dark"] .form-sep::before,
-    [data-theme="dark"] .form-sep::after {
-      background: rgba(148, 163, 184, .12);
+      background: #e2e8f0;
     }
 
     .form-sep span {
+      position: relative;
+      background: #fff;
+      padding: 0 15px;
+      color: #94a3b8;
       font-size: 11px;
-      color: #b0c4d8;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: .8px;
-      white-space: nowrap;
-    }
-
-    /* Accesos demo */
-    .demo-section p {
-      font-size: 10.5px;
-      color: #b0c4d8;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
     }
 
     .demo-cards {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      gap: 10px;
     }
 
     .demo-card {
-      background: #f7fafd;
-      border: 1.5px solid rgba(15, 45, 82, .08);
-      border-radius: 12px;
-      padding: 11px 10px;
+      padding: 15px;
+      background: #f8fafc;
+      border: 2px solid #f1f5f9;
+      border-radius: 16px;
       cursor: pointer;
       text-align: center;
-      transition: all .2s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .demo-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2.5px;
-      border-radius: 12px 12px 0 0;
-      opacity: 0;
-      transition: opacity .2s;
-    }
-
-    .demo-card.admin::before {
-      background: linear-gradient(90deg, #0a1f3c, #2563a8);
-    }
-
-    .demo-card.tesorero::before {
-      background: linear-gradient(90deg, #9a6200, #e0af50);
-    }
-
-    .demo-card.socio::before {
-      background: linear-gradient(90deg, #085041, #1d9e75);
+      transition: 0.2s;
     }
 
     .demo-card:hover {
-      border-color: rgba(15, 45, 82, .2);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(9, 30, 66, .1);
-    }
-
-    .demo-card:hover::before {
-      opacity: 1;
-    }
-
-    .demo-card:active {
-      transform: translateY(0) scale(.98);
-    }
-
-    [data-theme="dark"] .demo-card {
-      background: rgba(30, 40, 55, .6);
-      border-color: rgba(148, 163, 184, .1);
-    }
-
-    [data-theme="dark"] .demo-card:hover {
-      border-color: rgba(201, 146, 42, .25);
+      border-color: #e0af50;
+      background: #fff;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
     }
 
     .dc-avatar {
-      width: 34px;
-      height: 34px;
+      width: 35px;
+      height: 35px;
       border-radius: 50%;
+      background: #e2e8f0;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      margin: 0 auto 10px;
       font-weight: 700;
-      color: #fff;
-      margin: 0 auto 8px;
-    }
-
-    .admin .dc-avatar {
-      background: linear-gradient(135deg, #153d6e, #2563a8);
-    }
-
-    .tesorero.dc-avatar,
-    .tesorero .dc-avatar {
-      background: linear-gradient(135deg, #9a6200, #c9922a);
-    }
-
-    .socio .dc-avatar {
-      background: linear-gradient(135deg, #085041, #1d9e75);
+      font-size: 12px;
     }
 
     .dc-name {
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 600;
-      color: #0d1f35;
+      color: #1e293b;
     }
 
     .dc-role {
       font-size: 10px;
-      color: #7a95b0;
-      margin-top: 2px;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-    }
-
-    [data-theme="dark"] .dc-name {
-      color: #e2e8f0;
-    }
-
-    [data-theme="dark"] .dc-role {
       color: #64748b;
     }
 
-    /* Estado de conexión */
     .conn-status {
-      margin-top: 18px;
-      text-align: center;
-      font-size: 11px;
-      color: #b0c4d8;
+      margin-top: 30px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 10px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 30px;
     }
 
     .conn-dot {
-      width: 6px;
-      height: 6px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      background: #b0c4d8;
+      background: #cbd5e1;
     }
 
     .conn-dot.online {
-      background: #1d9e75;
-      box-shadow: 0 0 5px rgba(29, 158, 117, .5);
-      animation: blink 2s infinite;
+      background: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
     }
 
     .conn-dot.offline {
-      background: #ba7517;
+      background: #ef4444;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
     }
 
-    /* ═══════════════════════════════════════════════════════
-       RESPONSIVE
-    ═══════════════════════════════════════════════════════ */
-    @media (max-width: 720px) {
-      body {
-        overflow-y: auto;
-      }
-
-      .login-card {
-        grid-template-columns: 1fr;
-        max-width: 440px;
-        border-radius: 24px;
-      }
-
-      .brand-panel {
-        display: none;
-      }
-
-      .form-panel {
-        padding: 40px 32px;
-      }
+    #modoLabel {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
     }
 
-    @media (max-width: 420px) {
-      .form-panel {
-        padding: 32px 22px;
-      }
-
-      .demo-cards {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* ── Pulso animado en el emblema ────────────────────── */
-    @keyframes emblemPulse {
-
-      0%,
-      100% {
-        box-shadow: 0 8px 28px rgba(201, 146, 42, .5), inset 0 1px 0 rgba(255, 255, 255, .3);
-      }
-
-      50% {
-        box-shadow: 0 8px 48px rgba(201, 146, 42, .75), 0 0 0 8px rgba(201, 146, 42, .12), inset 0 1px 0 rgba(255, 255, 255, .3);
-      }
-    }
-
-    .brand-emblem {
-      animation: emblemPulse 3s ease-in-out infinite !important;
-    }
-
-    /* ── Línea de escaneo en el panel de marca ──────────── */
-    @keyframes scanLine {
-      0% {
-        transform: translateY(-100%);
-        opacity: 0;
-      }
-
-      5% {
-        opacity: 1;
-      }
-
-      95% {
-        opacity: 1;
-      }
-
-      100% {
-        transform: translateY(800%);
-        opacity: 0;
-      }
-    }
-
-    .brand-panel .scan-beam {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 2px;
-      top: 0;
-      background: linear-gradient(90deg, transparent, rgba(201, 146, 42, .6), rgba(201, 146, 42, .9), rgba(201, 146, 42, .6), transparent);
-      animation: scanLine 4s ease-in-out infinite;
-      animation-delay: .8s;
-      pointer-events: none;
-      z-index: 3;
-    }
-
-    /* ── Contador: shimmer sobre las tarjetas ─────────── */
-    @keyframes statShimmer {
-      0% {
-        transform: translateX(-100%);
-      }
-
-      100% {
-        transform: translateX(300%);
-      }
-    }
-
-    .stat-chip::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, .09) 50%, transparent 60%);
-      transform: translateX(-100%);
-      animation: statShimmer 3s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    .stat-chip.s-ahorros::after {
-      animation-delay: .5s;
-    }
-
-    .stat-chip.s-creditos::after {
-      animation-delay: 1s;
-    }
-
-    .stat-chip.s-fund::after {
-      animation-delay: 1.5s;
-    }
-
-    /* ── Entradas escalonadas del formulario ─────────────── */
-    @keyframes fieldIn {
-      from {
-        opacity: 0;
-        transform: translateX(16px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .field-stagger-1 {
-      animation: fieldIn .5s cubic-bezier(.16, 1, .3, 1) .25s both;
-    }
-
-    .field-stagger-2 {
-      animation: fieldIn .5s cubic-bezier(.16, 1, .3, 1) .35s both;
-    }
-
-    .field-stagger-3 {
-      animation: fieldIn .5s cubic-bezier(.16, 1, .3, 1) .45s both;
-    }
-
-    .field-stagger-4 {
-      animation: fieldIn .5s cubic-bezier(.16, 1, .3, 1) .55s both;
-    }
-
-    .field-stagger-5 {
-      animation: fieldIn .5s cubic-bezier(.16, 1, .3, 1) .65s both;
-    }
-
-    /* ── Indicador de seguridad SSL ──────────────────────── */
-    .ssl-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 10.5px;
-      color: #6b7280;
-      padding: 5px 12px;
-      background: rgba(0, 0, 0, .04);
-      border: 1px solid rgba(0, 0, 0, .07);
-      border-radius: 20px;
-      margin: 0 auto;
-      margin-top: 12px;
-    }
-
-    .ssl-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #22c55e;
-      animation: blink 2s ease-in-out infinite;
-    }
-
-    /* ── Fade-out al redirigir ───────────────────────────── */
-    @keyframes pageFadeOut {
-      to {
-        opacity: 0;
-        filter: blur(4px);
-        transform: scale(1.02);
-      }
-    }
-
-    .page-exit {
-      animation: pageFadeOut .35s ease forwards;
+    .form-error {
+      background: #fef2f2;
+      color: #991b1b;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 13px;
+      border: 1px solid #fee2e2;
+      margin-bottom: 20px;
+      display: none;
     }
   </style>
 </head>
 
 <body>
-
-  <!-- Fondo -->
   <div class="bg-scene"></div>
   <div class="bg-grid"></div>
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
   <div class="orb orb-3"></div>
-
-  <!-- Partículas -->
   <div class="particles" id="particles"></div>
 
-  <!-- Contenido -->
-  <div class="login-scene">
+  <main class="login-scene">
     <div class="login-card">
-
-      <!-- ── PANEL MARCA ────────────────────────────── -->
-      <div class="brand-panel">
-
+      <aside class="brand-panel">
         <div class="brand-logo">
           <div class="brand-emblem">F</div>
-          <div class="brand-id">
+          <div>
             <div class="brand-name">FONEVI</div>
-            <div class="brand-tagline-short">Fondo de Empleados Docentes</div>
+            <div class="brand-tagline">Fondo de Empleados</div>
           </div>
         </div>
 
         <div class="brand-headline">
           <h2>Tu ahorro,<br>tu <em>bienestar</em>,<br>tu fondo.</h2>
           <div class="brand-divider"></div>
-          <p>Administra aportes, créditos y beneficios con total transparencia y seguridad.</p>
+          <p>Gestiona tus finanzas con la seguridad y confianza de un fondo docente moderno.</p>
         </div>
 
-        <div>
-          <div class="brand-stats">
-
-            <!-- Fila 1 -->
-            <div class="stats-row">
-
-              <!-- Socios -->
-              <div class="stat-chip s-socios">
-                <span class="sc-bg-icon">👥</span>
-                <div class="sc-badge"><span class="sc-badge-dot"></span>Activos</div>
-                <div class="stat-num" id="animSocios">0</div>
-                <div class="stat-lbl">Socios</div>
-                <div class="sc-bar-wrap">
-                  <div class="sc-bar" id="barSocios"></div>
-                </div>
-              </div>
-
-              <!-- Ahorros -->
-              <div class="stat-chip s-ahorros">
-                <span class="sc-bg-icon">💰</span>
-                <div class="sc-badge"><span class="sc-badge-dot"></span>Total</div>
-                <div class="stat-num" id="animAhorros">$0</div>
-                <div class="stat-lbl">Ahorros</div>
-                <div class="sc-bar-wrap">
-                  <div class="sc-bar" id="barAhorros"></div>
-                </div>
-              </div>
-
-            </div><!-- /stats-row -->
-
-            <!-- Fila 2 -->
-            <div class="stats-row">
-
-              <!-- Créditos -->
-              <div class="stat-chip s-creditos">
-                <span class="sc-bg-icon">📋</span>
-                <div class="sc-badge"><span class="sc-badge-dot"></span>Vigentes</div>
-                <div class="stat-num" id="animCreditos">0</div>
-                <div class="stat-lbl">Créditos</div>
-                <div class="sc-bar-wrap">
-                  <div class="sc-bar" id="barCreditos"></div>
-                </div>
-              </div>
-
-              <!-- Fundación -->
-              <div class="stat-chip s-fund">
-                <span class="sc-bg-icon">🏛️</span>
-                <div class="sc-badge"><span class="sc-badge-dot"></span>Desde</div>
-                <div class="stat-num" id="animFund">0</div>
-                <div class="stat-lbl">Fundación</div>
-                <div class="sc-bar-wrap">
-                  <div class="sc-bar" id="barFund"></div>
-                </div>
-              </div>
-
-            </div><!-- /stats-row -->
-
-          </div><!-- /brand-stats -->
-
-          <div class="online-badge">
-            <div class="online-dot"></div>
-            <span class="online-text">Sistema operativo &nbsp;·&nbsp; NIT 800.123.456-7</span>
+        <div class="brand-stats">
+          <div class="stat-chip">
+            <div class="stat-num" id="animSocios">0</div>
+            <div class="stat-lbl">Socios Activos</div>
+            <div class="sc-bar-wrap">
+              <div class="sc-bar" id="barSocios"></div>
+            </div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-num" id="animAhorros">$0M</div>
+            <div class="stat-lbl">Ahorro Total</div>
+            <div class="sc-bar-wrap">
+              <div class="sc-bar" id="barAhorros"></div>
+            </div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-num" id="animCreditos">0</div>
+            <div class="stat-lbl">Cr&eacute;ditos</div>
+            <div class="sc-bar-wrap">
+              <div class="sc-bar" id="barCreditos"></div>
+            </div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-num" id="animFund">2015</div>
+            <div class="stat-lbl">Fundaci&oacute;n</div>
+            <div class="sc-bar-wrap">
+              <div class="sc-bar" id="barFund"></div>
+            </div>
           </div>
         </div>
 
-      </div>
+        <div class="online-badge">
+          <div class="online-dot"></div>
+          <span class="online-text">Servidor Seguro &middot; TLS 1.3</span>
+        </div>
+      </aside>
 
-      <!-- ── PANEL FORMULARIO ────────────────────────── -->
-      <div class="form-panel">
-
-        <div class="form-greeting">Acceso seguro</div>
-        <h1 class="form-title">Bienvenido de nuevo</h1>
-        <p class="form-subtitle">Ingresa tus credenciales para acceder a FONEVI.</p>
+      <section class="form-panel">
+        <div class="form-greeting">Acceso Seguro</div>
+        <h1 class="form-title">Bienvenido</h1>
+        <p class="form-subtitle">Ingresa tus credenciales para continuar.</p>
 
         <div class="form-error" id="loginError"></div>
 
-        <!-- Email -->
-        <div class="field field-stagger-1">
-          <label class="field-label" for="email">Correo electrónico</label>
+        <div class="field">
+          <label class="field-label">Email Corporativo</label>
           <div class="field-wrap">
             <span class="field-icon">✉</span>
-            <input type="email" id="email" class="field-input" placeholder="usuario@fonevi.edu.co"
-              autocomplete="email" />
+            <input type="email" id="email" class="field-input" placeholder="usuario@fonevi.edu.co" />
           </div>
         </div>
 
-        <!-- Contraseña -->
-        <div class="field field-stagger-2">
-          <label class="field-label" for="password">Contraseña</label>
+        <div class="field">
+          <label class="field-label">Contrase&ntilde;a</label>
           <div class="field-wrap">
             <span class="field-icon">🔒</span>
             <input type="password" id="password" class="field-input" placeholder="••••••••"
-              autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()" />
-            <button class="toggle-pass" onclick="togglePassword()" title="Mostrar contraseña">
-              👁
-            </button>
+              onkeydown="if(event.key==='Enter') doLogin()" />
           </div>
         </div>
 
-        <!-- Botón -->
-        <button class="btn-login field-stagger-3" id="loginBtn" onclick="doLogin()">
-          Ingresar al sistema
-        </button>
+        <button class="btn-login" id="loginBtn" onclick="doLogin()">Ingresar al Sistema</button>
 
-        <!-- Separador -->
-        <div class="form-sep field-stagger-4"><span>Accesos de demostración</span></div>
+        <div class="form-sep"><span>Cuentas de Prueba</span></div>
 
-        <!-- Demo cards -->
-        <div class="demo-section field-stagger-5">
-          <div class="demo-cards">
-            <div class="demo-card admin" onclick="fillDemo('admin@fonevi.edu.co','Admin2026!')">
-              <div class="dc-avatar">CM</div>
-              <div class="dc-name">Carlos Muñoz</div>
-              <div class="dc-role">Administrador</div>
-            </div>
-            <div class="demo-card tesorero" onclick="fillDemo('tesorero@fonevi.edu.co','tesorer123')">
-              <div class="dc-avatar">LJ</div>
-              <div class="dc-name">Laura Jiménez</div>
-              <div class="dc-role">Tesorero</div>
-            </div>
-            <div class="demo-card socio" onclick="fillDemo('ana.torres@fonevi.edu.co','socio123')">
-              <div class="dc-avatar">AT</div>
-              <div class="dc-name">Ana Torres</div>
-              <div class="dc-role">Socio</div>
-            </div>
+        <div class="demo-cards">
+          <div class="demo-card" onclick="fillDemo('admin@fonevi.edu.co','Admin2026!')">
+            <div class="dc-avatar">CM</div>
+            <div class="dc-name">C. Mu&ntilde;oz</div>
+            <div class="dc-role">Admin</div>
+          </div>
+          <div class="demo-card" onclick="fillDemo('tesorero@fonevi.edu.co','Tesorero2026!')">
+            <div class="dc-avatar">LJ</div>
+            <div class="dc-name">L. Jim&eacute;nez</div>
+            <div class="dc-role">Tesorero</div>
+          </div>
+          <div class="demo-card" onclick="fillDemo('ana.torres@fonevi.edu.co','socio123')">
+            <div class="dc-avatar">AT</div>
+            <div class="dc-name">A. Torres</div>
+            <div class="dc-role">Socio</div>
           </div>
         </div>
 
-        <!-- Estado conexión -->
         <div class="conn-status">
           <div class="conn-dot" id="connDot"></div>
-          <span id="modoLabel">Verificando conexión...</span>
+          <span id="modoLabel">Verificando conexi&oacute;n...</span>
         </div>
-
-      </div>
+      </section>
     </div>
-  </div>
+  </main>
 
-  <!-- Scripts -->
-  <script src="js/darkmode.js"></script>
   <script src="js/data.js"></script>
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
-  <script src="js/transitions.js"></script>
 
   <script>
-    /* ── Redirigir si ya hay sesión ─────────────────── */
-    if (Auth.getSession()) {
-      window.location.href = "pages/dashboard.html";
-    }
-
-    /* ── Partículas ─────────────────────────────────── */
-    (function () {
-      var container = document.getElementById("particles");
-      var sizes = [2, 3, 2, 4, 2, 3];
-      var delays = [0, 3, 6, 10, 14, 18, 22, 26, 7, 12];
-      var durations = [12, 16, 20, 14, 18, 22];
-      var lefts = [5, 12, 22, 35, 48, 58, 68, 78, 88, 95];
-
-      var colors = [
-        "rgba(201,146,42,.55)", "rgba(201,146,42,.35)",
-        "rgba(29,158,117,.25)", "rgba(255,255,255,.18)"
-      ];
-      for (var i = 0; i < 16; i++) {
-        var p = document.createElement("div");
-        p.className = "particle";
-        var sz = sizes[i % sizes.length];
-        var col = colors[i % colors.length];
-        p.style.cssText = [
-          "width:" + sz + "px",
-          "height:" + sz + "px",
-          "left:" + (Math.random() * 95 + 2).toFixed(1) + "%",
-          "background:" + col,
-          "border-radius:50%",
-          "animation-duration:" + durations[i % durations.length] + "s",
-          "animation-delay:" + (Math.random() * 20).toFixed(1) + "s",
-          "opacity:" + (0.25 + (i % 5) * 0.12)
-        ].join(";");
-        container.appendChild(p);
-      }
-    })();
-
-    /* ── Contadores animados en stats ───────────────── */
-    function animCount(id, from, to, duration, formatter) {
+    /* ── ANIMACIONES ── */
+    function animCount(id, from, to, duration, suffix = "") {
       var el = document.getElementById(id);
       if (!el) return;
       var start = performance.now();
-      var ease = function (t) { return t < .5 ? 2 * t * t : -1 + (4 - 2 * t) * t; };
       function tick(now) {
         var p = Math.min((now - start) / duration, 1);
-        var v = Math.round(from + (to - from) * ease(p));
-        el.textContent = formatter ? formatter(v) : v;
+        var v = Math.round(from + (to - from) * p);
+        el.textContent = v + suffix;
         if (p < 1) requestAnimationFrame(tick);
       }
       requestAnimationFrame(tick);
     }
 
-    /* Iniciar contadores con delay para que se vean en la animación de entrada */
-    setTimeout(function () {
-      animCount("animSocios", 0, 127, 1400);
-      animCount("animCreditos", 0, 38, 1200);
-      animCount("animFund", 2015, 2020, 900);
-      animCount("animAhorros", 0, 84, 1600, function (v) { return "$" + v + "M"; });
+    setTimeout(() => {
+      animCount("animSocios", 0, 127, 2000);
+      animCount("animAhorros", 0, 84, 2000, "M");
+      animCount("animCreditos", 0, 38, 2000);
+      animCount("animFund", 2010, 2015, 1000);
 
-      /* Barras de progreso */
-      setTimeout(function () {
-        document.getElementById("barSocios") && (document.getElementById("barSocios").style.width = "78%");
-        document.getElementById("barAhorros") && (document.getElementById("barAhorros").style.width = "65%");
-        document.getElementById("barCreditos") && (document.getElementById("barCreditos").style.width = "42%");
-        document.getElementById("barFund") && (document.getElementById("barFund").style.width = "90%");
-      }, 300);
-    }, 600);
+      document.getElementById("barSocios").style.width = "78%";
+      document.getElementById("barAhorros").style.width = "65%";
+      document.getElementById("barCreditos").style.width = "42%";
+      document.getElementById("barFund").style.width = "90%";
+    }, 500);
 
-    /* ── Toggle contraseña ──────────────────────────── */
-    function togglePassword() {
-      var inp = document.getElementById("password");
-      inp.type = inp.type === "password" ? "text" : "password";
-    }
+    /* ── PARTÍCULAS ── */
+    (function () {
+      var c = document.getElementById("particles");
+      for (var i = 0; i < 20; i++) {
+        var p = document.createElement("div");
+        p.className = "particle";
+        p.style.left = Math.random() * 100 + "%";
+        var sz = Math.random() * 3 + 2;
+        p.style.width = sz + "px";
+        p.style.height = sz + "px";
+        p.style.animationDuration = (Math.random() * 10 + 10) + "s";
+        p.style.animationDelay = Math.random() * 5 + "s";
+        c.appendChild(p);
+      }
+    })();
 
-    /* ── Ripple en botón ────────────────────────────── */
-    document.getElementById("loginBtn").addEventListener("click", function (e) {
-      var btn = this;
-      var r = btn.getBoundingClientRect();
-      var size = Math.max(r.width, r.height) * 1.5;
-      var x = e.clientX - r.left - size / 2;
-      var y = e.clientY - r.top - size / 2;
-      var wave = document.createElement("span");
-      wave.className = "ripple";
-      wave.style.cssText = "width:" + size + "px;height:" + size + "px;left:" + x + "px;top:" + y + "px";
-      btn.appendChild(wave);
-      setTimeout(function () { wave.remove(); }, 500);
-    });
-
-    /* ── fillDemo ───────────────────────────────────── */
+    /* ── LÓGICA LOGIN ── */
     function fillDemo(email, pw) {
       document.getElementById("email").value = email;
       document.getElementById("password").value = pw;
       doLogin();
     }
 
-    /* ── doLogin ────────────────────────────────────── */
+    async function actualizarEstadoConexion() {
+      try {
+        var ok = await API.ping();
+        var dot = document.getElementById("connDot");
+        var lbl = document.getElementById("modoLabel");
+        if (ok) {
+          dot.className = "conn-dot online";
+          lbl.textContent = "Conectado al servidor";
+        } else {
+          dot.className = "conn-dot offline";
+          lbl.textContent = "Modo offline — datos locales";
+        }
+        return ok;
+      } catch (e) { return false; }
+    }
+
     async function doLogin() {
       var btn = document.getElementById("loginBtn");
       var err = document.getElementById("loginError");
@@ -1566,7 +697,8 @@
       var pass = document.getElementById("password").value;
 
       if (!email || !pass) {
-        showError("Por favor ingresa tu correo y contraseña.");
+        err.textContent = "⚠ Email y contraseña requeridos.";
+        err.style.display = "block";
         return;
       }
 
@@ -1574,71 +706,47 @@
       btn.disabled = true;
       err.style.display = "none";
 
-      function resetBtn() {
-        btn.textContent = "Ingresar al sistema";
-        btn.disabled = false;
-        btn.style.background = "";
-      }
-
-      function showError(msg) {
-        err.textContent = "⚠  " + msg;
-        err.style.display = "block";
-        err.style.animation = "none";
-        err.offsetHeight;
-        err.style.animation = "";
-      }
-
       try {
-        var pingRes = null;
-        try { pingRes = await API.ping(); } catch (e) { }
-        var hayServidor = pingRes && pingRes.ok;
-
-        var connDot = document.getElementById("connDot");
-        var modoLabel = document.getElementById("modoLabel");
-        if (hayServidor) {
-          connDot.className = "conn-dot online";
-          modoLabel.textContent = "Conectado al servidor";
-        } else {
-          connDot.className = "conn-dot offline";
-          modoLabel.textContent = "Modo offline — datos locales";
-        }
-
+        var hayServidor = await actualizarEstadoConexion();
         var result = null;
+
         if (hayServidor) {
           try {
-            var apiRes = await API.auth.login({ email: email, password: pass });
-            if (apiRes && apiRes.ok && apiRes.token) {
+            // FIX: Pasar argumentos por separado, NO como objeto
+            var apiRes = await API.auth.login(email, pass);
+            if (apiRes?.ok) {
               API.setToken(apiRes.token);
-              // Set Auth session so the frontend knows the user
               sessionStorage.setItem("fonevi_session", JSON.stringify(apiRes.usuario));
               result = { ok: true };
             } else {
               result = { ok: false, mensaje: apiRes?.mensaje || "Credenciales incorrectas" };
             }
           } catch (e) {
-            result = { ok: false, mensaje: "Error conectando al servidor" };
+            result = { ok: false, mensaje: "Error de comunicación con el servidor" };
           }
         } else {
-          // Offline fallback
-          try { result = await Auth.login(email, pass); } catch (e) { }
+          result = await Auth.login(email, pass);
         }
 
-        if (result && result.ok) {
-          btn.textContent = "✓  Acceso concedido";
-          btn.style.background = "linear-gradient(135deg,#1d9e75,#085041)";
-          btn.style.boxShadow = "0 8px 24px rgba(29,158,117,.4)";
-          setTimeout(function () {
-            window.location.href = "pages/dashboard.html";
-          }, 600);
+        if (result?.ok) {
+          btn.textContent = "✓ Acceso Concedido";
+          setTimeout(() => { window.location.href = "pages/dashboard.html"; }, 600);
         } else {
-          showError((result && result.mensaje) || "Correo o contraseña incorrectos.");
-          resetBtn();
+          err.textContent = "⚠ " + (result?.mensaje || "Error al entrar");
+          err.style.display = "block";
+          btn.textContent = "Ingresar al Sistema";
+          btn.disabled = false;
         }
       } catch (e) {
-        showError("Error inesperado. Intenta de nuevo.");
-        resetBtn();
+        err.textContent = "⚠ Error inesperado";
+        err.style.display = "block";
+        btn.textContent = "Ingresar al Sistema";
+        btn.disabled = false;
       }
     }
+
+    actualizarEstadoConexion();
+    setInterval(actualizarEstadoConexion, 10000);
   </script>
 </body>
 

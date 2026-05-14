@@ -219,12 +219,12 @@ const DataHelper = {
   },
 
   getTotalAhorros() {
-    return DB.socios.reduce((t, s) => t + s.ahorro_acumulado, 0);
+    return DB.socios.reduce((t, s) => t + Number(s.ahorro_acumulado || 0), 0);
   },
 
   getTotalCartera() {
     return DB.creditos.filter(c => c.estado !== "pagado")
-                      .reduce((t, c) => t + c.saldo_capital, 0);
+                      .reduce((t, c) => t + Number(c.saldo_capital || 0), 0);
   },
 
   getNotificacionesNoLeidas() {
@@ -277,39 +277,42 @@ const DataHelper = {
 ═══════════════════════════════════════════════════════ */
 window.DataSync = {
   async init() {
-    if (!window.API) return; // Por si carga antes
-    // Intentar ping al servidor para asegurar estado offline/online
-    try {
-      await API.ping();
-    } catch(e) {}
+    if (!window.API) return;
     
+    // Verificar conexión
+    try { await API.ping(); } catch(e) {}
     if (API.MODO_OFFLINE) return;
 
-    try {
-      const [socios, aportes, creditos, config, sol, movs, notifs] = await Promise.all([
-        API.socios.listar(),
-        API.aportes.listar(),
-        API.creditos.listar(),
-        API.config.obtener(),
-        API.solidaridad.listar(),
-        API.movimientos.listar(),
-        API.notificaciones.listar()
-      ]);
+    console.log("DataSync: Iniciando sincronización robusta...");
 
-      if (socios?.ok) DB.socios = socios.datos;
-      if (aportes?.ok) DB.aportes = aportes.datos;
-      if (creditos?.ok) DB.creditos = creditos.datos;
-      if (config?.ok) DB.config = config.datos;
-      if (sol?.ok) {
-        DB.solidaridad.movimientos = sol.datos;
-        const saldoRes = await API.solidaridad.saldo();
-        DB.solidaridad.saldo_actual = saldoRes.saldo_actual || 0;
+    // Sincronizar cada entidad de forma independiente para evitar bloqueos
+    const syncTasks = [
+      { name: "socios",         task: API.socios.listar(),         update: (d) => DB.socios = d },
+      { name: "aportes",        task: API.aportes.listar(),        update: (d) => DB.aportes = d },
+      { name: "creditos",       task: API.creditos.listar(),       update: (d) => DB.creditos = d },
+      { name: "config",         task: API.config.obtener(),        update: (d) => DB.config = d },
+      { name: "solidaridad",    task: API.solidaridad.listar(),    update: (d) => DB.solidaridad.movimientos = d },
+      { name: "movimientos",    task: API.movimientos.listar(),    update: (d) => DB.movimientos = d },
+      { name: "notificaciones", task: API.notificaciones.listar(), update: (d) => DB.notificaciones = d }
+    ];
+
+    for (const item of syncTasks) {
+      try {
+        const res = await item.task;
+        if (res && res.ok) {
+          item.update(res.datos);
+          console.log(`DataSync: ${item.name} sincronizado.`);
+        }
+      } catch (e) {
+        console.warn(`DataSync: Error al sincronizar ${item.name}:`, e);
       }
-      if (movs?.ok) DB.movimientos = movs.datos;
-      if (notifs?.ok) DB.notificaciones = notifs.datos;
-    } catch(e) {
-      console.warn("DataSync init error:", e);
     }
+
+    // Caso especial: Saldo de solidaridad
+    try {
+      const res = await API.solidaridad.saldo();
+      if (res && res.ok) DB.solidaridad.saldo_actual = res.saldo_actual || 0;
+    } catch(e) {}
   },
 
   async syncAportes() {

@@ -100,7 +100,13 @@ router.post('/', requireAuth, requireRole('administrador', 'tesorero'), async (r
       }
     });
     await audit(req, { accion: 'CREAR_CREDITO', tabla: 'creditos', registroId: nuevo.id, detalle: { socio_id, monto } });
-    return res.status(201).json({ ok: true, datos: nuevo, mensaje: 'Crédito creado exitosamente' });
+    const responseData = { 
+      ...nuevo, 
+      monto: Number(nuevo.monto), 
+      tasaMensual: Number(nuevo.tasaMensual), 
+      saldoCapital: Number(nuevo.saldoCapital) 
+    };
+    return res.status(201).json({ ok: true, datos: responseData, mensaje: 'Crédito creado exitosamente' });
   } catch (e) {
     console.error('[creditos/crear]', e);
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });

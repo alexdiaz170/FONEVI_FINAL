@@ -73,7 +73,7 @@ router.post('/', requireAuth, requireRole('administrador','tesorero'), async (re
     }
 
     const estadoFinal = estado || 'pagado';
-    const montoVal = parseFloat(monto);
+    const montoVal = Number(monto);
 
     const nuevo = await prisma.aporte.create({
       data: {
@@ -115,12 +115,12 @@ router.put('/:id/estado', requireAuth, requireRole('administrador','tesorero'), 
     if (aporteActual.estado !== 'pagado' && req.body.estado === 'pagado') {
       await prisma.socio.update({
         where: { id: actualizado.socioId },
-        data: { ahorroAcumulado: { increment: parseFloat(actualizado.monto) } }
+        data: { ahorroAcumulado: { increment: Number(actualizado.monto) } }
       });
     } else if (aporteActual.estado === 'pagado' && req.body.estado !== 'pagado') {
       await prisma.socio.update({
         where: { id: actualizado.socioId },
-        data: { ahorroAcumulado: { decrement: parseFloat(actualizado.monto) } }
+        data: { ahorroAcumulado: { decrement: Number(actualizado.monto) } }
       });
     }
 

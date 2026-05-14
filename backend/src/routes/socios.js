@@ -83,7 +83,7 @@ router.post('/', requireAuth, requireRole('administrador', 'tesorero'), async (r
         email:        email   || null,
         telefono:     telefono || null,
         fechaIngreso: fechaIngreso ? new Date(fechaIngreso) : new Date(),
-        aporteMensual: parseFloat(aporteMensual),
+        aporteMensual: Number(aporteMensual),
         ahorroAcumulado: 0,
         cargo: cargo || null,
         sede:  sede  || null,
@@ -91,7 +91,7 @@ router.post('/', requireAuth, requireRole('administrador', 'tesorero'), async (r
     });
 
     await audit(req, { accion: 'CREAR_SOCIO', tabla: 'socios', registroId: nuevo.id, detalle: { nombre } });
-    return res.status(201).json({ ok: true, datos: nuevo, mensaje: 'Socio creado exitosamente' });
+    return res.status(201).json({ ok: true, datos: { ...nuevo, aporteMensual: Number(nuevo.aporteMensual), ahorroAcumulado: Number(nuevo.ahorroAcumulado) }, mensaje: 'Socio creado exitosamente' });
   } catch (e) {
     if (e.code === 'P2002') return res.status(409).json({ ok: false, mensaje: 'Ya existe un socio con ese documento' });
     console.error('[socios/crear]', e);

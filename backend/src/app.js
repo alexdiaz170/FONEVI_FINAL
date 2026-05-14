@@ -20,8 +20,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // ── CORS ────────────────────────────────────────────────────
 app.use(cors({
-  origin: process.env.CORS_ORIGIN === '*' ? true : (process.env.CORS_ORIGIN || '').split(','),
+  origin: true, // Refleja el origen de la petición
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Logger de peticiones para depuración
@@ -91,9 +93,9 @@ async function main() {
   try {
     await prisma.$connect();
     console.log('✅ Base de datos conectada');
-    app.listen(PORT, () => {
-      console.log(`🚀 FONEVI API corriendo en http://localhost:${PORT}`);
-      console.log(`📋 Health:   http://localhost:${PORT}/api/health`);
+    app.listen(PORT, '127.0.0.1', () => {
+      console.log(`🚀 FONEVI API corriendo en http://127.0.0.1:${PORT}`);
+      console.log(`📋 Health:   http://127.0.0.1:${PORT}/api/health`);
       console.log(`🌍 Entorno:  ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (err) {
