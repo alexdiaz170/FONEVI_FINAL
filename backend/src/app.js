@@ -19,8 +19,21 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ── CORS ────────────────────────────────────────────────────
+const allowedOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: true, // Refleja el origen de la petición
+  origin(origin, callback) {
+    // Permitir si: no hay origen (mismo dominio), si allowedOrigins está vacío,
+    // o si incluye '*' como comodín, o si el origen está en la lista.
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn(`[CORS] Origen denegado: ${origin}`);
+    return callback(new Error(`CORS: origen no permitido (${origin})`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -62,6 +75,7 @@ app.get('/api/health', async (_req, res) => {
 
 // ── Rutas ───────────────────────────────────────────────────
 app.use('/api/auth',           require('./routes/auth'));
+app.use('/api/sync',           require('./routes/sync'));
 app.use('/api/socios',         require('./routes/socios'));
 app.use('/api/aportes',        require('./routes/aportes'));
 app.use('/api/creditos',       require('./routes/creditos'));
@@ -93,9 +107,10 @@ async function main() {
   try {
     await prisma.$connect();
     console.log('✅ Base de datos conectada');
-    app.listen(PORT, '127.0.0.1', () => {
-      console.log(`🚀 FONEVI API corriendo en http://127.0.0.1:${PORT}`);
-      console.log(`📋 Health:   http://127.0.0.1:${PORT}/api/health`);
+    const HOST = process.env.HOST || '0.0.0.0';
+    app.listen(PORT, HOST, () => {
+      console.log(`🚀 FONEVI API corriendo en http://${HOST}:${PORT}`);
+      console.log(`📋 Health:   http://${HOST}:${PORT}/api/health`);
       console.log(`🌍 Entorno:  ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (err) {

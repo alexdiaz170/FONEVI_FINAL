@@ -4,6 +4,8 @@ const { prisma } = require('../lib/prisma');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { audit } = require('../middleware/audit');
 
+const { mapAporte } = require('../lib/mappings');
+
 // GET /api/aportes
 router.get('/', requireAuth, async (req, res) => {
   try {
@@ -15,21 +17,15 @@ router.get('/', requireAuth, async (req, res) => {
 
     const aportes = await prisma.aporte.findMany({
       where,
-      include: {
-        socio:   { select: { nombre: true, codigo: true } },
-        periodo: { select: { nombre: true } },
+      include: { 
+        socio:   { select: { nombre: true, codigo: true, documento: true } },
+        periodo: { select: { nombre: true } }
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'desc' }
     });
-
-    const mapped = aportes.map(a => ({
-      ...a,
-      socio_nombre:   a.socio?.nombre,
-      periodo_nombre: a.periodo?.nombre,
-    }));
-
-    return res.json({ ok: true, datos: mapped });
+    return res.json({ ok: true, datos: aportes.map(mapAporte) });
   } catch (e) {
+    console.error('[aportes/listar]', e);
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });
   }
 });
@@ -52,39 +48,45 @@ router.get('/resumen/:periodo_id', requireAuth, async (req, res) => {
 });
 
 // POST /api/aportes
-router.post('/', requireAuth, requireRole('administrador','tesorero'), async (req, res) => {
+router.post('/', requireAuth, requireRole('administrador', 'tesorero'), async (req, res) => {
   try {
-    const { socio_id, periodo_id, periodo, monto, metodo, notas, estado } = req.body;
-    if (!socio_id || (!periodo_id && !periodo) || !monto)
-      return res.status(400).json({ ok: false, mensaje: 'socio_id, periodo o periodo_id y monto son requeridos' });
+    const { socio_id, periodo_id, periodo, monto, metodo, notas, fecha_pago, estado } = req.body;
 
-    // Buscar el socio real (puede venir UUID o código como 'S001')
+    if (!socio_id || (!periodo_id && !periodo) || !monto)
+      return res.status(400).json({ ok: false, mensaje: 'socio_id, periodo (o id) y monto son requeridos' });
+
+    // 1. Buscar socio (por ID/documento o por código)
     const socio = await prisma.socio.findFirst({
       where: { OR: [{ id: socio_id }, { codigo: socio_id }] }
     });
     if (!socio) return res.status(404).json({ ok: false, mensaje: 'Socio no encontrado' });
     const sId = socio.id;
 
-    let pId = periodo_id ? parseInt(periodo_id) : null;
+    // 2. Buscar o validar periodo
+    let pId = parseInt(periodo_id);
     if (!pId && periodo) {
       const p = await prisma.periodo.findUnique({ where: { nombre: periodo } });
-      if (!p) return res.status(400).json({ ok: false, mensaje: 'El periodo no existe' });
+      if (!p) return res.status(404).json({ ok: false, mensaje: `Período '${periodo}' no existe en la BD` });
       pId = p.id;
     }
 
+    const montoVal    = parseFloat(monto);
     const estadoFinal = estado || 'pagado';
-    const montoVal = Number(monto);
 
     const nuevo = await prisma.aporte.create({
       data: {
         socioId:   sId,
         periodoId: pId,
         monto:     montoVal,
-        fechaPago: estadoFinal === 'pagado' ? new Date() : null,
+        metodo:    metodo     || 'efectivo',
+        notas:     notas      || null,
+        fechaPago: fecha_pago ? new Date(fecha_pago) : new Date(),
         estado:    estadoFinal,
-        metodo:    metodo || 'efectivo',
-        notas:     notas  || null,
-      }
+      },
+      include: {
+        socio:   { select: { nombre: true, codigo: true, documento: true } },
+        periodo: { select: { nombre: true } },
+      },
     });
 
     if (estadoFinal === 'pagado') {
@@ -95,8 +97,9 @@ router.post('/', requireAuth, requireRole('administrador','tesorero'), async (re
     }
 
     await audit(req, { accion: 'REGISTRAR_APORTE', tabla: 'aportes', registroId: nuevo.id, detalle: { socio_id, monto } });
-    return res.status(201).json({ ok: true, datos: nuevo, mensaje: 'Aporte registrado correctamente' });
+    return res.status(201).json({ ok: true, datos: mapAporte(nuevo), mensaje: 'Aporte registrado' });
   } catch (e) {
+    console.error('[aportes/crear]', e);
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });
   }
 });
@@ -109,7 +112,11 @@ router.put('/:id/estado', requireAuth, requireRole('administrador','tesorero'), 
 
     const actualizado = await prisma.aporte.update({
       where: { id: req.params.id },
-      data:  { estado: req.body.estado }
+      data:  { estado: req.body.estado },
+      include: {
+        socio:   { select: { nombre: true, codigo: true } },
+        periodo: { select: { nombre: true } },
+      },
     });
 
     if (aporteActual.estado !== 'pagado' && req.body.estado === 'pagado') {
@@ -125,7 +132,7 @@ router.put('/:id/estado', requireAuth, requireRole('administrador','tesorero'), 
     }
 
     await audit(req, { accion: 'CAMBIAR_ESTADO_APORTE', tabla: 'aportes', registroId: req.params.id });
-    return res.json({ ok: true, datos: actualizado });
+    return res.json({ ok: true, datos: mapAporte(actualizado) });
   } catch (e) {
     if (e.code === 'P2025') return res.status(404).json({ ok: false, mensaje: 'Aporte no encontrado' });
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });

@@ -3,6 +3,7 @@ const router = require('express').Router();
 const { prisma } = require('../lib/prisma');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { audit } = require('../middleware/audit');
+const { mapCredito } = require('../lib/mappings');
 
 // Simulador de cuota (helper interno)
 function calcularCuota(monto, tasaMensual, cuotas) {
@@ -10,7 +11,6 @@ function calcularCuota(monto, tasaMensual, cuotas) {
   if (r === 0) return monto / cuotas;
   return monto * (r * Math.pow(1 + r, cuotas)) / (Math.pow(1 + r, cuotas) - 1);
 }
-
 // GET /api/creditos/simular?monto=&cuotas=&tasa=
 router.get('/simular', requireAuth, async (req, res) => {
   try {
@@ -38,16 +38,18 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     const { socio_id, estado } = req.query;
     const where = {};
-    if (socio_id) where.socioId = socio_id;
+    if (socio_id) {
+       const s = await prisma.socio.findFirst({ where: { OR: [{ id: socio_id }, { codigo: socio_id }] } });
+       if (s) where.socioId = s.id;
+    }
     if (estado)   where.estado  = estado;
 
     const creditos = await prisma.credito.findMany({
       where,
-      include: { socio: { select: { nombre: true, codigo: true } } },
+      include: { socio: { select: { nombre: true, codigo: true, documento: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    const mapped = creditos.map(c => ({ ...c, socio_nombre: c.socio?.nombre }));
-    return res.json({ ok: true, datos: mapped });
+    return res.json({ ok: true, datos: creditos.map(mapCredito) });
   } catch (e) {
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });
   }
@@ -58,10 +60,10 @@ router.get('/:id', requireAuth, async (req, res) => {
   try {
     const credito = await prisma.credito.findUnique({
       where:   { id: req.params.id },
-      include: { socio: { select: { nombre: true } } }
+      include: { socio: { select: { nombre: true, codigo: true, documento: true } } }
     });
     if (!credito) return res.status(404).json({ ok: false, mensaje: 'Crédito no encontrado' });
-    return res.json({ ok: true, datos: credito });
+    return res.json({ ok: true, datos: mapCredito(credito) });
   } catch (e) {
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });
   }
@@ -74,7 +76,6 @@ router.post('/', requireAuth, requireRole('administrador', 'tesorero'), async (r
     if (!socio_id || !monto || !cuotas)
       return res.status(400).json({ ok: false, mensaje: 'socio_id, monto y cuotas son requeridos' });
 
-    // Buscar el socio real (puede venir UUID o código como 'S001')
     const socio = await prisma.socio.findFirst({
       where: { OR: [{ id: socio_id }, { codigo: socio_id }] }
     });
@@ -97,16 +98,11 @@ router.post('/', requireAuth, requireRole('administrador', 'tesorero'), async (r
         estado:          'activo',
         proposito:       proposito   || null,
         aprobadoPor:     req.usuario.id,
-      }
+      },
+      include: { socio: { select: { nombre: true, codigo: true, documento: true } } }
     });
     await audit(req, { accion: 'CREAR_CREDITO', tabla: 'creditos', registroId: nuevo.id, detalle: { socio_id, monto } });
-    const responseData = { 
-      ...nuevo, 
-      monto: Number(nuevo.monto), 
-      tasaMensual: Number(nuevo.tasaMensual), 
-      saldoCapital: Number(nuevo.saldoCapital) 
-    };
-    return res.status(201).json({ ok: true, datos: responseData, mensaje: 'Crédito creado exitosamente' });
+    return res.status(201).json({ ok: true, datos: mapCredito(nuevo), mensaje: 'Crédito creado exitosamente' });
   } catch (e) {
     console.error('[creditos/crear]', e);
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });

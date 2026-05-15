@@ -6,6 +6,8 @@ const { prisma } = require('../lib/prisma');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { audit } = require('../middleware/audit');
 
+const { mapSocio } = require('../lib/mappings');
+
 /* ── GET /api/socios ─────────────────────────────────────── */
 router.get('/', requireAuth, async (req, res) => {
   try {
@@ -23,7 +25,8 @@ router.get('/', requireAuth, async (req, res) => {
       where,
       orderBy: { nombre: 'asc' },
     });
-    return res.json({ ok: true, datos: socios, total: socios.length });
+    const mapped = socios.map(mapSocio);
+    return res.json({ ok: true, datos: mapped, total: mapped.length });
   } catch (e) {
     console.error('[socios/listar]', e);
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });
@@ -33,9 +36,11 @@ router.get('/', requireAuth, async (req, res) => {
 /* ── GET /api/socios/:id ─────────────────────────────────── */
 router.get('/:id', requireAuth, async (req, res) => {
   try {
-    const socio = await prisma.socio.findUnique({ where: { id: req.params.id } });
+    const socio = await prisma.socio.findFirst({ 
+      where: { OR: [{ id: req.params.id }, { codigo: req.params.id }] } 
+    });
     if (!socio) return res.status(404).json({ ok: false, mensaje: 'Socio no encontrado' });
-    return res.json({ ok: true, datos: socio });
+    return res.json({ ok: true, datos: mapSocio(socio) });
   } catch (e) {
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });
   }
@@ -44,20 +49,34 @@ router.get('/:id', requireAuth, async (req, res) => {
 /* ── GET /api/socios/:id/estado-cuenta ───────────────────── */
 router.get('/:id/estado-cuenta', requireAuth, async (req, res) => {
   try {
-    const [socio, aportes, creditos] = await Promise.all([
-      prisma.socio.findUnique({ where: { id: req.params.id } }),
+    const sId = req.params.id;
+    // Buscar el socio primero para obtener su UUID si se pasó el código
+    const socioBase = await prisma.socio.findFirst({ 
+      where: { OR: [{ id: sId }, { codigo: sId }] } 
+    });
+    if (!socioBase) return res.status(404).json({ ok: false, mensaje: 'Socio no encontrado' });
+    const uuid = socioBase.id;
+
+    const [aportes, creditos] = await Promise.all([
       prisma.aporte.findMany({
-        where: { socioId: req.params.id },
+        where: { socioId: uuid },
         include: { periodo: true },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.credito.findMany({
-        where: { socioId: req.params.id },
+        where: { socioId: uuid },
         orderBy: { createdAt: 'desc' },
       }),
     ]);
-    if (!socio) return res.status(404).json({ ok: false, mensaje: 'Socio no encontrado' });
-    return res.json({ ok: true, datos: { socio, aportes, creditos } });
+
+    return res.json({ 
+      ok: true, 
+      datos: { 
+        socio: mapSocio(socioBase), 
+        aportes: aportes.map(require('../lib/mappings').mapAporte), 
+        creditos: creditos.map(require('../lib/mappings').mapCredito) 
+      } 
+    });
   } catch (e) {
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });
   }
@@ -77,6 +96,7 @@ router.post('/', requireAuth, requireRole('administrador', 'tesorero'), async (r
 
     const nuevo = await prisma.socio.create({
       data: {
+        id:           documento, // El ID es el documento
         codigo,
         nombre,
         documento,
@@ -91,11 +111,11 @@ router.post('/', requireAuth, requireRole('administrador', 'tesorero'), async (r
     });
 
     await audit(req, { accion: 'CREAR_SOCIO', tabla: 'socios', registroId: nuevo.id, detalle: { nombre } });
-    return res.status(201).json({ ok: true, datos: { ...nuevo, aporteMensual: Number(nuevo.aporteMensual), ahorroAcumulado: Number(nuevo.ahorroAcumulado) }, mensaje: 'Socio creado exitosamente' });
+    return res.status(201).json({ ok: true, datos: mapSocio(nuevo), mensaje: 'Socio creado exitosamente' });
   } catch (e) {
-    if (e.code === 'P2002') return res.status(409).json({ ok: false, mensaje: 'Ya existe un socio con ese documento' });
+    if (e.code === 'P2002') return res.status(409).json({ ok: false, mensaje: 'Ya existe un socio con ese documento o código' });
     console.error('[socios/crear]', e);
-    return res.status(500).json({ ok: false, mensaje: 'Error interno' });
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
   }
 });
 
@@ -103,9 +123,13 @@ router.post('/', requireAuth, requireRole('administrador', 'tesorero'), async (r
 router.put('/:id', requireAuth, requireRole('administrador', 'tesorero'), async (req, res) => {
   try {
     const { nombre, email, telefono, aporteMensual, cargo, sede, estado } = req.body;
+    
+    // Buscar por ID o Código
+    const socio = await prisma.socio.findFirst({ where: { OR: [{ id: req.params.id }, { codigo: req.params.id }] } });
+    if (!socio) return res.status(404).json({ ok: false, mensaje: 'Socio no encontrado' });
 
     const actualizado = await prisma.socio.update({
-      where: { id: req.params.id },
+      where: { id: socio.id },
       data: {
         ...(nombre        && { nombre }),
         ...(email         && { email }),
@@ -117,10 +141,9 @@ router.put('/:id', requireAuth, requireRole('administrador', 'tesorero'), async 
       }
     });
 
-    await audit(req, { accion: 'ACTUALIZAR_SOCIO', tabla: 'socios', registroId: req.params.id });
-    return res.json({ ok: true, datos: actualizado, mensaje: 'Socio actualizado' });
+    await audit(req, { accion: 'ACTUALIZAR_SOCIO', tabla: 'socios', registroId: socio.id });
+    return res.json({ ok: true, datos: mapSocio(actualizado), mensaje: 'Socio actualizado' });
   } catch (e) {
-    if (e.code === 'P2025') return res.status(404).json({ ok: false, mensaje: 'Socio no encontrado' });
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });
   }
 });
@@ -128,15 +151,16 @@ router.put('/:id', requireAuth, requireRole('administrador', 'tesorero'), async 
 /* ── DELETE /api/socios/:id ──────────────────────────────── */
 router.delete('/:id', requireAuth, requireRole('administrador'), async (req, res) => {
   try {
-    // Soft delete: cambiar estado a "retirado"
+    const socio = await prisma.socio.findFirst({ where: { OR: [{ id: req.params.id }, { codigo: req.params.id }] } });
+    if (!socio) return res.status(404).json({ ok: false, mensaje: 'Socio no encontrado' });
+
     await prisma.socio.update({
-      where: { id: req.params.id },
+      where: { id: socio.id },
       data:  { estado: 'retirado' }
     });
-    await audit(req, { accion: 'RETIRAR_SOCIO', tabla: 'socios', registroId: req.params.id });
+    await audit(req, { accion: 'RETIRAR_SOCIO', tabla: 'socios', registroId: socio.id });
     return res.json({ ok: true, mensaje: 'Socio retirado del sistema' });
   } catch (e) {
-    if (e.code === 'P2025') return res.status(404).json({ ok: false, mensaje: 'Socio no encontrado' });
     return res.status(500).json({ ok: false, mensaje: 'Error interno' });
   }
 });

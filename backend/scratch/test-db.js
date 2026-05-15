@@ -1,16 +1,18 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function main() {
+async function test() {
   try {
-    console.log('Testing connection...');
-    const result = await prisma.$queryRaw`SELECT 1 as result`;
-    console.log('Connection successful:', result);
+    console.log('Intentando conectar...');
+    await prisma.$connect();
+    console.log('Conexión exitosa');
+    const result = await prisma.$queryRaw`SELECT 1`;
+    console.log('Query exitosa:', result);
   } catch (e) {
-    console.error('Connection failed:', e);
+    console.error('Error de conexión:', e);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-main();
+test();

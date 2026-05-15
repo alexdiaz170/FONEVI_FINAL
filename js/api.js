@@ -1,7 +1,7 @@
 /* ============================================================
    FONEVI — js/api.js
    Cliente HTTP completo: JWT, refresh, errores, offline fallback
-   
+
    MODO DE OPERACIÓN:
    - Si el servidor está corriendo → usa datos reales (PostgreSQL)
    - Si no hay servidor → usa DB local (data.js) automáticamente
@@ -10,13 +10,15 @@
 const API = {
 
   /* ── Configuración ────────────────────────────────────── */
-  BASE_URL:    "http://127.0.0.1:3000/api",
-  TIMEOUT_MS:  8000,   // 8 segundos antes de timeout
-  TOKEN_KEY:   "fonevi_token",
-  SESSION_KEY: "fonevi_session",
-  MODO_OFFLINE: false,  // se activa automáticamente si el servidor no responde
+  // URL base según entorno (desde config.js)
+  get BASE_URL() {
+    return CONFIG.getBackendURL();
+  },
 
-  /* ── Token JWT ────────────────────────────────────────── */
+  TIMEOUT_MS:  CONFIG.APP.TIMEOUT_MS,
+  TOKEN_KEY:   CONFIG.APP.TOKEN_KEY,
+  SESSION_KEY: CONFIG.APP.SESSION_KEY,
+  MODO_OFFLINE: false,
   getToken()        { return sessionStorage.getItem(this.TOKEN_KEY) || null; },
   setToken(t)       { sessionStorage.setItem(this.TOKEN_KEY, t); },
   removeToken()     { sessionStorage.removeItem(this.TOKEN_KEY); },
@@ -84,25 +86,29 @@ const API = {
 
     } catch(err) {
       clearTimeout(timer);
+      
+      const prohibirFallback = CONFIG.isProduction() || 
+                               CONFIG.FEATURES?.OFFLINE_MODE === false ||
+                               ["POST", "PUT", "DELETE"].includes(method);
 
-      // Timeout o sin conexión → activar modo offline
-      if (err.name === "AbortError" || err.message === "Failed to fetch" ||
+      // Errores de red (fetch falló antes de recibir respuesta)
+      if (err.name === "AbortError" || err.message === "Failed to fetch" || 
           err.message.includes("NetworkError") || err.message.includes("net::")) {
-
-        console.warn("API: Error de conexión detectado. Revisa si el servidor está corriendo en localhost:3000 y si no hay bloqueos de CORS.", err);
-        console.warn("API: Activando modo offline (data.js)");
+        
+        console.warn("API: Fallo de conexión. Intentando usar datos locales de emergencia...");
         this.MODO_OFFLINE = true;
-
-        // Mostrar banner si existe
         const banner = document.getElementById("offlineBanner");
         if (banner) banner.classList.add("show");
 
-        // Fallback no debe redirigir a 401 si no encuentra la ruta
-        const fbResult = await this._fallback(method, endpoint, body);
-        return fbResult;
+        if (prohibirFallback) {
+          console.error("API: Error de conexión crítico.", err.message);
+          const errProd = new Error("No se pudo conectar con el servidor real. Los datos no fueron guardados en la nube.");
+          throw errProd;
+        }
+
+        return await this._fallback(method, endpoint, body);
       }
 
-      // Si es otro error de red, lanzarlo
       throw err;
     }
   },
@@ -414,15 +420,20 @@ const API = {
   async ping() {
     try {
       const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 3000); // Subimos a 3s para evitar falsos negativos
-      const res = await fetch(this.BASE_URL.replace("/api","") + "/api/health?t=" + Date.now(),
+      // Aumentar a 20s para conexiones lentas a Supabase
+      setTimeout(() => ctrl.abort(), 20000); 
+      const res = await fetch(this.BASE_URL + "/health?t=" + Date.now(),
                               { signal: ctrl.signal });
       const data = await res.json();
-      this.MODO_OFFLINE = !data.ok;
-      if (data.ok) console.log("API: Conexión establecida con el servidor real.");
-      return data.ok;
+      
+      if (data.ok && data.db === 'connected') {
+        this.MODO_OFFLINE = false;
+        return true;
+      }
+      
+      this.MODO_OFFLINE = true;
+      return false;
     } catch(e) {
-      console.warn("API: El servidor real no responde. Usando modo offline.", e.message);
       this.MODO_OFFLINE = true;
       return false;
     }
@@ -514,5 +525,9 @@ const API = {
     listar:   (p={}) => API.get("/movimientos?" + new URLSearchParams(p)),
     crear:    (body) => API.post("/movimientos", body),
     eliminar: (id)   => API.delete(`/movimientos/${id}`),
+  },
+  
+  sync: {
+    all: () => API.get("/sync/all"),
   },
 };

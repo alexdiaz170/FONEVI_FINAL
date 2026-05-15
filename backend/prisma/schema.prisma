@@ -33,7 +33,7 @@ model Usuario {
 }
 
 model Socio {
-  id               String   @id @default(uuid())
+  id               String   @id // Usaremos el número de documento como ID
   codigo           String   @unique
   nombre           String
   documento        String   @unique
