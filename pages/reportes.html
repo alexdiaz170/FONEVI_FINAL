@@ -158,7 +158,6 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
-<script src="../js/data.js"></script>
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
@@ -170,7 +169,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
   if (!Roles.proteger("reportes")) return;
-  await window.DataSync?.init();
+  // DataSync removed
   buildLayout("Reportes", "Genera reportes financieros", "");
 });
 

@@ -1,14 +1,18 @@
-/* ── doLogout — disponible desde el momento en que carga layout.js ── */
+/* ── doLogout ── */
 function doLogout() {
+  if (window._loggingOut) return;
   if (!confirm("¿Deseas cerrar sesión?")) return;
-  try { sessionStorage.clear(); } catch(e) {}
-  try {
-    if (typeof API !== "undefined") API.clearSession();
-  } catch(e) {}
-  if (typeof PageTransition !== "undefined") PageTransition._navigating = false;
-  var enPages = window.location.pathname.includes("/pages/") ||
-                window.location.pathname.includes("/app/");
-  window.location.href = enPages ? "../index.html" : "index.html";
+  
+  window._loggingOut = true;
+  if (typeof API !== "undefined") API.clearSession();
+  
+  if (typeof Auth !== "undefined" && Auth.logout) {
+    Auth.logout();
+  } else {
+    sessionStorage.clear();
+    const enPages = window.location.pathname.includes("/pages/") || window.location.pathname.includes("/app/");
+    window.location.href = enPages ? "../index.html" : "index.html";
+  }
 }
 
 /* ============================================================

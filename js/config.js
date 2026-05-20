@@ -38,24 +38,25 @@ const CONFIG = {
       return this.normalizeApiURL(runtimeURL);
     }
 
-    // Si estamos en un servidor (no file://)
+    // Si estamos en un servidor (HTTP/HTTPS)
     if (window.location.protocol !== 'file:') {
-      // Si el puerto es el del backend (3000), o si estamos en producción, usar el mismo origen
-      if (window.location.port === '3000' || this.isProduction()) {
-        const url = window.location.origin;
-        console.log("CONFIG: Usando URL de origen actual:", url);
-        return this.normalizeApiURL(url);
+      // Si estamos ejecutando en desarrollo local (localhost o similar) pero en un puerto diferente del backend (3000),
+      // redirigir las peticiones al backend local real para evitar fallos de conexión (ej. Live Server).
+      const hostname = window.location.hostname;
+      const port = window.location.port;
+      if ((hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) && port !== '3000' && port !== '') {
+        const fallback = `http://${hostname}:3000`;
+        console.log(`CONFIG: Detectado puerto alternativo (${port}) en desarrollo local, usando backend en:`, fallback);
+        return this.normalizeApiURL(fallback);
       }
+
+      console.log("CONFIG: Ejecutando en servidor web, aplicando Same-Origin '/api'");
+      return "/api";
     }
 
-    if (this.isProduction()) {
-      console.log("CONFIG: Modo producción activo.");
-      return "https://tu-backend-produccion.herokuapp.com/api";
-    }
-
-    // Desarrollo local (fallback): Siempre apuntar al backend de Node en el puerto 3000
+    // Si estamos abriendo localmente desde archivo (file://), usar puerto local del backend
     const fallback = "http://localhost:3000";
-    console.log("CONFIG: Desarrollo local, usando backend en:", fallback);
+    console.log("CONFIG: Local filesystem (file://), usando fallback en:", fallback);
     return this.normalizeApiURL(fallback);
   },
 

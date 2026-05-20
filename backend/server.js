@@ -9,31 +9,42 @@ const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const frontendPath = path.join(__dirname, '..');
 
 // Middleware
-app.use(helmet());
+// Desactivar la política CSP estricta de Helmet para permitir scripts inline del frontend
+// (en producción deberías configurar CSP apropiadamente)
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
-app.use(express.json());
 
-// API endpoints PRIMERO
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, timestamp: new Date().toISOString() });
-});
+// Durante desarrollo permitir conexiones a backend en 3001 desde la UI servida en 3000
+if ((process.env.NODE_ENV || 'development') !== 'production') {
+  // Proxyear llamadas /api al backend completo que corre en :3001
+  app.use('/api', createProxyMiddleware({
+    target: 'http://127.0.0.1:3001',
+    changeOrigin: true,
+    logLevel: 'debug',
+    onError: (err, req, res) => {
+      console.error('Proxy error:', err && err.message);
+      if (!res.headersSent) {
+        res.status(502).json({ ok: false, mensaje: 'Proxy error' });
+      }
+    }
+  }));
 
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ ok: false, mensaje: 'Email y contraseña requeridos' });
-  }
-  res.json({
-    ok: true,
-    usuario: { id: 'test', email, nombre: 'Usuario Test', rol: 'administrador' }
+  app.use((req, res, next) => {
+    const connectTargets = ["'self'", 'http://127.0.0.1:3001', 'http://localhost:3001'];
+    const scriptSrc = ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdn.jsdelivr.net'];
+    const policy = `default-src 'self'; connect-src ${connectTargets.join(' ')}; script-src ${scriptSrc.join(' ')}; img-src 'self' data:; style-src 'self' 'unsafe-inline';`;
+    res.setHeader('Content-Security-Policy', policy);
+    next();
   });
-});
+}
+app.use(express.json());
 
 // Servir archivos estáticos (CSS, JS, etc)
 app.use(express.static(frontendPath, { 

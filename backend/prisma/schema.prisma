@@ -51,6 +51,7 @@ model Socio {
   aportes  Aporte[]
   creditos Credito[]
 
+  @@index([estado])
   @@map("socios")
 }
 
@@ -82,6 +83,9 @@ model Aporte {
   socio   Socio   @relation(fields: [socioId],   references: [id])
   periodo Periodo @relation(fields: [periodoId], references: [id])
 
+  @@index([socioId])
+  @@index([periodoId])
+  @@index([estado])
   @@map("aportes")
 }
 
@@ -103,6 +107,8 @@ model Credito {
 
   socio Socio @relation(fields: [socioId], references: [id])
 
+  @@index([socioId])
+  @@index([estado])
   @@map("creditos")
 }
 
@@ -135,6 +141,8 @@ model Movimiento {
   fecha       DateTime
   createdAt   DateTime @default(now()) @map("created_at")
 
+  @@index([tipo])
+  @@index([fecha])
   @@map("movimientos")
 }
 
@@ -147,6 +155,8 @@ model SolidaridadMovimiento {
   beneficiario String?
   createdAt    DateTime @default(now()) @map("created_at")
 
+  @@index([tipo])
+  @@index([fecha])
   @@map("solidaridad_movimientos")
 }
 
@@ -162,6 +172,8 @@ model Auditoria {
 
   usuario Usuario? @relation(fields: [usuarioId], references: [id])
 
+  @@index([usuarioId])
+  @@index([createdAt])
   @@map("auditoria")
 }
 
@@ -174,5 +186,7 @@ model WaLog {
   enviadoEn   DateTime @map("enviado_en")
   createdAt   DateTime @default(now()) @map("created_at")
 
+  @@index([numero])
+  @@index([enviadoEn])
   @@map("wa_logs")
 }

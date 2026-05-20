@@ -277,7 +277,6 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
-<script src="../js/data.js"></script>
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
@@ -301,7 +300,7 @@ var waActualId     = null;     // socioId para WhatsApp
 document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("aportes")) return;
 
-  await window.DataSync?.init();
+  // DataSync removed
 
   buildLayout(
     "Panel de Mora",
@@ -712,10 +711,8 @@ async function cambiarEstadoMora(socioId, nuevoEstado) {
       await API.aportes.actualizarEstado(a.id, nuevoEstado);
     }
     
-    await DataSync.syncAportes();
-    if (nuevoEstado === "pagado") {
-      await DataSync.syncSocios();
-    }
+    // DataSync removed
+
     
     renderKPIs();
     renderSidebar();

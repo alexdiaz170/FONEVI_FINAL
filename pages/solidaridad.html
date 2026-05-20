@@ -285,7 +285,6 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
-<script src="../js/data.js"></script>
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
@@ -311,13 +310,38 @@ var TIPOS = {
 
 var filtroMov = "todos";
 
+async function cargarSolidaridad() {
+  try {
+    const [movRes, saldoRes] = await Promise.all([
+      API.solidaridad.listar(),
+      API.solidaridad.saldo()
+    ]);
+
+    if (movRes && movRes.ok) {
+      window.DB.solidaridad.movimientos = movRes.datos;
+    }
+    if (saldoRes && saldoRes.ok) {
+      window.DB.solidaridad.saldo_actual = saldoRes.saldo_actual || 0;
+    }
+
+    if (!window.DB.socios || !window.DB.socios.length) {
+      const sociosRes = await API.socios.listar();
+      if (sociosRes && sociosRes.ok) {
+        window.DB.socios = sociosRes.datos;
+      }
+    }
+  } catch (error) {
+    console.error("Error cargando datos de solidaridad:", error);
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════
    INICIO
 ═══════════════════════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("solidaridad")) return;
 
-  await window.DataSync?.init();
+  await cargarSolidaridad();
 
   buildLayout(
     "Fondo de Solidaridad",
@@ -562,25 +586,23 @@ async function guardarAyuda() {
   try {
     const res = await API.solidaridad.crear(nuevo);
     if (res && res.ok) {
-      await DataSync.syncSolidaridad();
+        await cargarSolidaridad();
 
-      btn.textContent = "Registrar ayuda";
-      btn.disabled    = false;
+        btn.textContent = "Registrar ayuda";
+        btn.disabled    = false;
 
-      Modal.close("modalNuevaAyuda");
-      renderKPIs();
-      renderSaldoPanel();
-      renderCategorias();
-      renderMovimientos(filtroMov);
+        Modal.close("modalNuevaAyuda");
+        renderKPIs();
+        renderSaldoPanel();
+        renderCategorias();
+        renderMovimientos(filtroMov);
 
-      // Actualizar topbar subtitle
-      buildLayout(
-        "Fondo de Solidaridad",
-        "Saldo: " + DataHelper.formatCOP(DB.solidaridad.saldo_actual),
-        '<button class="btn btn-primary" onclick="Modal.open(\'modalNuevaAyuda\')">+ Registrar ayuda</button>'
-      );
-
-      Toast.success("✓ Ayuda de " + DataHelper.formatCOP(monto) + " registrada para " + ben + ".");
+        // Actualizar topbar subtitle
+        buildLayout(
+          "Fondo de Solidaridad",
+          "Saldo: " + DataHelper.formatCOP(DB.solidaridad.saldo_actual),
+          '<button class="btn btn-primary" onclick="Modal.open(\'modalNuevaAyuda\')">+ Registrar ayuda</button>'
+        );
     } else {
       Toast.error(res?.mensaje || "Error al registrar ayuda");
       btn.textContent = "Registrar ayuda";
@@ -616,7 +638,7 @@ async function registrarAporte() {
   try {
     const res = await API.solidaridad.crear(nuevo);
     if (res && res.ok) {
-      await DataSync.syncSolidaridad();
+      await cargarSolidaridad();
 
       renderKPIs();
       renderSaldoPanel();

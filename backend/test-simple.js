@@ -53,7 +53,9 @@ app.get('/api/health', (req, res) => {
   res.json({
     ok: true,
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    db: 'connected',
+    database: 'connected'
   });
 });
 

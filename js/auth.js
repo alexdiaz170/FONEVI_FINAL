@@ -4,16 +4,19 @@
 const Auth = {
   KEY: "fonevi_session",
 
-  login(email, password) {
-    const u = DB.usuarios.find(
-      u => u.email === email.trim().toLowerCase() &&
-           u.password === password &&
-           u.estado === "activo"
-    );
-    if (!u) return { ok: false };
-    const session = { id: u.id, nombre: u.nombre, email: u.email, rol: u.rol, avatar: u.avatar };
-    sessionStorage.setItem(this.KEY, JSON.stringify(session));
-    return { ok: true, usuario: session };
+  async login(email, password) {
+    try {
+      const res = await API.auth.login(email, password);
+      if (res && res.ok) {
+        // API.auth.login already sets token and session via API.setToken/session
+        const session = res.usuario || res.usuario;
+        sessionStorage.setItem(this.KEY, JSON.stringify(res.usuario || res.usuario));
+        return { ok: true, usuario: res.usuario };
+      }
+      return { ok: false, mensaje: res?.mensaje || 'Credenciales incorrectas' };
+    } catch (e) {
+      return { ok: false, mensaje: e.message || 'Error de conexión' };
+    }
   },
 
   logout() {

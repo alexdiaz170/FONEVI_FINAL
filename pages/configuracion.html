@@ -397,7 +397,6 @@
 
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
-<script src="../js/data.js"></script>
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
@@ -423,7 +422,7 @@ const CFG_KEY = "fonevi_config";
 document.addEventListener("DOMContentLoaded", async () => {
   if (!Roles.proteger("configuracion")) return;
 
-  await window.DataSync?.init();
+  // DataSync removed
 
   buildLayout("Configuración", "Parámetros del sistema FONEVI", "");
 
@@ -485,7 +484,7 @@ async function guardarConfig(seccion) {
     for (const item of dataToUpdate) {
       await API.config.actualizar(item.clave, item.valor);
     }
-    await DataSync.syncConfig();
+    // DataSync removed
 
     if (seccion === "credito") {
       renderImpactoCartera();
@@ -543,24 +542,34 @@ function renderImpactoCartera() {
 }
 
 function renderUsuarios() {
-  document.getElementById("usuariosTbody").innerHTML = DB.usuarios.map(u => {
-    const avatarClass = u.rol === 'administrador' ? 'admin' : u.rol === 'tesorero' ? 'tesorero' : 'socio';
-    const initials = u.nombre.split(' ').map(p => p[0]).slice(0,2).join('');
-    return `
-    <tr>
-      <td class="mono muted">${u.id}</td>
-      <td style="font-weight:500;"><span class="u-avatar ${avatarClass}">${initials}</span>${u.nombre}</td>
-      <td class="muted">${u.email}</td>
-      <td><span class="pill ${u.rol === 'administrador' ? 'pill-red' : u.rol === 'tesorero' ? 'pill-amber' : 'pill-blue'}">${u.rol}</span></td>
-      <td>${DataHelper.estadoPill(u.estado)}</td>
-      <td>
-        <button class="btn ${u.estado === 'activo' ? 'btn-secondary' : 'btn-success'} btn-sm" onclick="toggleEstado('${u.id}')">
-          ${u.estado === 'activo' ? '⏸ Desactivar' : '▶ Activar'}
-        </button>
-      </td>
-    </tr>
-  `;
-  }).join("");
+  // Cargar usuarios desde backend
+  (async () => {
+    try {
+      const res = await API.get('/usuarios');
+      if (!res || !res.ok) { document.getElementById('usuariosTbody').innerHTML = '<tr><td colspan="6">No se pudieron cargar los usuarios.</td></tr>'; return; }
+      const usuarios = res.datos || [];
+      document.getElementById('usuariosTbody').innerHTML = usuarios.map(u => {
+        const avatarClass = u.rol === 'administrador' ? 'admin' : u.rol === 'tesorero' ? 'tesorero' : 'socio';
+        const initials = (u.nombre || '').split(' ').map(p => p[0]).slice(0,2).join('');
+        return `
+        <tr>
+          <td class="mono muted">${u.id}</td>
+          <td style="font-weight:500;"><span class="u-avatar ${avatarClass}">${initials}</span>${u.nombre}</td>
+          <td class="muted">${u.email}</td>
+          <td><span class="pill ${u.rol === 'administrador' ? 'pill-red' : u.rol === 'tesorero' ? 'pill-amber' : 'pill-blue'}">${u.rol}</span></td>
+          <td>${DataHelper.estadoPill(u.estado)}</td>
+          <td>
+            <button class="btn ${u.estado === 'activo' ? 'btn-secondary' : 'btn-success'} btn-sm" onclick="toggleEstado('${u.id}')">
+              ${u.estado === 'activo' ? '⏸ Desactivar' : '▶ Activar'}
+            </button>
+          </td>
+        </tr>
+      `;
+      }).join("");
+    } catch (e) {
+      document.getElementById('usuariosTbody').innerHTML = '<tr><td colspan="6">Error cargando usuarios</td></tr>';
+    }
+  })();
 }
 
 function guardarUsuario() {
@@ -568,25 +577,53 @@ function guardarUsuario() {
   const email  = document.getElementById("nu-email").value.trim();
   const pass   = document.getElementById("nu-pass").value;
   if (!nombre || !email || !pass) { Toast.warn("Completa todos los campos."); return; }
-  DB.usuarios.push({
-    id: "U" + String(DB.usuarios.length + 1).padStart(3, "0"),
-    nombre, email, password: pass,
-    rol: document.getElementById("nu-rol").value,
-    estado: "activo",
-    avatar: nombre.split(" ").map(p => p[0]).slice(0, 2).join("")
-  });
-  Modal.close("modalNuevoUsuario");
-  renderUsuarios();
-  Toast.success(`Usuario ${nombre} creado correctamente.`);
+  (async () => {
+    try {
+      const body = { nombre, email, password: pass, rol: document.getElementById('nu-rol').value };
+      const res = await API.post('/usuarios', body);
+      if (res && res.ok) {
+        Modal.close('modalNuevoUsuario');
+        Toast.success(`Usuario ${nombre} creado correctamente.`);
+        renderUsuarios();
+      } else {
+        Toast.error(res?.mensaje || 'Error creando usuario');
+      }
+    } catch (e) {
+      Toast.error(e.message || 'Error de conexión');
+    }
+  })();
 }
 
 function toggleEstado(id) {
-  const u = DB.usuarios.find(x => x.id === id);
-  if (!u) return;
-  u.estado = u.estado === "activo" ? "inactivo" : "activo";
-  renderUsuarios();
-  Toast.success(`Usuario ${u.nombre} ${u.estado === 'activo' ? 'activado' : 'desactivado'}.`);
+  (async () => {
+    try {
+      // Obtener estado actual desde la tabla DOM (alternativamente llamar GET /usuarios/:id)
+      const row = Array.from(document.querySelectorAll('#usuariosTbody tr')).find(tr => tr.querySelector('.mono')?.textContent === id);
+      let nombre = '';
+      let estadoActual = 'activo';
+      if (row) {
+        nombre = row.children[1]?.textContent || '';
+        const badge = row.children[4]?.querySelector('.pill');
+        estadoActual = badge ? (badge.textContent.includes('Activo') ? 'activo' : 'inactivo') : 'activo';
+      }
+      const nuevo = estadoActual === 'activo' ? 'inactivo' : 'activo';
+      const res = await API.put(`/usuarios/${id}`, { estado: nuevo });
+      if (res && res.ok) {
+        Toast.success(`Usuario ${nombre.trim()} ${nuevo === 'activo' ? 'activado' : 'desactivado'}.`);
+        renderUsuarios();
+      } else {
+        Toast.error(res?.mensaje || 'Error actualizando usuario');
+      }
+    } catch (e) {
+      Toast.error(e.message || 'Error de conexión');
+    }
+  })();
 }
+
+// Exponer funciones al scope global para pruebas automatizadas y llamadas externas
+window.renderUsuarios = renderUsuarios;
+window.guardarUsuario = guardarUsuario;
+window.toggleEstado = toggleEstado;
 </script>
 </body>
 </html>

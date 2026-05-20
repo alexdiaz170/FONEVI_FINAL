@@ -8,12 +8,28 @@ const cors        = require('cors');
 const helmet      = require('helmet');
 const morgan      = require('morgan');
 const rateLimit   = require('express-rate-limit');
-const { prisma }  = require('./lib/prisma');
+const path        = require('path');
+const fs          = require('fs');
+const db          = require('./db');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
 // ── Seguridad y utilidades ──────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https://*", "http://*"],
+      connectSrc: ["'self'", "http://*", "https://*", "ws://*", "wss://*"],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      upgradeInsecureRequests: null, // Allow HTTP local development testing
+    }
+  }
+}));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -26,8 +42,6 @@ const allowedOrigins = (process.env.CORS_ORIGIN || '')
 
 app.use(cors({
   origin(origin, callback) {
-    // Permitir si: no hay origen (mismo dominio), si allowedOrigins está vacío,
-    // o si incluye '*' como comodín, o si el origen está en la lista.
     if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -66,16 +80,25 @@ app.use('/api/auth/login', loginLimiter);
 // ── Health check ────────────────────────────────────────────
 app.get('/api/health', async (_req, res) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
-    return res.json({ ok: true, version: '1.0.0', db: 'connected', env: process.env.NODE_ENV });
+    const start = Date.now();
+    await db.query('SELECT 1');
+    const latency = Date.now() - start;
+    return res.json({
+      ok: true,
+      version: '1.0.0',
+      db: 'connected',
+      latency: `${latency}ms`,
+      env: process.env.NODE_ENV
+    });
   } catch (e) {
+    console.error('❌ Health check falló:', e);
     return res.status(503).json({ ok: false, mensaje: 'Base de datos no disponible', error: e.message });
   }
 });
 
 // ── Rutas ───────────────────────────────────────────────────
 app.use('/api/auth',           require('./routes/auth'));
-app.use('/api/sync',           require('./routes/sync'));
+app.use('/api/usuarios',       require('./routes/usuarios'));
 app.use('/api/socios',         require('./routes/socios'));
 app.use('/api/aportes',        require('./routes/aportes'));
 app.use('/api/creditos',       require('./routes/creditos'));
@@ -87,26 +110,42 @@ app.use('/api/whatsapp',       require('./routes/whatsapp'));
 app.use('/api/solidaridad',    require('./routes/solidaridad'));
 app.use('/api/movimientos',    require('./routes/movimientos'));
 
-// ── 404 ─────────────────────────────────────────────────────
+// ── Servir archivos estáticos del frontend (Same-Origin) ────
+const frontendPath = path.join(__dirname, '..', '..');
+app.use(express.static(frontendPath, { 
+  index: false,
+  extensions: ['html', 'css', 'js', 'json', 'svg', 'png', 'jpg', 'jpeg', 'gif', 'webp']
+}));
+
+// Fallback a index.html para rutas no-API (SPA architecture)
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api')) {
+    return next();
+  }
+  const indexFile = path.join(frontendPath, 'index.html');
+  if (fs.existsSync(indexFile)) {
+    return res.sendFile(indexFile);
+  }
+  next();
+});
+
+// ── 404 API ──────────────────────────────────────────────────
 app.use((_req, res) => {
   res.status(404).json({ ok: false, mensaje: 'Ruta no encontrada' });
 });
 
 // ── Error handler global ─────────────────────────────────────
-app.use((err, _req, res, _next) => {
-  console.error('[Error global]', err);
-  if (err.message?.startsWith('CORS'))
-    return res.status(403).json({ ok: false, mensaje: err.message });
-  return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
-});
+app.use(errorHandler);
 
 // ── Arrancar ─────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT) || 3000;
 
 async function main() {
   try {
-    await prisma.$connect();
-    console.log('✅ Base de datos conectada');
+    // Probar la conexión a PostgreSQL real con el Pooler antes de levantar la app
+    await db.query('SELECT 1');
+    console.log('✅ PostgreSQL conectado y verificado vía pg Pool');
+    
     const HOST = process.env.HOST || '0.0.0.0';
     app.listen(PORT, HOST, () => {
       console.log(`🚀 FONEVI API corriendo en http://${HOST}:${PORT}`);
@@ -114,7 +153,7 @@ async function main() {
       console.log(`🌍 Entorno:  ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (err) {
-    console.error('❌ No se pudo conectar a la base de datos:', err.message);
+    console.error('❌ No se pudo conectar a la base de datos PostgreSQL:', err.message);
     console.error('   Verifica DATABASE_URL en el archivo .env');
     process.exit(1);
   }
@@ -123,5 +162,5 @@ async function main() {
 main();
 
 // Cierre limpio
-process.on('SIGINT',  () => { prisma.$disconnect(); process.exit(0); });
-process.on('SIGTERM', () => { prisma.$disconnect(); process.exit(0); });
+process.on('SIGINT',  () => { db.pool.end(); process.exit(0); });
+process.on('SIGTERM', () => { db.pool.end(); process.exit(0); });

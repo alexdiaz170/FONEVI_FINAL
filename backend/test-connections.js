@@ -96,6 +96,7 @@ const prisma = new PrismaClient();
             id: true,
             nombre: true,
             email: true,
+            password: true,
             rol: true,
             estado: true
           }
@@ -108,10 +109,23 @@ const prisma = new PrismaClient();
           });
         }
 
+        const isMatch = await require('bcryptjs').compare(password, usuario.password);
+        if (!isMatch) {
+          return res.status(401).json({
+            ok: false,
+            mensaje: 'Credenciales inválidas'
+          });
+        }
+
         res.json({
           ok: true,
           mensaje: 'Login exitoso (test)',
-          usuario,
+          usuario: {
+            id: usuario.id,
+            nombre: usuario.nombre,
+            email: usuario.email,
+            rol: usuario.rol
+          },
           token: 'test-token-' + Date.now()
         });
       } catch (err) {

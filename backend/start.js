@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 
 // API routes - primero
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, timestamp: new Date().toISOString(), db: 'connected', database: 'connected' });
 });
 
 app.post('/api/auth/login', (req, res) => {

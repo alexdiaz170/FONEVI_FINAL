@@ -52,30 +52,22 @@
             <span class="search-icon">🔍</span>
             <input type="text" id="searchAudit" placeholder="Buscar en logs..." oninput="aplicarFiltros()" />
           </div>
-          <button class="btn btn-secondary btn-sm" onclick="exportarLogs()" style="display:flex; align-items:center; gap:6px;">
+          <button class="btn btn-secondary btn-sm" onclick="exportarLogs()" style="display:flex;align-items:center;gap:6px;">
             <span>⬇</span> Exportar CSV
           </button>
-          <button class="btn btn-secondary btn-sm" onclick="limpiarFiltros()" style="display:flex; align-items:center; gap:6px;">
+          <button class="btn btn-secondary btn-sm" onclick="limpiarFiltros()" style="display:flex;align-items:center;gap:6px;">
             <span>✕</span> Limpiar
+          </button>
+          <button class="btn btn-sm" id="btnLimpiarAudit" onclick="limpiarAuditoria()" style="display:flex;align-items:center;gap:6px;background:var(--red,#dc2626);color:#fff;">
+            <span>🗑</span> Purgar logs
           </button>
         </div>
 
         <!-- Fila 2: filtro usuarios -->
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <span style="font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; white-space:nowrap;">👤 Usuario:</span>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;" id="filtroUsuarioBtns">
-            <button class="filter-pill active" data-filtro="usuario" data-val="" onclick="setFiltro('usuario', this)">
-              Todos
-            </button>
-            <button class="filter-pill" data-filtro="usuario" data-val="Carlos Muñoz" onclick="setFiltro('usuario', this)" style="--pill-color:#e53e3e; --pill-bg:rgba(229,62,62,.1);">
-              🔴 Carlos Muñoz
-            </button>
-            <button class="filter-pill" data-filtro="usuario" data-val="Laura Jiménez" onclick="setFiltro('usuario', this)" style="--pill-color:#d97706; --pill-bg:rgba(217,119,6,.1);">
-              🟡 Laura Jiménez
-            </button>
-            <button class="filter-pill" data-filtro="usuario" data-val="Ana Torres" onclick="setFiltro('usuario', this)" style="--pill-color:#2563eb; --pill-bg:rgba(37,99,235,.1);">
-              🔵 Ana Torres
-            </button>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;">👤 Usuario:</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;" id="filtroUsuarioBtns">
+            <button class="filter-pill active" data-filtro="usuario" data-val="" onclick="setFiltro('usuario',this)">Todos</button>
           </div>
         </div>
 
@@ -199,7 +191,6 @@
 
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
-<script src="../js/data.js"></script>
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
@@ -208,173 +199,208 @@
 <script src="../js/app.js"></script>
 <script src="../js/search.js"></script>
 <script>
-/* Datos de auditoría simulados */
-const AUDIT_LOGS = [
-  { fecha: "2026-03-21 09:14", usuario: "Laura Jiménez",  rol: "tesorero",       accion: "crear",   modulo: "Aportes",      detalle: "Aporte registrado — Ana Torres (Mar 2026)",       ip: "192.168.1.10" },
-  { fecha: "2026-03-21 08:30", usuario: "Laura Jiménez",  rol: "tesorero",       accion: "crear",   modulo: "Créditos",     detalle: "Cuota registrada — crédito #C-034 Luis Mora",      ip: "192.168.1.10" },
-  { fecha: "2026-03-20 16:45", usuario: "Carlos Muñoz",   rol: "administrador",  accion: "aprobar", modulo: "Créditos",     detalle: "Crédito #C-039 aprobado — Pedro Salcedo $2.5M",   ip: "192.168.1.5" },
-  { fecha: "2026-03-20 11:20", usuario: "Carlos Muñoz",   rol: "administrador",  accion: "crear",   modulo: "Socios",       detalle: "Nuevo socio registrado — Mariana López Castro",    ip: "192.168.1.5" },
-  { fecha: "2026-03-19 15:00", usuario: "Laura Jiménez",  rol: "tesorero",       accion: "editar",  modulo: "Socios",       detalle: "Estado actualizado — Jorge Erazo → mora",          ip: "192.168.1.10" },
-  { fecha: "2026-03-19 10:30", usuario: "Carlos Muñoz",   rol: "administrador",  accion: "crear",   modulo: "Solidaridad",  detalle: "Ayuda médica registrada — Patricia Velasco $500k", ip: "192.168.1.5" },
-  { fecha: "2026-03-18 09:00", usuario: "Ana Torres",     rol: "socio",          accion: "login",   modulo: "Sistema",      detalle: "Inicio de sesión exitoso",                         ip: "192.168.1.22" },
-  { fecha: "2026-03-17 14:15", usuario: "Carlos Muñoz",   rol: "administrador",  accion: "editar",  modulo: "Contabilidad", detalle: "Movimiento editado — M003 monto ajustado",         ip: "192.168.1.5" },
-  { fecha: "2026-03-15 11:00", usuario: "Laura Jiménez",  rol: "tesorero",       accion: "crear",   modulo: "Aportes",      detalle: "Aportes masivos nómina Marzo 2026 (109 registros)","ip": "192.168.1.10" },
-  { fecha: "2026-03-10 08:45", usuario: "Carlos Muñoz",   rol: "administrador",  accion: "eliminar",modulo: "Config",       detalle: "Parámetro de tasa eliminado (duplicado)",          ip: "192.168.1.5" }
-];
+/* ── Mapa de acciones del backend a etiquetas legibles ── */
+const ACCION_MAP = {
+  'LOGIN':                    { label: 'login',    tipo: 'login'    },
+  'CAMBIAR_PASSWORD':         { label: 'cambiar contraseña', tipo: 'editar' },
+  'CREAR_SOCIO':              { label: 'crear',    tipo: 'crear'    },
+  'ACTUALIZAR_SOCIO':         { label: 'editar',   tipo: 'editar'   },
+  'RETIRAR_SOCIO':            { label: 'eliminar', tipo: 'eliminar' },
+  'REGISTRAR_APORTE_COMPUESTO':{ label: 'crear',   tipo: 'crear'    },
+  'CAMBIAR_ESTADO_APORTE':    { label: 'editar',   tipo: 'editar'   },
+  'CREAR_CREDITO':            { label: 'aprobar',  tipo: 'aprobar'  },
+  'PAGAR_CUOTA_CREDITO':      { label: 'crear',    tipo: 'crear'    },
+};
+const TABLA_MAP = {
+  'socios':'Socios','aportes':'Aportes','creditos':'Créditos',
+  'usuarios':'Sistema','configuracion':'Config','solidaridad_movimientos':'Solidaridad',
+};
+const ACCION_PILLS = { crear:'pill-green', editar:'pill-amber', eliminar:'pill-red', login:'pill-blue', aprobar:'pill-navy', 'cambiar contraseña':'pill-amber' };
 
-const ACCESOS_LOGS = [
-  { fecha: "2026-03-21 09:10", usuario: "Laura Jiménez",  evento: "Login",  ip: "192.168.1.10", resultado: "exitoso" },
-  { fecha: "2026-03-21 08:25", usuario: "Laura Jiménez",  evento: "Login",  ip: "192.168.1.10", resultado: "exitoso" },
-  { fecha: "2026-03-20 16:40", usuario: "Carlos Muñoz",   evento: "Login",  ip: "192.168.1.5",  resultado: "exitoso" },
-  { fecha: "2026-03-20 12:30", usuario: "desconocido",    evento: "Login",  ip: "201.245.1.88", resultado: "fallido" },
-  { fecha: "2026-03-18 09:00", usuario: "Ana Torres",     evento: "Login",  ip: "192.168.1.22", resultado: "exitoso" },
-  { fecha: "2026-03-18 18:45", usuario: "Carlos Muñoz",   evento: "Logout", ip: "192.168.1.5",  resultado: "exitoso" },
-  { fecha: "2026-03-15 17:00", usuario: "Laura Jiménez",  evento: "Logout", ip: "192.168.1.10", resultado: "exitoso" }
-];
+let _todosLogs = [];
+const _filtros = { usuario: '', accion: '' };
 
-const CAMBIOS_LOGS = [
-  { fecha: "2026-03-19 15:00", usuario: "Laura Jiménez",  modulo: "Socios",       registro: "S005 - Jorge Erazo",       campo: "estado",          anterior: "pendiente",   nuevo: "mora" },
-  { fecha: "2026-03-17 14:15", usuario: "Carlos Muñoz",   modulo: "Contabilidad", registro: "M003 - Crédito Pedro",     campo: "monto",           anterior: "2.400.000",   nuevo: "2.500.000" },
-  { fecha: "2026-03-15 11:00", usuario: "Laura Jiménez",  modulo: "Config",       registro: "Tasa mensual",             campo: "tasa_credito",    anterior: "1.8%",        nuevo: "1.5%" },
-  { fecha: "2026-03-10 09:30", usuario: "Carlos Muñoz",   modulo: "Socios",       registro: "S003 - Claudia Ríos",      campo: "aporte_mensual",  anterior: "100.000",     nuevo: "120.000" }
-];
-
-document.addEventListener("DOMContentLoaded", () => {
-  if (!Roles.proteger("auditoria")) return;
-  buildLayout("Auditoría", "Solo accesible para administradores", "");
-  renderKPIs();
-  renderLogs(AUDIT_LOGS);
-  filterTable("searchAudit", "tablaAudit");
-  initTabs("auditTabs", function(tab) {
-    ["logs","accesos","cambios"].forEach(function(p) {
-      document.getElementById("panel-" + p).style.display = tab === p ? "block" : "none";
-    });
-    if (tab === "accesos") renderAccesos();
-    if (tab === "cambios") renderCambios();
-  });
-});
-
-function renderKPIs() {
-  const hoy    = "2026-03-21";
-  const hoyLogs = AUDIT_LOGS.filter(l => l.fecha.startsWith(hoy)).length;
-  const fallidos = ACCESOS_LOGS.filter(l => l.resultado === "fallido").length;
-
-  document.getElementById("kpiAudit").innerHTML = `
-    <div class="kpi-card blue">
-      <div class="kpi-label">Total acciones</div>
-      <div class="kpi-value">${AUDIT_LOGS.length}</div>
-      <div class="kpi-footer">En el período</div>
-      <div class="kpi-bg-icon">📋</div>
-    </div>
-    <div class="kpi-card green">
-      <div class="kpi-label">Acciones hoy</div>
-      <div class="kpi-value">${hoyLogs}</div>
-      <div class="kpi-bg-icon">📅</div>
-    </div>
-    <div class="kpi-card red">
-      <div class="kpi-label">Accesos fallidos</div>
-      <div class="kpi-value">${fallidos}</div>
-      <div class="kpi-footer kpi-down">Requiere atención</div>
-      <div class="kpi-bg-icon">⚠</div>
-    </div>
-    <div class="kpi-card gold">
-      <div class="kpi-label">Usuarios activos</div>
-      <div class="kpi-value">3</div>
-      <div class="kpi-bg-icon">👥</div>
-    </div>
-  `;
+function mapLog(l) {
+  const a = ACCION_MAP[l.accion] || { label: l.accion.toLowerCase(), tipo: 'crear' };
+  let detalleTxt = '';
+  if (l.detalle) {
+    try {
+      const d = JSON.parse(l.detalle);
+      detalleTxt = Object.entries(d).map(([k,v])=>`${k}: ${v}`).join(' | ');
+    } catch { detalleTxt = l.detalle; }
+  }
+  return {
+    fecha:   new Date(l.createdAt).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'}),
+    usuario: l.usuario?.nombre || 'Sistema',
+    rol:     l.usuario?.rol    || '—',
+    accion:  a.label,
+    modulo:  TABLA_MAP[l.tabla] || l.tabla || 'Sistema',
+    detalle: detalleTxt || `Acción: ${l.accion}`,
+    ip:      l.ip || '—',
+    raw:     l,
+  };
 }
 
-const ACCION_PILLS = {
-  crear:    "pill-green",
-  editar:   "pill-amber",
-  eliminar: "pill-red",
-  login:    "pill-blue",
-  aprobar:  "pill-navy",
-};
+function renderKPIs(logs) {
+  const hoy = new Date().toLocaleDateString('es-CO');
+  const hoyN = logs.filter(l=>new Date(l.createdAt).toLocaleDateString('es-CO')===hoy).length;
+  const logins = logs.filter(l=>l.accion==='LOGIN').length;
+  const usuarios = new Set(logs.filter(l=>l.usuario).map(l=>l.usuarioId)).size;
+  document.getElementById('kpiAudit').innerHTML = `
+    <div class="kpi-card blue"><div class="kpi-label">Total acciones</div><div class="kpi-value">${logs.length}</div><div class="kpi-footer">En el período</div><div class="kpi-bg-icon">📋</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Acciones hoy</div><div class="kpi-value">${hoyN}</div><div class="kpi-bg-icon">📅</div></div>
+    <div class="kpi-card gold"><div class="kpi-label">Inicios de sesión</div><div class="kpi-value">${logins}</div><div class="kpi-bg-icon">🔐</div></div>
+    <div class="kpi-card navy"><div class="kpi-label">Usuarios activos</div><div class="kpi-value">${usuarios}</div><div class="kpi-bg-icon">👥</div></div>`;
+}
+
+const PILL_COLORS = ['#e53e3e','#d97706','#2563eb','#16a34a','#7c3aed','#0891b2'];
+function buildUsuarioPills(logs) {
+  const usuarios = [...new Set(logs.map(l=>l.usuario?.nombre).filter(Boolean))];
+  const cont = document.getElementById('filtroUsuarioBtns');
+  cont.innerHTML = `<button class="filter-pill active" data-filtro="usuario" data-val="" onclick="setFiltro('usuario',this)">Todos</button>`;
+  usuarios.forEach((u,i)=>{
+    const c = PILL_COLORS[i % PILL_COLORS.length];
+    const btn = document.createElement('button');
+    btn.className = 'filter-pill';
+    btn.dataset.filtro = 'usuario';
+    btn.dataset.val = u;
+    btn.style.cssText = `--pill-color:${c};--pill-bg:${c}1a`;
+    btn.textContent = u;
+    btn.onclick = function(){ setFiltro('usuario',this); };
+    cont.appendChild(btn);
+  });
+}
 
 function renderLogs(logs) {
-  document.getElementById("auditTbody").innerHTML = logs.map(l => `
-    <tr>
-      <td class="mono muted" style="font-size:11px; white-space:nowrap;">${l.fecha}</td>
-      <td style="font-weight:500;">${l.usuario}</td>
-      <td><span class="pill ${l.rol === 'administrador' ? 'pill-red' : l.rol === 'tesorero' ? 'pill-amber' : 'pill-blue'}" style="font-size:10px;">${l.rol}</span></td>
-      <td><span class="pill ${ACCION_PILLS[l.accion] || 'pill-navy'}" style="font-size:10px;">${l.accion}</span></td>
-      <td class="muted">${l.modulo}</td>
-      <td style="font-size:12px; max-width:260px;">${l.detalle}</td>
-      <td class="mono muted" style="font-size:11px;">${l.ip}</td>
-    </tr>
-  `).join("");
+  const mapped = logs.map(mapLog);
+  document.getElementById('auditTbody').innerHTML = mapped.length
+    ? mapped.map(l=>`<tr>
+        <td class="mono muted" style="font-size:11px;white-space:nowrap">${l.fecha}</td>
+        <td style="font-weight:500">${l.usuario}</td>
+        <td><span class="pill ${l.rol==='administrador'?'pill-red':l.rol==='tesorero'?'pill-amber':'pill-blue'}" style="font-size:10px">${l.rol}</span></td>
+        <td><span class="pill ${ACCION_PILLS[l.accion]||'pill-navy'}" style="font-size:10px">${l.accion}</span></td>
+        <td class="muted">${l.modulo}</td>
+        <td style="font-size:12px;max-width:260px">${l.detalle}</td>
+        <td class="mono muted" style="font-size:11px">${l.ip}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">Sin registros</td></tr>';
 }
 
-function renderAccesos() {
-  document.getElementById("accesosTbody").innerHTML = ACCESOS_LOGS.map(l => `
-    <tr>
-      <td class="mono muted" style="font-size:11px;">${l.fecha}</td>
-      <td style="font-weight:${l.resultado === 'fallido' ? '500' : '400'}; color:${l.resultado === 'fallido' ? 'var(--red)' : 'inherit'};">${l.usuario}</td>
-      <td class="muted">${l.evento}</td>
-      <td class="mono muted" style="font-size:11px;">${l.ip}</td>
-      <td>${l.resultado === "exitoso"
-        ? '<span class="pill pill-green">Exitoso</span>'
-        : '<span class="pill pill-red">Fallido</span>'}</td>
-    </tr>
-  `).join("");
+function renderAccesos(logs) {
+  const logins = logs.filter(l=>l.accion==='LOGIN').map(l=>({
+    fecha:    new Date(l.createdAt).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'}),
+    usuario:  l.usuario?.nombre||'Sistema',
+    ip:       l.ip||'—',
+  }));
+  document.getElementById('accesosTbody').innerHTML = logins.length
+    ? logins.map(l=>`<tr>
+        <td class="mono muted" style="font-size:11px">${l.fecha}</td>
+        <td style="font-weight:500">${l.usuario}</td>
+        <td class="muted">Login</td>
+        <td class="mono muted" style="font-size:11px">${l.ip}</td>
+        <td><span class="pill pill-green">Exitoso</span></td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--muted)">Sin registros de acceso</td></tr>';
 }
 
-function renderCambios() {
-  document.getElementById("cambiosTbody").innerHTML = CAMBIOS_LOGS.map(l => `
-    <tr>
-      <td class="mono muted" style="font-size:11px;">${l.fecha}</td>
-      <td style="font-weight:500;">${l.usuario}</td>
-      <td class="muted">${l.modulo}</td>
-      <td style="font-size:12px;">${l.registro}</td>
-      <td class="muted">${l.campo}</td>
-      <td style="font-size:12px; color:var(--red); text-decoration:line-through;">${l.anterior}</td>
-      <td style="font-size:12px; color:var(--green); font-weight:500;">${l.nuevo}</td>
-    </tr>
-  `).join("");
+function renderCambios(logs) {
+  const cambios = logs.filter(l=>['ACTUALIZAR_SOCIO','CAMBIAR_ESTADO_APORTE','CAMBIAR_PASSWORD'].includes(l.accion));
+  document.getElementById('cambiosTbody').innerHTML = cambios.length
+    ? cambios.map(l=>{
+        let det={}; try{det=JSON.parse(l.detalle||'{}');}catch{}
+        return `<tr>
+          <td class="mono muted" style="font-size:11px">${new Date(l.createdAt).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'})}</td>
+          <td style="font-weight:500">${l.usuario?.nombre||'Sistema'}</td>
+          <td class="muted">${TABLA_MAP[l.tabla]||l.tabla||'—'}</td>
+          <td style="font-size:12px">${l.registroId||'—'}</td>
+          <td class="muted">${l.accion}</td>
+          <td colspan="2" style="font-size:12px">${JSON.stringify(det)}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">Sin cambios registrados</td></tr>';
 }
 
-/* Valor activo de cada grupo de filtros */
-const _filtros = { usuario: "", accion: "" };
-
-/* Cambia el botón activo y re-aplica filtros */
 function setFiltro(tipo, btn) {
-  const grupo = btn.closest("[id^=\"filtro\"]");
-  if (grupo) {
-    grupo.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active"));
-  }
-  btn.classList.add("active");
+  const grupo = btn.closest('[id^="filtro"]');
+  if (grupo) grupo.querySelectorAll('.filter-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
   _filtros[tipo] = btn.dataset.val;
   aplicarFiltros();
 }
 
 function aplicarFiltros() {
-  const texto   = (document.getElementById("searchAudit").value || "").toLowerCase();
-  let filtrado  = AUDIT_LOGS;
-  if (_filtros.usuario) filtrado = filtrado.filter(l => l.usuario === _filtros.usuario);
-  if (_filtros.accion)  filtrado = filtrado.filter(l => l.accion  === _filtros.accion);
-  if (texto) {
-    filtrado = filtrado.filter(l =>
-      (l.usuario + l.rol + l.accion + l.modulo + l.detalle + l.ip).toLowerCase().includes(texto)
-    );
-  }
-  renderLogs(filtrado);
+  const texto = (document.getElementById('searchAudit').value||'').toLowerCase();
+  let f = _todosLogs;
+  if (_filtros.usuario) f = f.filter(l=>(l.usuario?.nombre||'')=== _filtros.usuario);
+  if (_filtros.accion)  f = f.filter(l=>{
+    const mapped = (ACCION_MAP[l.accion]||{}).tipo||l.accion.toLowerCase();
+    return mapped === _filtros.accion;
+  });
+  if (texto) f = f.filter(l=>{
+    const m = mapLog(l);
+    return (m.usuario+m.rol+m.accion+m.modulo+m.detalle+m.ip).toLowerCase().includes(texto);
+  });
+  renderLogs(f);
 }
 
 function limpiarFiltros() {
-  _filtros.usuario = "";
-  _filtros.accion  = "";
-  document.getElementById("searchAudit").value = "";
-  document.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active"));
-  document.querySelectorAll(".filter-pill[data-val='']").forEach(b => b.classList.add("active"));
-  renderLogs(AUDIT_LOGS);
-  Toast.success("Filtros limpiados.");
+  _filtros.usuario=''; _filtros.accion='';
+  document.getElementById('searchAudit').value='';
+  document.querySelectorAll('.filter-pill').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.filter-pill[data-val=""]').forEach(b=>b.classList.add('active'));
+  renderLogs(_todosLogs);
+  Toast.success('Filtros limpiados.');
 }
 
 function exportarLogs() {
-  Toast.success("Exportando logs de auditoría a CSV...");
+  if (!_todosLogs.length) { Toast.warn('No hay datos para exportar.'); return; }
+  const rows = _todosLogs.map(l=>{
+    const m=mapLog(l);
+    return [m.fecha,m.usuario,m.rol,m.accion,m.modulo,`"${m.detalle.replace(/"/g,"'")}"`,m.ip].join(',');
+  });
+  const csv = 'Fecha,Usuario,Rol,Acción,Módulo,Detalle,IP\n'+rows.join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='auditoria_fonevi_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  Toast.success('CSV exportado correctamente.');
 }
+
+async function limpiarAuditoria() {
+  const dias = prompt('¿Eliminar registros anteriores a cuántos días?\n(Se recomienda 90 días)', '90');
+  if (!dias || isNaN(dias)) return;
+  if (!confirm(`¿Confirmas eliminar logs anteriores a ${dias} días? Esta acción NO se puede deshacer.`)) return;
+  try {
+    const r = await API.auditoria.limpiar(parseInt(dias));
+    if (r?.ok) { Toast.success(r.mensaje); await cargarLogs(); }
+    else Toast.error(r?.mensaje || 'Error al limpiar');
+  } catch(e) { Toast.error('Error: '+e.message); }
+}
+
+async function cargarLogs() {
+  document.getElementById('auditTbody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px">⏳ Cargando...</td></tr>';
+  try {
+    const r = await API.auditoria.listar({ limit: 300 });
+    if (!r?.ok) { Toast.error(r?.mensaje || 'Error al cargar auditoría'); return; }
+    _todosLogs = r.datos || [];
+    renderKPIs(_todosLogs);
+    buildUsuarioPills(_todosLogs);
+    renderLogs(_todosLogs);
+  } catch(e) { Toast.error('Error de conexión: '+e.message); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Roles.proteger('auditoria')) return;
+  buildLayout('Auditoría', 'Solo accesible para administradores', '');
+  cargarLogs();
+  initTabs('auditTabs', function(tab) {
+    ['logs','accesos','cambios'].forEach(p=>{
+      document.getElementById('panel-'+p).style.display = tab===p ? 'block' : 'none';
+    });
+    if (tab==='accesos') renderAccesos(_todosLogs);
+    if (tab==='cambios') renderCambios(_todosLogs);
+  });
+});
 </script>
 </body>
 </html>

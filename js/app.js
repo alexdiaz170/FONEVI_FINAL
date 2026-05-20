@@ -1,6 +1,87 @@
-/* ============================================================
-   FONEVI — js/app.js
-   ============================================================ */
+
+window.DB = {
+  socios: [],
+  aportes: [],
+  creditos: [],
+  movimientos: [],
+  solidaridad: { saldo_actual: 0, movimientos: [] },
+  config: {
+    nombre: "FONEVI",
+    nombre_completo: "Fondo de Empleados Docentes FONEVI",
+    nit: "800.123.456-7",
+    representante: "Carlos Alberto Muñoz",
+    periodo_actual: "Marzo 2026",
+    aporte_minimo: 120000,
+    aporte_solidaridad: 30000,
+    tasa_credito_mensual: 1.5,
+    tasa_mora_diaria: 0.1,
+    max_credito_multiplicador: 3
+  },
+  dividendos: [],
+  notificaciones: []
+};
+
+window.DataHelper = {
+  getSocio(id) {
+    return window.DB?.socios?.find(s => s.id === id) || null;
+  },
+  getSocioNombre(id) {
+    const s = this.getSocio(id);
+    return s ? s.nombre : id;
+  },
+  getAportesSocio(socio_id) {
+    return window.DB?.aportes?.filter(a => a.socio_id === socio_id) || [];
+  },
+  getCreditosSocio(socio_id) {
+    return window.DB?.creditos?.filter(c => c.socio_id === socio_id) || [];
+  },
+  getCreditosActivos() {
+    return window.DB?.creditos?.filter(c => c.estado !== 'pagado') || [];
+  },
+  getSociosMora() {
+    return window.DB?.socios?.filter(s => s.estado === 'mora') || [];
+  },
+  getTotalAhorros() {
+    return window.DB?.socios?.reduce((t, s) => t + (s.ahorro_acumulado || 0), 0) || 0;
+  },
+  getTotalCartera() {
+    return window.DB?.creditos?.reduce((t, c) => t + (c.saldo_capital || 0), 0) || 0;
+  },
+  getNotificacionesNoLeidas() {
+    return window.DB?.notificaciones?.filter(n => !n.leida).length || 0;
+  },
+  calcularCuota(monto, tasaMensual, cuotas) {
+    if (!tasaMensual) return monto / cuotas;
+    const i = tasaMensual / 100;
+    return (monto * i) / (1 - Math.pow(1 + i, -cuotas));
+  },
+  formatCOP(v) {
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      minimumFractionDigits: 0
+    }).format(v);
+  },
+  formatFecha(fechaStr) {
+    if (!fechaStr) return "—";
+    const d = new Date(fechaStr);
+    if (isNaN(d.getTime())) return fechaStr;
+    return d.toLocaleDateString("es-CO");
+  },
+  estadoPill(estado) {
+    const map = {
+      activo:    '<span class="pill pill-green">🟢 Activo</span>',
+      inactivo:  '<span class="pill pill-red">🔴 Inactivo</span>',
+      mora:      '<span class="pill pill-red">🔴 Mora</span>',
+      vencido:   '<span class="pill pill-amber">🟡 Vencido</span>',
+      pendiente: '<span class="pill pill-blue">🔵 Pendiente</span>',
+      pagado:    '<span class="pill pill-green">🟢 Pagado</span>',
+      aprobado:  '<span class="pill pill-green">🟢 Aprobado</span>',
+      rechazado: '<span class="pill pill-red">🔴 Rechazado</span>',
+    };
+    return map[estado] || `<span class="pill pill-muted">${estado}</span>`;
+  }
+};
 
 const Sidebar = {
   init() {
@@ -152,14 +233,77 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   Auth.applyRoleUI();
 
-  const badge = document.getElementById("notifBadge");
-  if (badge) {
-    const n = DataHelper.getNotificacionesNoLeidas();
-    badge.textContent = n;
-    badge.style.display = n > 0 ? "inline-block" : "none";
+  // Pre-cargar datos del backend en DB si no estamos en login
+  if (page !== "index.html" && page !== "") {
+    (async () => {
+      try {
+        const [configRes, sociosRes, aportesRes, creditosRes, movimientosRes, notifRes, solSaldoRes] = await Promise.allSettled([
+          API.config.obtener(),
+          API.socios.listar(),
+          API.aportes.listar(),
+          API.creditos.listar(),
+          API.movimientos.listar(),
+          API.notificaciones.listar(),
+          API.solidaridad.saldo()
+        ]);
+
+        if (configRes.status === "fulfilled" && configRes.value?.ok) {
+          window.DB.config = { ...window.DB.config, ...configRes.value.datos };
+        }
+        if (sociosRes.status === "fulfilled" && sociosRes.value?.ok) {
+          window.DB.socios = sociosRes.value.datos;
+        }
+        if (aportesRes.status === "fulfilled" && aportesRes.value?.ok) {
+          window.DB.aportes = aportesRes.value.datos;
+        }
+        if (creditosRes.status === "fulfilled" && creditosRes.value?.ok) {
+          window.DB.creditos = creditosRes.value.datos;
+        }
+        if (movimientosRes.status === "fulfilled" && movimientosRes.value?.ok) {
+          window.DB.movimientos = movimientosRes.value.datos;
+        }
+        if (notifRes.status === "fulfilled" && notifRes.value?.ok) {
+          window.DB.notificaciones = notifRes.value.datos;
+        }
+        if (solSaldoRes.status === "fulfilled" && solSaldoRes.value?.ok) {
+          window.DB.solidaridad.saldo_actual = solSaldoRes.value.saldo_actual || 0;
+        }
+
+        // Actualizar badges
+        const badge = document.getElementById("notifBadge");
+        if (badge) {
+          const n = DataHelper.getNotificacionesNoLeidas();
+          badge.textContent = n;
+          badge.style.display = n > 0 ? "inline-block" : "none";
+        }
+        const dot = document.getElementById("topNotifDot");
+        if (dot) dot.style.display = DataHelper.getNotificacionesNoLeidas() > 0 ? "block" : "none";
+
+        // Re-renderizadores específicos si existen
+        if (typeof window.refreshUI === "function") {
+          window.refreshUI();
+        } else {
+          if (typeof renderKPIs === "function") renderKPIs();
+          if (typeof renderSidebar === "function") renderSidebar();
+          if (typeof renderMorosos === "function") renderMorosos("todos");
+          if (typeof renderLibro === "function") renderLibro();
+          if (typeof renderCategorias === "function" && typeof tabActual !== "undefined" && tabActual === "categorias") renderCategorias();
+          if (typeof renderBalance === "function" && typeof tabActual !== "undefined" && tabActual === "balance") renderBalance();
+          if (typeof renderGrafico === "function" && typeof tabActual !== "undefined" && tabActual === "grafico") renderGrafico();
+          if (typeof renderSocios === "function") renderSocios();
+          if (typeof renderCreditos === "function") renderCreditos();
+          if (typeof renderAportes === "function") renderAportes();
+          if (typeof renderMovimientos === "function") renderMovimientos();
+          if (typeof cargarFormularios === "function") cargarFormularios();
+          if (typeof previsualizarTasa === "function") previsualizarTasa();
+          if (typeof renderImpactoCartera === "function") renderImpactoCartera();
+          if (typeof renderUsuarios === "function") renderUsuarios();
+        }
+      } catch (e) {
+        console.error("Error pre-cargando base de datos real:", e);
+      }
+    })();
   }
-  const dot = document.getElementById("topNotifDot");
-  if (dot) dot.style.display = DataHelper.getNotificacionesNoLeidas() > 0 ? "block" : "none";
 
   // Listener directo en el botón (si ya existe en el DOM)
   const logoutBtnEl = document.getElementById("logoutBtn");
@@ -177,3 +321,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, { once: false });
 });
+

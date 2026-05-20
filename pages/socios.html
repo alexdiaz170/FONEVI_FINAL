@@ -280,7 +280,6 @@
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
 <script src="../js/config.js"></script>
-<script src="../js/data.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
 <script src="../js/roles.js"></script>
@@ -296,12 +295,25 @@
 ═══════════════════════════════════════════════════════════ */
 var filtroActual = "todos";
 
+async function cargarDatos() {
+  try {
+    const [resSocios, resCreditos] = await Promise.all([
+      API.socios.listar(),
+      API.creditos.listar()
+    ]);
+    if (resSocios && resSocios.ok) window.pageSocios = resSocios.datos;
+    if (resCreditos && resCreditos.ok) window.pageCreditos = resCreditos.datos;
+  } catch (e) {
+    console.error("Error cargando socios:", e);
+    Toast.error("Error al conectar con el servidor.");
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("socios")) return;
 
-  await window.DataSync?.init();
-
   buildLayout("Socios", "Gestión de miembros del fondo", "");
+  await cargarDatos();
   renderTabla();
   filterTable("searchSocio", "tablaSocios");
   initTabs("filtroEstado", function(tab) { filtroActual = tab; renderTabla(); });
@@ -309,7 +321,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 });
 
 function renderTabla() {
-  var socios = DB.socios;
+  var socios = window.pageSocios || [];
   if (filtroActual !== "todos") {
     socios = socios.filter(function(s) { return s.estado === filtroActual; });
   }
@@ -317,16 +329,16 @@ function renderTabla() {
   document.getElementById("contadorSocios").textContent =
     socios.length + " socio" + (socios.length !== 1 ? "s" : "") +
     (filtroActual !== "todos" ? " · filtro: " + filtroActual : "") +
-    " · Total DB: " + DB.socios.length;
+    " · Total DB: " + (window.pageSocios || []).length;
 
   document.getElementById("sociosTbody").innerHTML = socios.map(function(s) {
-    var creds = DataHelper.getCreditosSocio(s.id).filter(function(c) { return c.estado !== "pagado"; });
+    var creds = (window.pageCreditos || []).filter(function(c) { return c.socioId === s.id && c.estado !== "pagado"; });
     return "<tr>" +
       "<td class='mono muted'>" + s.id + "</td>" +
       "<td><strong style='font-weight:500;'>" + s.nombre + "</strong></td>" +
       "<td class='muted'>" + (s.documento || "—") + "</td>" +
-      "<td>" + DataHelper.formatCOP(s.aporte_mensual) + "</td>" +
-      "<td style='font-weight:500;'>" + DataHelper.formatCOP(s.ahorro_acumulado) + "</td>" +
+      "<td>" + DataHelper.formatCOP(s.aporte_mensual || s.aporteMensual) + "</td>" +
+      "<td style='font-weight:500;'>" + DataHelper.formatCOP(s.ahorro_acumulado || s.ahorroAcumulado) + "</td>" +
       "<td>" + (creds.length > 0
         ? "<span class='pill pill-amber'>" + creds.length + " activo" + (creds.length > 1 ? "s" : "") + "</span>"
         : "<span class='muted'>—</span>") + "</td>" +
@@ -347,6 +359,8 @@ async function guardarNuevoSocio() {
   btn.disabled = true;
 
   var nuevo = {
+    id: doc,
+    codigo: "S" + String(doc).slice(-4),
     nombre: nombre,
     documento: doc,
     email:    document.getElementById("ns-email").value.trim(),
@@ -360,7 +374,7 @@ async function guardarNuevoSocio() {
   try {
     const res = await API.socios.crear(nuevo);
     if (res && res.ok) {
-      await DataSync.syncSocios();
+      await cargarDatos();
       Modal.close("modalNuevoSocio");
       renderTabla();
       Toast.success("✓ Socio " + nombre + " registrado.");
@@ -685,7 +699,7 @@ async function ejecutarImportacion() {
 
   /* Documentos ya existentes para detectar duplicados */
   var docsExistentes = {};
-  DB.socios.forEach(function(s) {
+  (window.pageSocios || []).forEach(function(s) {
     if (s.documento) docsExistentes[String(s.documento).trim()] = true;
   });
 
@@ -754,7 +768,7 @@ async function ejecutarImportacion() {
     }
   }
 
-  await DataSync.syncSocios();
+  // DataSync removed
 
   importState.resultado = { ok, errores, duplicados, total: importState.filas.length };
   importState.paso      = 3;

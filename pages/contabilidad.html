@@ -312,7 +312,6 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
-<script src="../js/data.js"></script>
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
@@ -339,18 +338,55 @@ var idEliminar    = null;
 var chartBarInst  = null;
 var chartDonaInst = null;
 
+async function cargarDatos() {
+  try {
+    const [movs, config, socios, creditos, solSaldo] = await Promise.all([
+      API.movimientos.listar(),
+      API.config.obtener(),
+      API.socios.listar(),
+      API.creditos.listar(),
+      API.solidaridad.saldo()
+    ]);
+    
+    window.pageMovimientos = movs?.datos || movs || [];
+    window.pageSocios = socios?.datos || socios || [];
+    window.pageCreditos = creditos?.datos || creditos || [];
+    window.pageSolidaridadSaldo = solSaldo?.saldo_actual || 0;
+
+    // Sync to window.DB
+    if (!window.DB) { window.DB = {}; }
+    window.DB.movimientos = window.pageMovimientos;
+    window.DB.socios = window.pageSocios;
+    window.DB.creditos = window.pageCreditos;
+    window.DB.config = { ...window.DB.config, ...(config?.datos || {}) };
+    if (!window.DB.solidaridad) { window.DB.solidaridad = {}; }
+    window.DB.solidaridad.saldo_actual = window.pageSolidaridadSaldo;
+  } catch (e) {
+    console.error("Error loading contabilidad data:", e);
+    Toast.error("Error al conectar con el servidor.");
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════
    INICIO
 ═══════════════════════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("contabilidad")) return;
 
-  await window.DataSync?.init();
-
   buildLayout("Contabilidad", "Libro diario y control financiero del fondo", "");
 
   document.getElementById("nm-fecha").value = new Date().toISOString().split("T")[0];
   actualizarCategorias();
+
+  await cargarDatos();
+
+  window.refreshUI = function() {
+    renderKPIs();
+    renderLibro();
+    if (tabActual === "grafico")    renderGrafico();
+    if (tabActual === "categorias") renderCategorias();
+    if (tabActual === "balance")    renderBalance();
+  };
 
   renderKPIs();
   renderLibro();
@@ -375,13 +411,13 @@ document.addEventListener("DOMContentLoaded", async function() {
    KPIs
 ═══════════════════════════════════════════════════════════ */
 function renderKPIs() {
-  var mov     = DB.movimientos;
+  var mov     = window.pageMovimientos || [];
   var ing     = mov.filter(function(m){return m.tipo==="ingreso";}).reduce(function(t,m){return t+m.monto;},0);
   var egr     = mov.filter(function(m){return m.tipo==="egreso"; }).reduce(function(t,m){return t+m.monto;},0);
   var neto    = ing - egr;
 
-  // KPI del mes actual
-  var mesActual = DB.config.periodo_actual;
+  var mesActual = window.DB?.config?.periodo_actual || "Marzo 2026";
+  // Filter by matching the year and month of the period
   var movMes   = mov.filter(function(m){ return m.fecha && m.fecha.includes("2026-03"); });
   var ingMes   = movMes.filter(function(m){return m.tipo==="ingreso";}).reduce(function(t,m){return t+m.monto;},0);
 
@@ -403,7 +439,7 @@ function renderKPIs() {
    LIBRO DIARIO
 ═══════════════════════════════════════════════════════════ */
 function renderLibro() {
-  var lista = DB.movimientos.slice().sort(function(a,b){
+  var lista = (window.pageMovimientos || []).slice().sort(function(a,b){
     return (b.fecha||"").localeCompare(a.fecha||"");
   });
   if (filtroLibro !== "todos") {
@@ -442,7 +478,6 @@ function renderLibro() {
     '</tr>';
   }).join("");
 
-  // Pie con totales
   var totIng = lista.filter(function(m){return m.tipo==="ingreso";}).reduce(function(t,m){return t+m.monto;},0);
   var totEgr = lista.filter(function(m){return m.tipo==="egreso"; }).reduce(function(t,m){return t+m.monto;},0);
   pie.innerHTML =
@@ -457,11 +492,10 @@ function renderLibro() {
    GRÁFICO MENSUAL
 ═══════════════════════════════════════════════════════════ */
 function renderGrafico() {
-  // Agrupar por mes
   var meses = {};
-  DB.movimientos.forEach(function(m) {
+  (window.pageMovimientos || []).forEach(function(m) {
     if (!m.fecha) return;
-    var ym = m.fecha.substring(0, 7); // "2026-03"
+    var ym = m.fecha.substring(0, 7);
     if (!meses[ym]) meses[ym] = { ing:0, egr:0 };
     if (m.tipo === "ingreso") meses[ym].ing += m.monto;
     else                      meses[ym].egr += m.monto;
@@ -474,9 +508,7 @@ function renderGrafico() {
   });
   var ings   = keys.map(function(k){ return meses[k].ing; });
   var egrs   = keys.map(function(k){ return meses[k].egr; });
-  var netos  = keys.map(function(k){ return meses[k].ing - meses[k].egr; });
 
-  // ── Barras ──────────────────────────────────────────────
   if (chartBarInst) { chartBarInst.destroy(); chartBarInst = null; }
   var ctxBar = document.getElementById("chartBarras");
   if (ctxBar && typeof Chart !== "undefined") {
@@ -511,11 +543,10 @@ function renderGrafico() {
     });
   }
 
-  // ── Dona ─────────────────────────────────────────────────
   if (chartDonaInst) { chartDonaInst.destroy(); chartDonaInst = null; }
   var ctxDona = document.getElementById("chartDona");
   var cats = {};
-  DB.movimientos.forEach(function(m) {
+  (window.pageMovimientos || []).forEach(function(m) {
     var key = (m.tipo === "ingreso" ? "↑ " : "↓ ") + (m.categoria||"Otro");
     cats[key] = (cats[key]||0) + m.monto;
   });
@@ -548,7 +579,6 @@ function renderGrafico() {
     });
   }
 
-  // ── Tabla resumen por mes ─────────────────────────────────
   var acum  = 0;
   var tbody = document.getElementById("resumenMesTbody");
   tbody.innerHTML = keys.map(function(k) {
@@ -574,7 +604,7 @@ function renderGrafico() {
 ═══════════════════════════════════════════════════════════ */
 function renderCategorias() {
   function panelCat(tipo, panelId, tbodyId, color) {
-    var movs  = DB.movimientos.filter(function(m){ return m.tipo===tipo; });
+    var movs  = (window.pageMovimientos || []).filter(function(m){ return m.tipo===tipo; });
     var total = movs.reduce(function(t,m){ return t+m.monto; }, 0);
     var cats  = {};
     movs.forEach(function(m){ cats[m.categoria||"Sin categoría"] = (cats[m.categoria||"Sin categoría"]||0)+m.monto; });
@@ -617,11 +647,11 @@ function renderCategorias() {
 function renderBalance() {
   var totalAhorros = DataHelper.getTotalAhorros();
   var totalCartera = DataHelper.getTotalCartera();
-  var solidaridad  = DB.solidaridad ? DB.solidaridad.saldo_actual : 0;
+  var solidaridad  = window.pageSolidaridadSaldo || 0;
   var totalActivos = totalAhorros + totalCartera + solidaridad;
 
-  var ing      = DB.movimientos.filter(function(m){return m.tipo==="ingreso";}).reduce(function(t,m){return t+m.monto;},0);
-  var egr      = DB.movimientos.filter(function(m){return m.tipo==="egreso"; }).reduce(function(t,m){return t+m.monto;},0);
+  var ing      = (window.pageMovimientos || []).filter(function(m){return m.tipo==="ingreso";}).reduce(function(t,m){return t+m.monto;},0);
+  var egr      = (window.pageMovimientos || []).filter(function(m){return m.tipo==="egreso"; }).reduce(function(t,m){return t+m.monto;},0);
   var utilidad = ing - egr;
 
   function balRow(lbl, val, cls) {
@@ -692,12 +722,11 @@ async function guardarMovimiento() {
   try {
     const res = await API.movimientos.crear(nuevo);
     if (res && res.ok) {
-      await DataSync.syncMovimientos();
+      await cargarDatos();
       btn.textContent = "Registrar movimiento"; btn.disabled = false;
       Modal.close("modalNuevoMov");
       renderKPIs();
       renderLibro();
-      // Actualizar el panel activo
       if (tabActual === "grafico")    renderGrafico();
       if (tabActual === "categorias") renderCategorias();
       if (tabActual === "balance")    renderBalance();
@@ -717,7 +746,7 @@ async function guardarMovimiento() {
    ELIMINAR MOVIMIENTO
 ═══════════════════════════════════════════════════════════ */
 function solicitarEliminar(id) {
-  var m = DB.movimientos.find(function(x){ return x.id===id; });
+  var m = (window.pageMovimientos || []).find(function(x){ return x.id===id; });
   if (!m) return;
   idEliminar = id;
   document.getElementById("eliminarDetalle").innerHTML =
@@ -733,7 +762,7 @@ async function confirmarEliminar() {
   try {
     const res = await API.movimientos.eliminar(idEliminar);
     if (res && res.ok) {
-      await DataSync.syncMovimientos();
+      await cargarDatos();
       idEliminar = null;
       Modal.close("modalEliminar");
       renderKPIs(); renderLibro();
@@ -755,7 +784,7 @@ async function confirmarEliminar() {
 function exportarExcel() {
   if (typeof XLSX === "undefined") { Toast.warn("Cargando exportador..."); return; }
 
-  var mov  = DB.movimientos.slice().sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); });
+  var mov  = (window.pageMovimientos || []).slice().sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); });
   var ing  = mov.filter(function(m){return m.tipo==="ingreso";}).reduce(function(t,m){return t+m.monto;},0);
   var egr  = mov.filter(function(m){return m.tipo==="egreso"; }).reduce(function(t,m){return t+m.monto;},0);
 
@@ -782,9 +811,8 @@ function exportarExcel() {
   ws["!cols"] = [{wch:8},{wch:12},{wch:10},{wch:22},{wch:36},{wch:16},{wch:18}];
   XLSX.utils.book_append_sheet(wb, ws, "Libro Diario");
 
-  // Hoja de resumen mensual
   var meses = {};
-  DB.movimientos.forEach(function(m) {
+  (window.pageMovimientos || []).forEach(function(m) {
     if (!m.fecha) return;
     var ym = m.fecha.substring(0,7);
     if (!meses[ym]) meses[ym] = { ing:0, egr:0 };

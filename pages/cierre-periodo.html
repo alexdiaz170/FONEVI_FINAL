@@ -183,7 +183,6 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
-<script src="../js/data.js"></script>
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
@@ -217,7 +216,7 @@ var PASOS_CONFIG = [
 document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("aportes")) return;
 
-  await window.DataSync?.init();
+  // DataSync removed: init skipped
 
   buildLayout(
     "Cierre de Período",
@@ -672,7 +671,7 @@ async function ejecutarCierre() {
     await API.config.actualizar("periodo_actual", siguiente);
 
     // 4. Sincronizar datos locales
-    await window.DataSync?.init();
+    // DataSync removed: init skipped
 
     btn.textContent = "✓ Cerrado";
 

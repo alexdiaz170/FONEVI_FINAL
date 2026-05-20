@@ -457,39 +457,7 @@
       color: #64748b;
     }
 
-    .conn-status {
-      margin-top: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 12px;
-      background: #f8fafc;
-      border-radius: 30px;
-    }
 
-    .conn-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #cbd5e1;
-    }
-
-    .conn-dot.online {
-      background: #10b981;
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-    }
-
-    .conn-dot.offline {
-      background: #ef4444;
-      box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
-    }
-
-    #modoLabel {
-      font-size: 11px;
-      font-weight: 700;
-      color: #64748b;
-    }
 
     .form-error {
       background: #fef2f2;
@@ -605,23 +573,23 @@
             <div class="dc-name">L. Jim&eacute;nez</div>
             <div class="dc-role">Tesorero</div>
           </div>
-          <div class="demo-card" onclick="fillDemo('ana.torres@fonevi.edu.co','socio123')">
+          <div class="demo-card" onclick="fillDemo('ana.torres@fonevi.edu.co','Socio2026!')">
             <div class="dc-avatar">AT</div>
             <div class="dc-name">A. Torres</div>
             <div class="dc-role">Socio</div>
           </div>
         </div>
 
-        <div class="conn-status">
-          <div class="conn-dot" id="connDot"></div>
-          <span id="modoLabel">Verificando conexi&oacute;n...</span>
-        </div>
+
       </section>
     </div>
   </main>
 
+  <script>
+    // Durante pruebas locales, forzar el backend al puerto 3000 (backend unificado)
+    window.FONEVI_API_URL = "http://localhost:3000/api";
+  </script>
   <script src="js/config.js"></script>
-  <script src="js/data.js"></script>
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
 
@@ -675,21 +643,7 @@
       doLogin();
     }
 
-    async function actualizarEstadoConexion() {
-      try {
-        var ok = await API.ping();
-        var dot = document.getElementById("connDot");
-        var lbl = document.getElementById("modoLabel");
-        if (ok) {
-          dot.className = "conn-dot online";
-          lbl.textContent = "Conectado al servidor";
-        } else {
-          dot.className = "conn-dot offline";
-          lbl.textContent = "Modo offline — datos locales";
-        }
-        return ok;
-      } catch (e) { return false; }
-    }
+
 
     async function doLogin() {
       var btn = document.getElementById("loginBtn");
@@ -708,26 +662,8 @@
       err.style.display = "none";
 
       try {
-        var hayServidor = await actualizarEstadoConexion();
-        var result = null;
-
-        if (hayServidor) {
-          try {
-            // FIX: Pasar argumentos por separado, NO como objeto
-            var apiRes = await API.auth.login(email, pass);
-            if (apiRes?.ok) {
-              API.setToken(apiRes.token);
-              sessionStorage.setItem("fonevi_session", JSON.stringify(apiRes.usuario));
-              result = { ok: true };
-            } else {
-              result = { ok: false, mensaje: apiRes?.mensaje || "Credenciales incorrectas" };
-            }
-          } catch (e) {
-            result = { ok: false, mensaje: "Error de comunicación con el servidor" };
-          }
-        } else {
-          result = await Auth.login(email, pass);
-        }
+        // Siempre usar el backend para login; Auth.login delega en API.auth.login
+        var result = await Auth.login(email, pass);
 
         if (result?.ok) {
           btn.textContent = "✓ Acceso Concedido";
@@ -746,8 +682,8 @@
       }
     }
 
-    actualizarEstadoConexion();
-    setInterval(actualizarEstadoConexion, 10000);
+
+
   </script>
 </body>
 

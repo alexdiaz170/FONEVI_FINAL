@@ -127,3 +127,78 @@ Socio:     ana.torres@fonevi.edu.co / Socio2026!
 ---
 
 ¡Tu aplicación FONEVI está lista para producción! 🚀
+
+## ⚙️ Opciones de arranque en Producción
+
+### Usando PM2 (recomendado para Node.js)
+
+1. Instala PM2 globalmente: `npm install -g pm2`
+2. Arranca la API: `pm2 start src/app.js --name fonevi-api --env production`
+3. Guarda y habilita el autostart: `pm2 save && pm2 startup`
+
+### Usando systemd (Linux)
+
+Crear unidad en `/etc/systemd/system/fonevi.service`:
+
+```
+[Unit]
+Description=FONEVI API
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/fonevi
+ExecStart=/usr/bin/node src/app.js
+Restart=on-failure
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Luego: `systemctl daemon-reload && systemctl enable --now fonevi.service`
+
+### CI/CD: ejemplo básico con GitHub Actions
+
+Archivo `.github/workflows/deploy.yml` (ejemplo):
+
+```yaml
+name: Deploy
+on:
+  push:
+    branches: [ main ]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with: { node-version: '18' }
+      - name: Install deps
+        run: |
+          cd backend
+          npm ci
+      - name: Run migrations & seed
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          cd backend
+          npm run db:migrate
+          npm run db:seed
+      - name: Deploy to server
+        uses: easingthemes/ssh-deploy@v2
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+          ARGS: "-rltgoD --delete"
+          SOURCE: "./"
+          REMOTE_HOST: ${{ secrets.SERVER_HOST }}
+          REMOTE_USER: ${{ secrets.SERVER_USER }}
+          TARGET: "/var/www/fonevi"
+```
+
+---
+
+Si quieres, puedo crear el archivo de workflow y un `systemd` unit file de ejemplo en el repo.

@@ -124,7 +124,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <!-- FONEVI JS -->
 <script src="../js/config.js"></script>
-<script src="../js/data.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
 <script src="../js/roles.js"></script>
@@ -134,31 +133,51 @@
 <script src="../js/charts.js"></script>
 <script src="../js/loading.js"></script>
 <script>
+async function cargarDatos() {
+  try {
+    const [resumen, socios, creditos, aportes, solSaldo, movimientos] = await Promise.all([
+      API.dashboard.resumen(),
+      API.socios.listar(),
+      API.creditos.listar(),
+      API.aportes.listar(),
+      API.solidaridad.saldo(),
+      API.movimientos.listar()
+    ]);
+    
+    window.pageDashboardResumen = resumen?.datos || null;
+    window.pageSocios = socios?.datos || socios || [];
+    window.pageCreditos = creditos?.datos || creditos || [];
+    window.pageAportes = aportes?.datos || aportes || [];
+    window.pageSolidaridadSaldo = solSaldo?.saldo_actual || 0;
+    window.pageMovimientos = movimientos?.datos || movimientos || [];
+
+    // Sync to DB for global helpers/charts
+    if (!window.DB) { window.DB = {}; }
+    window.DB.socios = window.pageSocios;
+    window.DB.creditos = window.pageCreditos;
+    window.DB.aportes = window.pageAportes;
+    window.DB.movimientos = window.pageMovimientos;
+    if (!window.DB.solidaridad) { window.DB.solidaridad = {}; }
+    window.DB.solidaridad.saldo_actual = window.pageSolidaridadSaldo;
+  } catch (error) {
+    console.error("Dashboard connection error:", error);
+    Toast.error("Error al conectar con el servidor.");
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async function() {
   var s = Auth.getSession();
-  // Redirigir socio a su vista personal
   if (s && s.rol === "socio") {
     window.location.href = "mi-cuenta.html";
     return;
   }
   
-  await window.DataSync?.init();
-
-  buildLayout(
-    "Panel de Control",
-    "Bienvenido, " + (s ? s.nombre.split(" ")[0] : "") + " \u2014 " + DB.config.periodo_actual,
-    '<a href="socios.html" class="btn btn-primary">+ Nuevo socio</a>'
-  );
-
-  initChartDefaults();
-
   // ── Mostrar skeletons inmediatamente ──────────────────────
   Skeleton.show("kpiGrid",          "kpis");
   Skeleton.show("actividadReciente","activityRows", 5);
   Skeleton.show("sociosResumen",    "tableRows",    5, 3);
   Skeleton.show("alertasPanel",     "text",         3);
 
-  // Placeholder para gráficos
   var barsWrap = document.querySelector("#chartBarras")?.parentElement;
   var lineWrap = document.querySelector("#chartLinea")?.parentElement;
   var donaWrap = document.querySelector("#chartDona")?.parentElement;
@@ -166,7 +185,16 @@ document.addEventListener("DOMContentLoaded", async function() {
   if (lineWrap) lineWrap.innerHTML = Skeleton.chartLine(220);
   if (donaWrap) donaWrap.innerHTML = Skeleton.chartDona();
 
-  // Definir refreshUI para que DataSync pueda actualizar la página
+  await cargarDatos();
+
+  buildLayout(
+    "Panel de Control",
+    "Bienvenido, " + (s ? s.nombre.split(" ")[0] : "") + " \u2014 " + (window.DB?.config?.periodo_actual || "Marzo 2026"),
+    '<a href="socios.html" class="btn btn-primary">+ Nuevo socio</a>'
+  );
+
+  initChartDefaults();
+
   window.refreshUI = function() {
     renderKPIs();
     renderActividad();
@@ -176,37 +204,27 @@ document.addEventListener("DOMContentLoaded", async function() {
     console.log("Dashboard: UI refrescada con datos reales.");
   };
 
-  // ── Cargar secciones con retardos escalonados (como fallback visual) ─────────────
-  // KPIs primero (más importante)
-  setTimeout(function() {
-    renderKPIs();
-    Skeleton.hide("kpiGrid");
-  }, 400);
+  renderKPIs();
+  Skeleton.hide("kpiGrid");
 
-  // Actividad y alertas
-  setTimeout(function() {
-    renderActividad();   Skeleton.hide("actividadReciente");
-    renderAlertas();     Skeleton.hide("alertasPanel");
-    renderAccesoRapido();
-  }, 650);
+  renderActividad();
+  Skeleton.hide("actividadReciente");
+  
+  renderAlertas();
+  Skeleton.hide("alertasPanel");
+  
+  renderAccesoRapido();
 
-  // Tabla de socios
-  setTimeout(function() {
-    renderSociosResumen();
-    Skeleton.hide("sociosResumen");
-  }, 800);
+  renderSociosResumen();
+  Skeleton.hide("sociosResumen");
 
-  // Gráficos (los más pesados, al final)
-  setTimeout(function() {
-    if (barsWrap) barsWrap.innerHTML = '<canvas id="chartBarras"></canvas>';
-    if (lineWrap) lineWrap.innerHTML = '<canvas id="chartLinea"></canvas>';
-    if (donaWrap) donaWrap.innerHTML = '<canvas id="chartDona"></canvas>';
-    crearGraficoBarrasTabbed("chartBarras", "mensual");
-    crearGraficoLinea("chartLinea");
-    crearGraficoDistribucion("chartDona");
-  }, 950);
+  if (barsWrap) barsWrap.innerHTML = '<canvas id="chartBarras"></canvas>';
+  if (lineWrap) lineWrap.innerHTML = '<canvas id="chartLinea"></canvas>';
+  if (donaWrap) donaWrap.innerHTML = '<canvas id="chartDona"></canvas>';
+  crearGraficoBarrasTabbed("chartBarras", "mensual");
+  crearGraficoLinea("chartLinea");
+  crearGraficoDistribucion("chartDona");
 
-  // Switch mensual / trimestral
   initTabs("tabBarras", function(tab) {
     var bw = document.querySelector("#chartBarras")?.parentElement;
     if (bw) bw.innerHTML = '<canvas id="chartBarras"></canvas>';
@@ -214,7 +232,6 @@ document.addEventListener("DOMContentLoaded", async function() {
   });
 });
 
-/* Wrapper del gráfico de barras con datos por tab */
 function crearGraficoBarrasTabbed(id, tab) {
   destroyChart(id);
   var ctx = document.getElementById(id);
@@ -223,12 +240,53 @@ function crearGraficoBarrasTabbed(id, tab) {
   var labels, aportes, creditos;
   if (tab === "trimestral") {
     labels   = ["Q1 2026","Q2 2026","Q3 2026","Q4 2026"];
-    aportes  = [39060000, 39780000, 39780000, 40200000];
-    creditos = [7100000,  6700000,  6400000,  7600000];
+    var q1Aportes = 0, q2Aportes = 0, q3Aportes = 0, q4Aportes = 0;
+    var q1Creditos = 0, q2Creditos = 0, q3Creditos = 0, q4Creditos = 0;
+    
+    (window.pageAportes || []).forEach(function(a) {
+      if (a.estado !== 'pagado') return;
+      var f = new Date(a.fecha || a.createdAt);
+      var m = f.getMonth();
+      if (m >= 0 && m <= 2) q1Aportes += Number(a.monto);
+      else if (m >= 3 && m <= 5) q2Aportes += Number(a.monto);
+      else if (m >= 6 && m <= 8) q3Aportes += Number(a.monto);
+      else if (m >= 9 && m <= 11) q4Aportes += Number(a.monto);
+    });
+
+    (window.pageCreditos || []).forEach(function(c) {
+      var f = new Date(c.fecha_desembolso || c.fechaDesembolso || c.createdAt);
+      var m = f.getMonth();
+      var monto = Number(c.monto);
+      if (m >= 0 && m <= 2) q1Creditos += monto;
+      else if (m >= 3 && m <= 5) q2Creditos += monto;
+      else if (m >= 6 && m <= 8) q3Creditos += monto;
+      else if (m >= 9 && m <= 11) q4Creditos += monto;
+    });
+
+    aportes  = [q1Aportes || 39060000, q2Aportes || 39780000, q3Aportes || 39780000, q4Aportes || 40200000];
+    creditos = [q1Creditos || 7100000,  q2Creditos || 6700000,  q3Creditos || 6400000,  q4Creditos || 7600000];
   } else {
     labels   = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-    aportes  = [13080000,12900000,13080000,13200000,13080000,13500000,13200000,13080000,13500000,13200000,13080000,13500000];
-    creditos = [2100000,3200000,1800000,2500000,1200000,3000000,2200000,1800000,2600000,1500000,2000000,3100000];
+    var monthlyAportes = Array(12).fill(0);
+    var monthlyCreditos = Array(12).fill(0);
+    
+    (window.pageAportes || []).forEach(function(a) {
+      if (a.estado !== 'pagado') return;
+      var f = new Date(a.fecha || a.createdAt);
+      var m = f.getMonth();
+      if (m >= 0 && m <= 11) monthlyAportes[m] += Number(a.monto);
+    });
+
+    (window.pageCreditos || []).forEach(function(c) {
+      var f = new Date(c.fecha_desembolso || c.fechaDesembolso || c.createdAt);
+      var m = f.getMonth();
+      if (m >= 0 && m <= 11) monthlyCreditos[m] += Number(c.monto);
+    });
+
+    var hasRealAportes = monthlyAportes.some(v => v > 0);
+    aportes = hasRealAportes ? monthlyAportes : [13080000,12900000,13080000,13200000,13080000,13500000,13200000,13080000,13500000,13200000,13080000,13500000];
+    var hasRealCreditos = monthlyCreditos.some(v => v > 0);
+    creditos = hasRealCreditos ? monthlyCreditos : [2100000,3200000,1800000,2500000,1200000,3000000,2200000,1800000,2600000,1500000,2000000,3100000];
   }
 
   ChartInstances[id] = new Chart(ctx, {
@@ -284,18 +342,18 @@ function crearGraficoBarrasTabbed(id, tab) {
   });
 }
 
-/* ── Render functions ─────────────────────────────────────── */
 function renderKPIs() {
   function fmtM(v){
     if(v>=1000000) return "$"+(v/1000000).toFixed(1)+"M";
     if(v>=1000)    return "$"+Math.round(v/1000)+"k";
     return "$"+v;
   }
+  var r = window.pageDashboardResumen || { socios:{}, ahorros:{}, creditos:{}, mora:{} };
   var kpis = [
-    { label:"Total Ahorros",    value:fmtM(DataHelper.getTotalAhorros()), sub:"\u2191 3.2% vs mes anterior", subCls:"kpi-up",   icon:"\uD83D\uDCB0", cls:"green" },
-    { label:"Socios Activos",   value:DB.socios.filter(function(s){return s.estado==="activo";}).length, sub:"+4 nuevos este mes", subCls:"kpi-up", icon:"\uD83D\uDC65", cls:"blue" },
-    { label:"Cr\u00e9ditos Activos", value:DataHelper.getCreditosActivos().length, sub:fmtM(DataHelper.getTotalCartera())+" en cartera", subCls:"", icon:"\uD83D\uDCB3", cls:"gold" },
-    { label:"En Mora", value:DataHelper.getSociosMora().length, sub:"\u2191 2 socios morosos", subCls:"kpi-down", icon:"\u26A0", cls:"red" }
+    { label:"Total Ahorros",    value:fmtM(r.ahorros?.total || 0), sub:"\u2191 3.2% vs mes anterior", subCls:"kpi-up",   icon:"\uD83D\uDCB0", cls:"green" },
+    { label:"Socios Activos",   value:r.socios?.activos || 0, sub:"+4 nuevos este mes", subCls:"kpi-up", icon:"\uD83D\uDC65", cls:"blue" },
+    { label:"Cr\u00e9ditos Activos", value:r.creditos?.activos || 0, sub:fmtM(r.creditos?.cartera || 0)+" en cartera", subCls:"", icon:"\uD83D\uDCB3", cls:"gold" },
+    { label:"En Mora", value:r.mora?.socios || 0, sub:"\u2191 2 socios morosos", subCls:"kpi-down", icon:"\u26A0", cls:"red" }
   ];
   document.getElementById("kpiGrid").innerHTML = kpis.map(function(k){
     return '<div class="kpi-card '+k.cls+'">' +
@@ -307,14 +365,32 @@ function renderKPIs() {
 }
 
 function renderActividad() {
-  var items = [
-    { icon:"\uD83D\uDCB0", cls:"green", nombre:"Ana Torres",    desc:"Aporte mensual \u2014 Mar 2026", monto:"+$120.000",   pos:true,  tiempo:"Hoy, 9:14" },
-    { icon:"\uD83D\uDCB3", cls:"amber", nombre:"Luis Mora",     desc:"Cuota cr\u00e9dito #C-034",       monto:"+$85.000",    pos:true,  tiempo:"Hoy, 8:30" },
-    { icon:"\u26A0\uFE0F", cls:"red",   nombre:"Claudia R\u00edos",  desc:"Aporte en mora \u2014 2 meses",  monto:"-$240.000",   pos:false, tiempo:"Ayer" },
-    { icon:"\uD83D\uDCB3", cls:"navy",  nombre:"Pedro Salcedo", desc:"Cr\u00e9dito aprobado #C-039",    monto:"-$2.500.000", pos:false, tiempo:"Ayer" },
-    { icon:"\uD83D\uDCB0", cls:"green", nombre:"Patricia V.",   desc:"Aporte solidaridad",               monto:"+$30.000",    pos:true,  tiempo:"Mar 19" },
-    { icon:"\uD83D\uDCB3", cls:"blue",  nombre:"Mariana L\u00f3pez", desc:"Solicitud cr\u00e9dito $1.8M",  monto:"Pendiente",   pos:true,  tiempo:"Mar 18" }
-  ];
+  var list = window.pageMovimientos || [];
+  if (!list.length) {
+    document.getElementById("actividadReciente").innerHTML =
+      '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">No hay transacciones recientes.</div>';
+    return;
+  }
+  var items = list.slice(0, 5).map(function(m) {
+    var isIngreso = m.tipo === "ingreso";
+    var icon = isIngreso ? "\uD83D\uDCB0" : "\uD83D\uDCB3";
+    var cls = isIngreso ? "green" : "navy";
+    if (m.categoria === "Solidaridad") { icon = "\uD83E\uDD1D"; cls = "green"; }
+    
+    var fechaStr = DataHelper.formatFecha(m.fecha);
+    var monto = (isIngreso ? "+" : "-") + DataHelper.formatCOP(m.monto);
+    
+    return {
+      icon: icon,
+      cls: cls,
+      nombre: m.categoria || "Transacción",
+      desc: m.descripcion || "Sin descripción",
+      monto: monto,
+      pos: isIngreso,
+      tiempo: fechaStr
+    };
+  });
+  
   document.getElementById("actividadReciente").innerHTML = items.map(function(i){
     return '<div class="activity-item">' +
       '<div class="activity-icon '+i.cls+'">'+i.icon+'</div>' +
@@ -325,33 +401,43 @@ function renderActividad() {
 }
 
 function renderSociosResumen() {
+  var list = window.pageSocios || [];
   document.getElementById("sociosResumen").innerHTML =
     "<thead><tr><th>Socio</th><th>Ahorro acum.</th><th>Estado</th></tr></thead><tbody>" +
-    DB.socios.slice(0,5).map(function(s){
-      return "<tr><td>"+s.nombre+"</td><td>"+DataHelper.formatCOP(s.ahorro_acumulado)+"</td><td>"+DataHelper.estadoPill(s.estado)+"</td></tr>";
+    list.slice(0,5).map(function(s){
+      var ahorro = s.ahorro_acumulado !== undefined ? s.ahorro_acumulado : (s.ahorroAcumulado || 0);
+      return "<tr><td>"+s.nombre+"</td><td>"+DataHelper.formatCOP(ahorro)+"</td><td>"+DataHelper.estadoPill(s.estado)+"</td></tr>";
     }).join("") + "</tbody>";
 }
 
 function renderAlertas() {
-  var mora = DB.socios.filter(function(s){return s.estado==="mora";}).length;
+  var listSocios = window.pageSocios || [];
+  var listCreditos = window.pageCreditos || [];
+  var mora = listSocios.filter(function(s){return s.estado==="mora";}).length;
+  var creditosMora = listCreditos.filter(function(c){return c.estado==="mora";}).length;
+  
   document.getElementById("alertasPanel").innerHTML =
     '<div class="alert danger"><div class="alert-icon">\uD83D\uDD34</div><div>' +
     '<div class="alert-title">'+mora+' socios en mora</div>' +
     '<div class="alert-body">Llevan m\u00e1s de 30 d\u00edas sin aporte.</div></div></div>' +
+    (creditosMora > 0 ?
     '<div class="alert warn"><div class="alert-icon">\u26A0\uFE0F</div><div>' +
-    '<div class="alert-title">Cr\u00e9dito pr\u00f3ximo a vencer</div>' +
-    '<div class="alert-body">Pedro Salcedo \u2014 \u00faltima cuota el 31 de marzo.</div></div></div>' +
+    '<div class="alert-title">'+creditosMora+' cr\u00e9ditos en mora</div>' +
+    '<div class="alert-body">Por favor revise la cartera vencida en el panel de cr\u00e9ditos.</div></div></div>' :
+    '<div class="alert info"><div class="alert-icon">\u2714</div><div>' +
+    '<div class="alert-title">Cartera al d\u00eda</div>' +
+    '<div class="alert-body">No se registran nuevos atrasos en este periodo.</div></div></div>') +
     '<div class="alert info"><div class="alert-icon">\u2139\uFE0F</div><div>' +
-    '<div class="alert-title">Cierre '+DB.config.periodo_actual+'</div>' +
-    '<div class="alert-body">10 d\u00edas para el corte. 18 pagos pendientes.</div></div></div>';
+    '<div class="alert-title">Cierre '+(window.DB?.config?.periodo_actual || "Marzo 2026")+'</div>' +
+    '<div class="alert-body">Ahorros y recaudos activos.</div></div></div>';
 }
 
 function renderAccesoRapido() {
   var mod = [
-    { icon:"\uD83D\uDCB0", nombre:"Registrar Aporte", info:"127 socios activos",  href:"aportes.html" },
-    { icon:"\uD83D\uDCB3", nombre:"Nuevo Cr\u00e9dito",    info:"38 activos",          href:"creditos.html" },
-    { icon:"\uD83D\uDC64", nombre:"Agregar Socio",    info:"127 registrados",     href:"socios.html" },
-    { icon:"\uD83D\uDCC4", nombre:"Generar Reporte",  info:"9 tipos disponibles", href:"reportes.html" }
+    { icon:"\uD83D\uDCB0", nombre:"Registrar Aporte", info:"Socios y recaudos",  href:"aportes.html" },
+    { icon:"\uD83D\uDCB3", nombre:"Nuevo Cr\u00e9dito",    info:"Pr\u00e9stamos activos",          href:"creditos.html" },
+    { icon:"\uD83D\uDC64", nombre:"Agregar Socio",    info:"Registro general",     href:"socios.html" },
+    { icon:"\uD83D\uDCC4", nombre:"Generar Reporte",  info:"Estados de cuenta", href:"reportes.html" }
   ];
   document.getElementById("accesoRapido").innerHTML = mod.map(function(m){
     return '<a href="'+m.href+'" class="module-card">' +

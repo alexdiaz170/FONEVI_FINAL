@@ -386,7 +386,6 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
-<script src="../js/data.js"></script>
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
@@ -405,24 +404,41 @@ var creditoPagoActual = null;  // id del crédito en el modal de pago
 var busquedaActual = "";
 
 /* ═══════════════════════════════════════════════════════════
-   INICIO
+   INICIO Y CARGA DE DATOS (BACKEND-FIRST)
 ═══════════════════════════════════════════════════════════ */
+async function cargarDatos() {
+  try {
+    const [resCreditos, resSocios] = await Promise.all([
+      API.creditos.listar(),
+      API.socios.listar()
+    ]);
+    if (resCreditos && resCreditos.ok) window.pageCreditos = resCreditos.datos;
+    if (resSocios && resSocios.ok) window.pageSocios = resSocios.datos;
+  } catch (e) {
+    console.error("Error cargando créditos:", e);
+    Toast.error("Error al conectar con el servidor.");
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("creditos")) return;
 
-  await window.DataSync?.init();
+  await cargarDatos();
+
+  var carteraTotal = (window.pageCreditos || [])
+    .filter(function(c) { return c.estado === "activo" || c.estado === "mora"; })
+    .reduce(function(t, c) { return t + Number(c.saldo_capital || c.saldoCapital || 0); }, 0);
 
   buildLayout(
     "Créditos",
-    "Cartera activa: " + DataHelper.formatCOP(DataHelper.getTotalCartera()),
+    "Cartera activa: " + DataHelper.formatCOP(carteraTotal),
     ""
   );
 
-  // Fecha de hoy por defecto en modales
   var hoy = new Date().toISOString().split("T")[0];
   document.getElementById("nc-fecha").value  = hoy;
   document.getElementById("pg-fecha").value  = hoy;
-  document.getElementById("nc-tasa").value   = DB.config.tasa_credito_mensual;
+  document.getElementById("nc-tasa").value   = window.DB.config.tasa_credito_mensual;
 
   renderKPIs();
   renderMoraPanel();
@@ -446,14 +462,17 @@ document.addEventListener("DOMContentLoaded", async function() {
    KPIs
 ═══════════════════════════════════════════════════════════ */
 function renderKPIs() {
-  var activos   = DB.creditos.filter(function(c) { return c.estado === "activo"; }).length;
-  var mora      = DB.creditos.filter(function(c) { return c.estado === "mora"; }).length;
-  var cartera   = DataHelper.getTotalCartera();
-  var pagados   = DB.creditos.filter(function(c) { return c.estado === "pagado"; }).length;
-  var cuotaMes  = DB.creditos
+  var todos = window.pageCreditos || [];
+  var activos   = todos.filter(function(c) { return c.estado === "activo"; }).length;
+  var mora      = todos.filter(function(c) { return c.estado === "mora"; }).length;
+  var cartera   = todos
+    .filter(function(c) { return c.estado === "activo" || c.estado === "mora"; })
+    .reduce(function(t, c) { return t + Number(c.saldo_capital || c.saldoCapital || 0); }, 0);
+  var pagados   = todos.filter(function(c) { return c.estado === "pagado"; }).length;
+  var cuotaMes  = todos
     .filter(function(c) { return c.estado === "activo" || c.estado === "mora"; })
     .reduce(function(t, c) {
-      return t + Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas));
+      return t + Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual || c.tasaMensual, c.cuotas));
     }, 0);
 
   document.getElementById("kpiCreditos").innerHTML = [
@@ -474,19 +493,20 @@ function renderKPIs() {
    PANEL DE ALERTAS DE MORA
 ═══════════════════════════════════════════════════════════ */
 function renderMoraPanel() {
-  var morosos = DB.creditos.filter(function(c) { return c.estado === "mora"; });
+  var morosos = (window.pageCreditos || []).filter(function(c) { return c.estado === "mora"; });
   var panel   = document.getElementById("moraPanel");
 
   if (!morosos.length) { panel.innerHTML = ""; return; }
 
   var lista = morosos.map(function(c) {
-    var socio = DataHelper.getSocioNombre(c.socio_id);
-    var dias  = calcularDiasMora(c.fecha_desembolso, c.cuotas_pagadas);
-    var intMora = Math.round(c.saldo_capital * (DB.config.tasa_mora_diaria / 100) * dias);
+    var sObj = (window.pageSocios || []).find(function(s){ return s.id === c.socio_id || s.id === c.socioId; });
+    var socio = sObj ? sObj.nombre : (c.socio_nombre || "Socio #" + (c.socio_id || c.socioId));
+    var dias  = calcularDiasMora(c.fecha_desembolso || c.fechaDesembolso, c.cuotas_pagadas || c.cuotasPagadas || 0);
+    var intMora = Math.round(Number(c.saldo_capital || c.saldoCapital || 0) * (window.DB.config.tasa_mora_diaria / 100) * dias);
     return '<div class="mora-item">' +
       '<div><strong>' + socio + '</strong> — Crédito #' + c.id + '</div>' +
       '<div style="display:flex;gap:12px;align-items:center;">' +
-        '<span style="color:var(--red-700);font-weight:500;">' + DataHelper.formatCOP(c.saldo_capital) + '</span>' +
+        '<span style="color:var(--red-700);font-weight:500;">' + DataHelper.formatCOP(c.saldo_capital || c.saldoCapital) + '</span>' +
         '<span class="pill pill-red">' + dias + ' días</span>' +
         '<span style="font-size:11px;color:var(--red-500);">+' + DataHelper.formatCOP(intMora) + ' mora</span>' +
         '<button class="btn btn-sm" style="background:var(--red-500);color:#fff;padding:3px 10px;font-size:11px;border:none;border-radius:var(--r-full);cursor:pointer;" ' +
@@ -499,10 +519,10 @@ function renderMoraPanel() {
     '<div class="mora-icon">🚨</div>' +
     '<div style="flex:1;">' +
       '<div class="mora-title">Créditos en mora — ' + morosos.length + ' socio' + (morosos.length>1?"s":"") + '</div>' +
-      '<div class="mora-desc">Los siguientes créditos tienen cuotas vencidas. Se están acumulando intereses de mora al ' + DB.config.tasa_mora_diaria + '% diario.</div>' +
+      '<div class="mora-desc">Los siguientes créditos tienen cuotas vencidas. Se están acumulando intereses de mora al ' + window.DB.config.tasa_mora_diaria + '% diario.</div>' +
       '<div class="mora-list">' + lista + '</div>' +
     '</div>' +
-  '</div>';
+    '</div>';
 }
 
 function calcularDiasMora(fechaDesembolso, cuotasPagadas) {
@@ -521,14 +541,15 @@ function renderCreditos(filtro) {
   var mapa = { activos:"activo", mora:"mora", pagados:"pagado" };
   var estado = mapa[filtro];
   var lista  = estado
-    ? DB.creditos.filter(function(c) { return c.estado === estado; })
-    : DB.creditos;
+    ? (window.pageCreditos || []).filter(function(c) { return c.estado === estado; })
+    : (window.pageCreditos || []);
 
   // Aplicar búsqueda
   if (busquedaActual) {
     var q = busquedaActual.toLowerCase();
     lista = lista.filter(function(c) {
-      var nombre = DataHelper.getSocioNombre(c.socio_id).toLowerCase();
+      var sObj = (window.pageSocios || []).find(function(s){ return s.id === c.socio_id || s.id === c.socioId; });
+      var nombre = (sObj ? sObj.nombre : (c.socio_nombre || "")).toLowerCase();
       return nombre.includes(q) || c.id.toLowerCase().includes(q) ||
              (c.proposito || "").toLowerCase().includes(q);
     });
@@ -553,7 +574,6 @@ function renderCreditos(filtro) {
   grid.style.display  = "grid";
   empty.style.display = "none";
 
-  // Grid de 2 columnas
   grid.style.gridTemplateColumns = "repeat(auto-fill,minmax(440px,1fr))";
   grid.style.gap = "14px";
 
@@ -563,19 +583,26 @@ function renderCreditos(filtro) {
 }
 
 function buildCreditoCard(c) {
-  var socio     = DataHelper.getSocio(c.socio_id) || {};
-  var nombre    = socio.nombre || "Socio desconocido";
+  var socioId = c.socio_id || c.socioId;
+  var socio     = (window.pageSocios || []).find(function(s){ return s.id === socioId; }) || {};
+  var nombre    = socio.nombre || c.socio_nombre || "Socio desconocido";
   var iniciales = nombre.split(" ").map(function(p){return p[0];}).slice(0,2).join("");
-  var cuota     = Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas));
-  var pct       = Math.round((c.cuotas_pagadas / c.cuotas) * 100);
+  
+  var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
+  var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
+  var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
+  var fechaDesembolso = c.fecha_desembolso || c.fechaDesembolso;
+
+  var cuota     = Math.round(DataHelper.calcularCuota(c.monto, tasa, c.cuotas));
+  var pct       = Math.round((cuotasPagadas / c.cuotas) * 100);
   var progCls   = c.estado === "mora" ? "red" : c.estado === "pagado" ? "gold" : "green";
-  var cuotaProx = c.cuotas_pagadas + 1;
+  var cuotaProx = cuotasPagadas + 1;
 
   // Interés de mora si aplica
   var moraExtra = "";
   if (c.estado === "mora") {
-    var dias = calcularDiasMora(c.fecha_desembolso, c.cuotas_pagadas);
-    var int  = Math.round(c.saldo_capital * (DB.config.tasa_mora_diaria / 100) * dias);
+    var dias = calcularDiasMora(fechaDesembolso, cuotasPagadas);
+    var int  = Math.round(saldoCapital * (window.DB.config.tasa_mora_diaria / 100) * dias);
     moraExtra = '<div style="background:var(--red-50);border:1px solid var(--red-100);' +
       'border-radius:var(--r-sm);padding:8px 12px;font-size:12px;color:var(--red-700);margin-bottom:12px;">' +
       '⚠ <strong>' + dias + ' días en mora</strong> — Interés acumulado: ' +
@@ -594,41 +621,41 @@ function buildCreditoCard(c) {
       '<div style="flex:1;min-width:0;">' +
         '<div class="cc-nombre">' + nombre + '</div>' +
         '<div class="cc-proposito">' + (c.proposito || "Sin propósito") + '</div>' +
-        '<div class="cc-codigo">Crédito #' + c.id + ' · ' + DataHelper.formatFecha(c.fecha_desembolso) + '</div>' +
+        '<div class="cc-codigo">Crédito #' + c.id + ' · ' + DataHelper.formatFecha(fechaDesembolso) + '</div>' +
       '</div>' +
       '<div class="cc-badge">' + DataHelper.estadoPill(c.estado) + '</div>' +
     '</div>' +
-
+ 
     // Body
     '<div class="cc-body">' +
       moraExtra +
-
+ 
       '<div class="cc-metrics">' +
         metrica("Monto original",   DataHelper.formatCOP(c.monto)) +
-        metrica("Saldo pendiente",  DataHelper.formatCOP(c.saldo_capital), c.estado === "mora" ? "red" : "") +
+        metrica("Saldo pendiente",  DataHelper.formatCOP(saldoCapital), c.estado === "mora" ? "red" : "") +
         metrica("Cuota mensual",    DataHelper.formatCOP(cuota), "gold") +
       '</div>' +
-
+ 
       // Barra de progreso
       '<div class="prog-wrap">' +
         '<div class="prog-info">' +
-          '<span>' + c.cuotas_pagadas + ' de ' + c.cuotas + ' cuotas pagadas</span>' +
+          '<span>' + cuotasPagadas + ' de ' + c.cuotas + ' cuotas pagadas</span>' +
           '<span style="font-weight:600;">' + pct + '%</span>' +
         '</div>' +
         '<div class="prog-track">' +
           '<div class="prog-fill ' + progCls + '" style="width:' + pct + '%;"></div>' +
         '</div>' +
       '</div>' +
-
+ 
       '<div style="display:flex;gap:6px;font-size:11px;color:var(--text-muted);">' +
-        '<span>Tasa: <strong>' + c.tasa_mensual + '% m.e.a.</strong></span>' +
+        '<span>Tasa: <strong>' + tasa + '% m.e.a.</strong></span>' +
         '<span style="margin:0 4px;">·</span>' +
-        '<span>Restantes: <strong>' + (c.cuotas - c.cuotas_pagadas) + ' cuotas</strong></span>' +
+        '<span>Restantes: <strong>' + (c.cuotas - cuotasPagadas) + ' cuotas</strong></span>' +
         '<span style="margin:0 4px;">·</span>' +
-        '<span>Aprobado por: <strong>' + (c.aprobado_por || "U001") + '</strong></span>' +
+        '<span>Aprobado por: <strong>' + (c.aprobado_por || c.aprobadoPor || "U001") + '</strong></span>' +
       '</div>' +
     '</div>' +
-
+ 
     // Footer acciones
     '<div class="cc-actions">' +
       btnPago +
@@ -651,21 +678,29 @@ function metrica(label, valor, cls) {
    REGISTRAR PAGO DE CUOTA
 ═══════════════════════════════════════════════════════════ */
 function abrirPago(creditoId) {
-  var c = DB.creditos.find(function(x) { return x.id === creditoId; });
+  var c = (window.pageCreditos || []).find(function(x) { return x.id === creditoId; });
   if (!c) return;
   creditoPagoActual = creditoId;
 
-  var cuota    = Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas));
-  var numCuota = c.cuotas_pagadas + 1;
-  var r        = c.tasa_mensual / 100;
-  var interes  = Math.round(c.saldo_capital * r);
+  var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
+  var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
+  var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
+  var fechaDesembolso = c.fecha_desembolso || c.fechaDesembolso;
+
+  var cuota    = Math.round(DataHelper.calcularCuota(c.monto, tasa, c.cuotas));
+  var numCuota = cuotasPagadas + 1;
+  var r        = tasa / 100;
+  var interes  = Math.round(saldoCapital * r);
   var capital  = Math.round(cuota - interes);
+
+  var sObj = (window.pageSocios || []).find(function(s){ return s.id === c.socio_id || s.id === c.socioId; });
+  var socio = sObj ? sObj.nombre : (c.socio_nombre || "Socio #" + (c.socio_id || c.socioId));
 
   // Alerta si está en mora
   var alerta = "";
   if (c.estado === "mora") {
-    var dias    = calcularDiasMora(c.fecha_desembolso, c.cuotas_pagadas);
-    var intMora = Math.round(c.saldo_capital * (DB.config.tasa_mora_diaria / 100) * dias);
+    var dias    = calcularDiasMora(fechaDesembolso, cuotasPagadas);
+    var intMora = Math.round(saldoCapital * (window.DB.config.tasa_mora_diaria / 100) * dias);
     alerta = '<div style="background:var(--red-50);border:1px solid var(--red-100);' +
       'border-radius:var(--r-md);padding:12px;font-size:12.5px;color:var(--red-700);">' +
       '⚠ Este crédito tiene <strong>' + dias + ' días en mora</strong>.<br>' +
@@ -675,12 +710,12 @@ function abrirPago(creditoId) {
   }
 
   document.getElementById("pagoResumen").innerHTML =
-    statPago("Socio", DataHelper.getSocioNombre(c.socio_id)) +
+    statPago("Socio", socio) +
     statPago("Cuota N°", numCuota + " de " + c.cuotas) +
     statPago("Cuota total", DataHelper.formatCOP(cuota)) +
     statPago("Capital", DataHelper.formatCOP(capital)) +
     statPago("Interés", DataHelper.formatCOP(interes)) +
-    statPago("Saldo tras pago", DataHelper.formatCOP(Math.max(0, c.saldo_capital - capital)));
+    statPago("Saldo tras pago", DataHelper.formatCOP(Math.max(0, saldoCapital - capital)));
 
   document.getElementById("pagoAlerta").innerHTML  = alerta;
   document.getElementById("pagoAlerta").style.display = alerta ? "block" : "none";
@@ -700,35 +735,37 @@ function statPago(label, val) {
 }
 
 async function confirmarPago() {
-  var c = DB.creditos.find(function(x) { return x.id === creditoPagoActual; });
+  var c = (window.pageCreditos || []).find(function(x) { return x.id === creditoPagoActual; });
   if (!c) return;
 
   var btn = document.getElementById("btnConfirmarPago");
   btn.textContent = "Procesando...";
   btn.disabled    = true;
 
+  var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
+
   try {
-    const res = await API.creditos.pagarCuota(c.id, c.cuotas_pagadas + 1);
+    const res = await API.creditos.pagarCuota(c.id, cuotasPagadas + 1);
 
     if (res && res.ok) {
+      await cargarDatos();
+
       // Registrar en movimientos contables
-      var cuota = Math.round(DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas));
+      var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
+      var cuota = Math.round(DataHelper.calcularCuota(c.monto, tasa, c.cuotas));
       await API.movimientos.crear({
         tipo:         "ingreso",
         categoria:    "Abono Crédito",
-        descripcion:  "Cuota " + (c.cuotas_pagadas + 1) + "/" + c.cuotas + " — Crédito #" + c.id,
+        descripcion:  "Cuota " + (cuotasPagadas + 1) + "/" + c.cuotas + " — Crédito #" + c.id,
         monto:        cuota,
         fecha:        document.getElementById("pg-fecha").value || new Date().toISOString()
       });
-
-      await DataSync.syncCreditos();
-      await DataSync.syncMovimientos();
 
       btn.textContent = "✓ Confirmar pago";
       btn.disabled    = false;
       Modal.close("modalPago");
 
-      var crMod = DB.creditos.find(function(x) { return x.id === creditoPagoActual; });
+      var crMod = (window.pageCreditos || []).find(function(x) { return x.id === creditoPagoActual; });
       var mensaje = crMod?.estado === "pagado"
         ? "🎉 Crédito #" + c.id + " liquidado completamente."
         : "✓ Cuota registrada correctamente.";
@@ -753,12 +790,18 @@ async function confirmarPago() {
    VER DETALLE / AMORTIZACIÓN
 ═══════════════════════════════════════════════════════════ */
 function verDetalle(creditoId) {
-  var c = DB.creditos.find(function(x) { return x.id === creditoId; });
+  var c = (window.pageCreditos || []).find(function(x) { return x.id === creditoId; });
   if (!c) return;
 
-  var socio = DataHelper.getSocioNombre(c.socio_id);
-  var cuota = DataHelper.calcularCuota(c.monto, c.tasa_mensual, c.cuotas);
-  var pct   = Math.round((c.cuotas_pagadas / c.cuotas) * 100);
+  var sObj = (window.pageSocios || []).find(function(s){ return s.id === c.socio_id || s.id === c.socioId; });
+  var socio = sObj ? sObj.nombre : (c.socio_nombre || "Socio #" + (c.socio_id || c.socioId));
+
+  var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
+  var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
+  var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
+
+  var cuota = DataHelper.calcularCuota(c.monto, tasa, c.cuotas);
+  var pct   = Math.round((cuotasPagadas / c.cuotas) * 100);
 
   document.getElementById("detalleTitle").textContent =
     "Plan de Pagos — Crédito #" + c.id + " · " + socio;
@@ -767,13 +810,13 @@ function verDetalle(creditoId) {
   var saldo = c.monto;
   var filas = "";
   for (var i = 1; i <= c.cuotas; i++) {
-    var r   = c.tasa_mensual / 100;
+    var r   = tasa / 100;
     var int = saldo * r;
     var cap = cuota - int;
     saldo  -= cap;
 
-    var pagada = i <= c.cuotas_pagadas;
-    var actual = i === c.cuotas_pagadas + 1 && c.estado !== "pagado";
+    var pagada = i <= cuotasPagadas;
+    var actual = i === cuotasPagadas + 1 && c.estado !== "pagado";
     var numCls = pagada ? "pagada" : actual ? "actual" : "futura";
     var trCls  = pagada ? "cuota-row-pagada" : actual ? "cuota-row-actual" : "";
     var est    = pagada
@@ -797,34 +840,34 @@ function verDetalle(creditoId) {
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">' +
       resCard("Socio",       socio) +
       resCard("Monto",       DataHelper.formatCOP(c.monto)) +
-      resCard("Saldo actual",DataHelper.formatCOP(c.saldo_capital)) +
+      resCard("Saldo actual",DataHelper.formatCOP(saldoCapital)) +
       resCard("Estado",      DataHelper.estadoPill(c.estado)) +
     '</div>' +
-
+ 
     // Progreso
     '<div style="margin-bottom:16px;">' +
       '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:5px;">' +
-        '<span>' + c.cuotas_pagadas + ' de ' + c.cuotas + ' cuotas pagadas</span>' +
+        '<span>' + cuotasPagadas + ' de ' + c.cuotas + ' cuotas pagadas</span>' +
         '<span style="font-weight:600;">' + pct + '%</span>' +
       '</div>' +
       '<div class="prog-track">' +
         '<div class="prog-fill ' + (c.estado==="mora"?"red":"green") + '" style="width:' + pct + '%;"></div>' +
       '</div>' +
     '</div>' +
-
     // Tabla
     '<div style="overflow-x:auto;">' +
       '<table class="data-table table-animated">' +
         '<thead><tr>' +
           '<th>N°</th><th>Capital</th><th>Interés</th>' +
           '<th>Cuota total</th><th>Saldo</th><th>Estado</th>' +
-        '</tr></thead>' +
+         '</tr></thead>' +
         '<tbody>' + filas + '</tbody>' +
       '</table>' +
     '</div>';
 
   Modal.open("modalDetalle");
 }
+
 
 function resCard(label, val) {
   return '<div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:10px 14px;">' +
@@ -842,11 +885,12 @@ function imprimirDetalle() {
 ═══════════════════════════════════════════════════════════ */
 function poblarSelectSocios() {
   var sel = document.getElementById("nc-socio");
-  DB.socios.filter(function(s) { return s.estado === "activo"; })
+  (window.pageSocios || []).filter(function(s) { return s.estado === "activo"; })
     .forEach(function(s) {
       var opt = document.createElement("option");
       opt.value = s.id;
-      opt.textContent = s.nombre + " · Ahorro: " + DataHelper.formatCOP(s.ahorro_acumulado);
+      var ahorro = s.ahorro_acumulado !== undefined ? s.ahorro_acumulado : (s.ahorroAcumulado || 0);
+      opt.textContent = s.nombre + " · Ahorro: " + DataHelper.formatCOP(ahorro);
       sel.appendChild(opt);
     });
 }
@@ -860,9 +904,13 @@ function verificarCapacidad() {
 
   if (!socioId || !monto) { box.style.display = "none"; return; }
 
-  var socio    = DataHelper.getSocio(socioId);
-  var maximo   = socio.ahorro_acumulado * DB.config.max_credito_multiplicador;
-  var cuotaEst = Math.round(DataHelper.calcularCuota(monto, DB.config.tasa_credito_mensual, cuotas));
+  var socio = (window.pageSocios || []).find(function(s){ return s.id === socioId; });
+  if (!socio) { box.style.display = "none"; return; }
+
+  var ahorro = socio.ahorro_acumulado !== undefined ? socio.ahorro_acumulado : (socio.ahorroAcumulado || 0);
+  var multiplicador = window.DB?.config?.max_credito_multiplicador || 3;
+  var maximo   = ahorro * multiplicador;
+  var cuotaEst = Math.round(DataHelper.calcularCuota(monto, window.DB?.config?.tasa_credito_mensual || 1.5, cuotas));
   var ok       = monto <= maximo;
 
   box.style.display = "block";
@@ -880,7 +928,7 @@ function verificarCapacidad() {
       '<div style="background:var(--red-50);border:1px solid var(--red-100);' +
       'border-radius:var(--r-md);padding:12px 14px;font-size:12.5px;color:var(--red-700);">' +
       '⚠ Monto excede el límite. El máximo para este socio es <strong>' +
-      DataHelper.formatCOP(maximo) + '</strong> (3× su ahorro acumulado).' +
+      DataHelper.formatCOP(maximo) + '</strong> (' + multiplicador + '× su ahorro acumulado).' +
       '</div>';
   }
 }
@@ -899,26 +947,26 @@ async function guardarCredito() {
   btn.disabled    = true;
 
   var nuevo = {
-    socio_id:        socioId,
+    socioId:         socioId,
     monto:           monto,
-    tasa_mensual:    DB.config.tasa_credito_mensual,
+    tasaMensual:     window.DB?.config?.tasa_credito_mensual || 1.5,
     cuotas:          cuotas,
     proposito:       proposito,
-    fecha_desembolso: fecha || new Date().toISOString().split("T")[0]
+    fechaDesembolso: fecha || new Date().toISOString().split("T")[0]
   };
 
   try {
     const res = await API.creditos.crear(nuevo);
     
     if (res && res.ok) {
-      await DataSync.syncCreditos();
+      await cargarDatos();
       
       btn.textContent = "Aprobar y desembolsar";
       btn.disabled    = false;
       Modal.close("modalNuevoCredito");
       renderKPIs();
       renderCreditos(filtroActual);
-      Toast.success("✓ Crédito " + res.datos.id + " aprobado y desembolsado.");
+      Toast.success("✓ Crédito desembolsado correctamente.");
     } else {
       Toast.error(res?.mensaje || "Error al crear crédito");
       btn.textContent = "Aprobar y desembolsar";
@@ -935,14 +983,21 @@ async function guardarCredito() {
    ESTADO DE MORA
 ═══════════════════════════════════════════════════════════ */
 async function pasarActivo(creditoId) {
-  var c = DB.creditos.find(function(x) { return x.id === creditoId; });
-  if (!c) return;
-  // TODO: Añadir API si hay endpoint, de lo contrario solo actualizamos local o usamos API genérica si la hubiera
-  c.estado = "activo";
-  renderKPIs();
-  renderMoraPanel();
-  renderCreditos(filtroActual);
-  Toast.success("Crédito #" + creditoId + " marcado como activo.");
+  try {
+    // Si no hay API para pasarActivo, podemos usar la actualización general
+    var res = await API.creditos.actualizarEstado(creditoId, "activo");
+    if (res && res.ok) {
+      await cargarDatos();
+      renderKPIs();
+      renderMoraPanel();
+      renderCreditos(filtroActual);
+      Toast.success("Crédito #" + creditoId + " marcado como activo.");
+    } else {
+      Toast.error(res?.mensaje || "Error al actualizar estado");
+    }
+  } catch (e) {
+    Toast.error("Error de conexión");
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1003,18 +1058,24 @@ function exportarCreditos() {
   var mapa = { activos:"activo", mora:"mora", pagados:"pagado" };
   var estado = mapa[filtroActual];
   var lista  = estado
-    ? DB.creditos.filter(function(c) { return c.estado === estado; })
-    : DB.creditos;
+    ? (window.pageCreditos || []).filter(function(c) { return c.estado === estado; })
+    : (window.pageCreditos || []);
 
   var datos = [["Código","Socio","Monto","Cuotas","Pagadas","Saldo","Tasa","Estado","Propósito","Fecha"]];
   lista.forEach(function(c) {
+    var sObj = (window.pageSocios || []).find(function(s){ return s.id === c.socio_id || s.id === c.socioId; });
+    var socio = sObj ? sObj.nombre : (c.socio_nombre || "Socio #" + (c.socio_id || c.socioId));
+    var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
+    var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
+    var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
+    var fecha = c.fecha_desembolso || c.fechaDesembolso;
     datos.push([
       c.id,
-      DataHelper.getSocioNombre(c.socio_id),
-      c.monto, c.cuotas, c.cuotas_pagadas,
-      c.saldo_capital, c.tasa_mensual + "%",
+      socio,
+      c.monto, c.cuotas, cuotasPagadas,
+      saldoCapital, tasa + "%",
       c.estado, c.proposito || "",
-      DataHelper.formatFecha(c.fecha_desembolso)
+      DataHelper.formatFecha(fecha)
     ]);
   });
 
@@ -1024,6 +1085,7 @@ function exportarCreditos() {
   XLSX.writeFile(wb, "FONEVI_Creditos_" + new Date().toISOString().split("T")[0] + ".xlsx");
   Toast.success("Archivo Excel generado.");
 }
+
 
 /* ═══════════════════════════════════════════════════════════
    UTILIDADES

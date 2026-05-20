@@ -309,6 +309,16 @@
           <input type="text" class="form-control" id="na-obs"
             placeholder="Nota adicional sobre el aporte..."/>
         </div>
+        <div class="form-group">
+          <label class="form-label">Pago Solidaridad ($)</label>
+          <input type="number" class="form-control" id="na-solidaridad"
+            placeholder="30000" min="0" step="1000"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Abono a Crédito ($)</label>
+          <input type="number" class="form-control" id="na-credito"
+            placeholder="0" min="0" step="1000"/>
+        </div>
       </div>
 
       <!-- Aviso de aporte duplicado -->
@@ -346,7 +356,6 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="../js/darkmode.js"></script>
 <script src="../js/transitions.js"></script>
-<script src="../js/data.js"></script>
 <script src="../js/config.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/auth.js"></script>
@@ -374,12 +383,24 @@ var METODO_LABEL = {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   INICIO
+   INICIO Y CARGA DE DATOS (BACKEND-FIRST)
 ═══════════════════════════════════════════════════════════ */
+async function cargarDatos() {
+  try {
+    const [resAportes, resSocios] = await Promise.all([
+      API.aportes.listar(),
+      API.socios.listar()
+    ]);
+    if (resAportes && resAportes.ok) window.pageAportes = resAportes.datos;
+    if (resSocios && resSocios.ok) window.pageSocios = resSocios.datos;
+  } catch (e) {
+    console.error("Error cargando aportes:", e);
+    Toast.error("Error al conectar con el servidor.");
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("aportes")) return;
-
-  await window.DataSync?.init();
 
   buildLayout(
     "Aportes",
@@ -387,8 +408,10 @@ document.addEventListener("DOMContentLoaded", async function() {
     ""
   );
 
+  await cargarDatos();
+
   // Período actual como filtro inicial
-  filtroPeriodo = DB.config.periodo_actual;
+  filtroPeriodo = window.DB.config.periodo_actual;
 
   poblarSelectSocios();
   poblarSelectPeriodos();
@@ -415,7 +438,7 @@ document.addEventListener("DOMContentLoaded", async function() {
    KPIs
 ═══════════════════════════════════════════════════════════ */
 function renderKPIs() {
-  var todos     = DB.aportes;
+  var todos     = window.pageAportes || [];
   var pagados   = todos.filter(function(a){ return a.estado === "pagado"; });
   var pendientes= todos.filter(function(a){ return a.estado === "pendiente"; });
   var mora      = todos.filter(function(a){ return ["mora","vencido"].includes(a.estado); });
@@ -440,8 +463,8 @@ function renderKPIs() {
    BARRA DE RECAUDO DEL PERÍODO
 ═══════════════════════════════════════════════════════════ */
 function renderRecaudo() {
-  var periodo  = filtroPeriodo || DB.config.periodo_actual;
-  var lista    = DB.aportes.filter(function(a){ return a.periodo === periodo; });
+  var periodo  = filtroPeriodo || window.DB.config.periodo_actual;
+  var lista    = (window.pageAportes || []).filter(function(a){ return (a.periodo_nombre || a.periodo) === periodo; });
   var pagados  = lista.filter(function(a){ return a.estado === "pagado"; });
   var pend     = lista.filter(function(a){ return a.estado === "pendiente"; });
   var morosos  = lista.filter(function(a){ return ["mora","vencido"].includes(a.estado); });
@@ -454,11 +477,13 @@ function renderRecaudo() {
   setTimeout(function() {
     document.getElementById("recaudoFill").style.width = pct + "%";
     var fill = document.getElementById("recaudoFill");
-    fill.style.background = pct >= 80
-      ? "linear-gradient(90deg,var(--green-500),var(--green-300))"
-      : pct >= 50
-        ? "linear-gradient(90deg,var(--gold-500),var(--gold-300))"
-        : "linear-gradient(90deg,var(--red-500),var(--red-300))";
+    if (fill) {
+      fill.style.background = pct >= 80
+        ? "linear-gradient(90deg,var(--green-500),var(--green-300))"
+        : pct >= 50
+          ? "linear-gradient(90deg,var(--gold-500),var(--gold-300))"
+          : "linear-gradient(90deg,var(--red-500),var(--red-300))";
+    }
   }, 200);
 
   document.getElementById("recaudoStats").innerHTML = [
@@ -479,11 +504,11 @@ function renderRecaudo() {
    TABLA PRINCIPAL
 ═══════════════════════════════════════════════════════════ */
 function renderTabla() {
-  var lista = DB.aportes;
+  var lista = window.pageAportes || [];
 
   // Filtro período
   if (filtroPeriodo) {
-    lista = lista.filter(function(a){ return a.periodo === filtroPeriodo; });
+    lista = lista.filter(function(a){ return (a.periodo_nombre || a.periodo) === filtroPeriodo; });
   }
 
   // Filtro estado
@@ -564,21 +589,21 @@ function renderTabla() {
 function solicitarCambioEstado(selectEl) {
   var id          = selectEl.dataset.id;
   var nuevoEstado = selectEl.value;
-  var aporte      = DB.aportes.find(function(a){ return a.id === id; });
+  var aporte      = (window.pageAportes || []).find(function(a){ return a.id === id; });
   if (!aporte) return;
   if (aporte.estado === nuevoEstado) return;
 
   cambioEstadoPendiente = { id: id, nuevoEstado: nuevoEstado, selectEl: selectEl };
 
-  var socio  = DataHelper.getSocioNombre(aporte.socio_id);
-  var labels = { pagado:"✓ Pagado", pendiente:"⏱ Pendiente", mora:"⚠ En mora" };
+  var sObj = (window.pageSocios || []).find(function(s){ return s.id === aporte.socio_id || s.id === aporte.socioId; });
+  var socio = sObj ? sObj.nombre : (aporte.socio_nombre || "Socio #" + (aporte.socio_id || aporte.socioId));
 
   document.getElementById("cambioEstadoBody").innerHTML =
     '<p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">' +
       '¿Confirmar el cambio de estado del siguiente aporte?' +
     '</p>' +
     '<div style="background:var(--bg-subtle);border-radius:var(--r-md);padding:14px 16px;font-size:13px;">' +
-      '<div style="margin-bottom:6px;"><strong>' + socio + '</strong> — ' + aporte.periodo + '</div>' +
+      '<div style="margin-bottom:6px;"><strong>' + socio + '</strong> — ' + (aporte.periodo_nombre || aporte.periodo) + '</div>' +
       '<div style="margin-bottom:6px;">Monto: <strong>' + DataHelper.formatCOP(aporte.monto) + '</strong></div>' +
       '<div>Estado: ' + DataHelper.estadoPill(aporte.estado) +
         ' → ' + DataHelper.estadoPill(nuevoEstado) +
@@ -592,7 +617,7 @@ function solicitarCambioEstado(selectEl) {
     (nuevoEstado === "mora"
       ? '<div style="margin-top:10px;background:var(--red-50);border:1px solid var(--red-100);' +
           'border-radius:var(--r-sm);padding:10px 14px;font-size:12px;color:var(--red-700);">' +
-          '⚠ Al marcar como mora se registrarán intereses de ' + DB.config.tasa_mora_diaria + '% diario.' +
+          '⚠ Al marcar como mora se registrarán intereses de ' + window.DB.config.tasa_mora_diaria + '% diario.' +
         '</div>'
       : "");
 
@@ -600,9 +625,8 @@ function solicitarCambioEstado(selectEl) {
 }
 
 function cancelarCambioEstado() {
-  // Restaurar el select al valor original
   if (cambioEstadoPendiente) {
-    var aporte = DB.aportes.find(function(a){ return a.id === cambioEstadoPendiente.id; });
+    var aporte = (window.pageAportes || []).find(function(a){ return a.id === cambioEstadoPendiente.id; });
     if (aporte && cambioEstadoPendiente.selectEl) {
       cambioEstadoPendiente.selectEl.value =
         ["mora","vencido"].includes(aporte.estado) ? "mora" : aporte.estado;
@@ -615,27 +639,26 @@ function cancelarCambioEstado() {
 async function confirmarCambioEstado() {
   if (!cambioEstadoPendiente) return;
 
-  var aporte = DB.aportes.find(function(a){ return a.id === cambioEstadoPendiente.id; });
+  var aporte = (window.pageAportes || []).find(function(a){ return a.id === cambioEstadoPendiente.id; });
   if (!aporte) return;
 
-  var estadoAnterior = aporte.estado;
   var nuevoEstado = cambioEstadoPendiente.nuevoEstado;
 
-  // Actualizar en el backend
-  var res = await API.aportes.actualizarEstado(aporte.id, nuevoEstado);
-
-  if (res && res.ok) {
-    await DataSync.syncAportes();
-    await DataSync.syncSocios(); // por si se actualizó el ahorro
-
-    cambioEstadoPendiente = null;
-    Modal.close("modalCambioEstado");
-    renderKPIs();
-    renderRecaudo();
-    renderTabla();
-    Toast.success("✓ Estado actualizado correctamente.");
-  } else {
-    Toast.error(res?.mensaje || "Error al actualizar estado");
+  try {
+    var res = await API.aportes.actualizarEstado(aporte.id, nuevoEstado);
+    if (res && res.ok) {
+      await cargarDatos();
+      cambioEstadoPendiente = null;
+      Modal.close("modalCambioEstado");
+      renderKPIs();
+      renderRecaudo();
+      renderTabla();
+      Toast.success("✓ Estado actualizado correctamente.");
+    } else {
+      Toast.error(res?.mensaje || "Error al actualizar estado");
+    }
+  } catch (err) {
+    Toast.error(err.message || "Error al conectar con el servidor");
   }
 }
 
@@ -644,11 +667,12 @@ async function confirmarCambioEstado() {
 ═══════════════════════════════════════════════════════════ */
 function autocompletarMonto() {
   var id = document.getElementById("na-socio").value;
-  var s  = DataHelper.getSocio(id);
+  var s = (window.pageSocios || []).find(function(x){ return x.id === id; });
   if (s) {
-    document.getElementById("na-monto").value = s.aporte_mensual;
+    var val = s.aporte_mensual || s.aporteMensual || 120000;
+    document.getElementById("na-monto").value = val;
     document.getElementById("na-monto-hint").textContent =
-      "Aporte habitual: " + DataHelper.formatCOP(s.aporte_mensual);
+      "Aporte habitual: " + DataHelper.formatCOP(val);
   } else {
     document.getElementById("na-monto-hint").textContent = "";
   }
@@ -662,8 +686,8 @@ function verificarDuplicado() {
 
   if (!socioId || !periodo) { warn.style.display = "none"; btn.disabled = false; return; }
 
-  var existe = DB.aportes.find(function(a) {
-    return a.socio_id === socioId && a.periodo === periodo;
+  var existe = (window.pageAportes || []).find(function(a) {
+    return (a.socio_id === socioId || a.socioId === socioId) && (a.periodo_nombre || a.periodo) === periodo;
   });
 
   if (existe) {
@@ -697,22 +721,23 @@ async function guardarAporte() {
   btn.disabled    = true;
 
   var nuevo = {
-    socio_id:   socioId,
-    periodo:    periodo,
+    socioId:    socioId,
+    periodoId:  periodo,
     monto:      monto,
-    fecha_pago: estado === "pagado" ? document.getElementById("na-fecha").value : null,
+    fechaPago:  estado === "pagado" ? document.getElementById("na-fecha").value : null,
     estado:     estado,
     metodo:     document.getElementById("na-metodo").value,
-    obs:        document.getElementById("na-obs").value.trim(),
+    notas:      document.getElementById("na-obs").value.trim(),
+    pago_solidaridad: parseFloat(document.getElementById("na-solidaridad").value || 0),
+    pago_credito:     parseFloat(document.getElementById("na-credito").value || 0),
   };
 
   try {
     const res = await API.aportes.registrar(nuevo);
 
     if (res && res.ok) {
-      await DataSync.syncAportes();
-      if (estado === "pagado") await DataSync.syncSocios();
-
+      await cargarDatos();
+      
       btn.textContent = "Registrar aporte";
       btn.disabled    = false;
 
@@ -724,7 +749,11 @@ async function guardarAporte() {
       // Actualizar selector de período si es nuevo
       poblarSelectPeriodos();
 
-      Toast.success("✓ Aporte de " + DataHelper.formatCOP(monto) + " registrado.");
+      // Limpiar campos extra
+      document.getElementById("na-solidaridad").value = "";
+      document.getElementById("na-credito").value = "";
+
+      Toast.success("✓ Pago múltiple procesado exitosamente.");
     } else {
       Toast.error(res?.mensaje || "Error al registrar aporte");
       btn.textContent = "Registrar aporte";
@@ -751,7 +780,7 @@ function cambiarPeriodo(valor) {
 ═══════════════════════════════════════════════════════════ */
 function poblarSelectSocios() {
   var sel = document.getElementById("na-socio");
-  DB.socios
+  (window.pageSocios || [])
     .filter(function(s){ return s.estado === "activo"; })
     .sort(function(a,b){ return a.nombre.localeCompare(b.nombre); })
     .forEach(function(s) {
@@ -763,20 +792,19 @@ function poblarSelectSocios() {
 }
 
 function poblarSelectPeriodos() {
-  // Períodos únicos en aportes + período actual
   var periodos = [];
   var vistos   = {};
-  DB.aportes.forEach(function(a) {
-    if (a.periodo && !vistos[a.periodo]) {
-      periodos.push(a.periodo);
-      vistos[a.periodo] = true;
+  (window.pageAportes || []).forEach(function(a) {
+    var p = a.periodo_nombre || a.periodo;
+    if (p && !vistos[p]) {
+      periodos.push(p);
+      vistos[p] = true;
     }
   });
-  if (!vistos[DB.config.periodo_actual]) {
-    periodos.unshift(DB.config.periodo_actual);
+  if (!vistos[window.DB.config.periodo_actual]) {
+    periodos.unshift(window.DB.config.periodo_actual);
   }
 
-  // Ordenar: más reciente primero (por año desc, mes desc)
   var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
                "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   periodos.sort(function(a, b) {
@@ -787,7 +815,6 @@ function poblarSelectPeriodos() {
     return mb - ma;
   });
 
-  // Selector de la página
   var sel = document.getElementById("selectPeriodo");
   var cur = sel.value || filtroPeriodo;
   sel.innerHTML = periodos.map(function(p) {
@@ -801,19 +828,16 @@ function poblarSelectPeriodoModal() {
                "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   var sel = document.getElementById("na-periodo");
   
-  var partes  = DB.config.periodo_actual.split(" ");
+  var partes  = window.DB.config.periodo_actual.split(" ");
   var anio    = parseInt(partes[partes.length-1]);
   var opciones = [];
 
-  // Generar meses del año actual (Enero a Diciembre)
   for (var i = 0; i < 12; i++) {
     opciones.push(MESES[i] + " " + anio);
   }
 
-  // Opcional: Agregar el año siguiente si estamos a final de año, o el año pasado si lo necesitan, 
-  // pero para este requerimiento específico, solo hasta diciembre del año actual.
   sel.innerHTML = opciones.map(function(p) {
-    return '<option value="' + p + '" ' + (p === DB.config.periodo_actual ? "selected" : "") + '>' + p + '</option>';
+    return '<option value="' + p + '" ' + (p === window.DB.config.periodo_actual ? "selected" : "") + '>' + p + '</option>';
   }).join("");
 }
 
@@ -821,15 +845,14 @@ function poblarSelectPeriodoModal() {
    COMPROBANTE DE APORTE (impresión)
 ═══════════════════════════════════════════════════════════ */
 function imprimirComprobante(id) {
-  // Usar sistema centralizado de comprobantes
   if (typeof Comprobantes !== 'undefined') {
     Comprobantes.imprimirAporte(id);
     return;
   }
-  var a = DB.aportes.find(function(x){ return x.id === id; });
+  var a = (window.pageAportes || []).find(function(x){ return x.id === id; });
   if (!a) return;
 
-  var socio  = DB.socios.find(function(s){ return s.id === a.socio_id; }) || {};
+  var socio  = (window.pageSocios || []).find(function(s){ return s.id === a.socio_id || s.id === a.socioId; }) || {};
   var num    = "FONEVI-AP-" + a.id + "-" + new Date().getFullYear();
   var fecha  = new Date().toLocaleDateString("es-CO", { day:"2-digit", month:"long", year:"numeric" });
 
