@@ -245,7 +245,7 @@ function crearGraficoBarrasTabbed(id, tab) {
     
     (window.pageAportes || []).forEach(function(a) {
       if (a.estado !== 'pagado') return;
-      var f = new Date(a.fecha || a.createdAt);
+      var f = new Date(a.fecha_pago || a.created_at || a.fecha || a.createdAt);
       var m = f.getMonth();
       if (m >= 0 && m <= 2) q1Aportes += Number(a.monto);
       else if (m >= 3 && m <= 5) q2Aportes += Number(a.monto);
@@ -254,7 +254,7 @@ function crearGraficoBarrasTabbed(id, tab) {
     });
 
     (window.pageCreditos || []).forEach(function(c) {
-      var f = new Date(c.fecha_desembolso || c.fechaDesembolso || c.createdAt);
+      var f = new Date(c.fecha_desembolso || c.fechaDesembolso || c.created_at || c.createdAt);
       var m = f.getMonth();
       var monto = Number(c.monto);
       if (m >= 0 && m <= 2) q1Creditos += monto;
@@ -272,13 +272,13 @@ function crearGraficoBarrasTabbed(id, tab) {
     
     (window.pageAportes || []).forEach(function(a) {
       if (a.estado !== 'pagado') return;
-      var f = new Date(a.fecha || a.createdAt);
+      var f = new Date(a.fecha_pago || a.created_at || a.fecha || a.createdAt);
       var m = f.getMonth();
       if (m >= 0 && m <= 11) monthlyAportes[m] += Number(a.monto);
     });
 
     (window.pageCreditos || []).forEach(function(c) {
-      var f = new Date(c.fecha_desembolso || c.fechaDesembolso || c.createdAt);
+      var f = new Date(c.fecha_desembolso || c.fechaDesembolso || c.created_at || c.createdAt);
       var m = f.getMonth();
       if (m >= 0 && m <= 11) monthlyCreditos[m] += Number(c.monto);
     });

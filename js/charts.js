@@ -151,9 +151,9 @@ function crearGraficoLinea(canvasId) {
 
   const meses = ["Ene","Feb","Mar","Abr","May","Jun",
                  "Jul","Ago","Sep","Oct","Nov","Dic"];
-  const ahorroBase = DB.socios.reduce((t,s)=>t+s.ahorro_acumulado,0);
+  const ahorroBase = (DB.socios || []).reduce((t,s)=>t+Number(s.ahorro_acumulado || s.ahorroAcumulado || 0),0);
   // Simular curva de crecimiento mensual acumulado
-  const aporteMensual = DB.socios.reduce((t,s)=>t+s.aporte_mensual,0);
+  const aporteMensual = (DB.socios || []).reduce((t,s)=>t+Number(s.aporte_mensual || s.aporteMensual || 0),0);
   const dataTendencia = meses.map((_,i) => {
     return Math.round((ahorroBase - (11-i) * aporteMensual) * (1 + i * 0.003));
   });
@@ -228,7 +228,7 @@ function crearGraficoDistribucion(canvasId) {
 
   const totalAhorros   = DataHelper.getTotalAhorros();
   const totalCartera   = DataHelper.getTotalCartera();
-  const totalSolid     = DB.solidaridad.saldo_actual;
+  const totalSolid     = Number(DB?.solidaridad?.saldo_actual || 0);
   const total          = totalAhorros + totalCartera + totalSolid;
 
   ChartInstances[canvasId] = new Chart(ctx, {
@@ -262,7 +262,7 @@ function crearGraficoDistribucion(canvasId) {
         tooltip: {
           callbacks: {
             label: ctx => {
-              const pct = ((ctx.raw / total) * 100).toFixed(1);
+              const pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(1) : "0.0";
               return " " + ctx.label + ": " + pct + "%";
             },
             afterLabel: ctx =>

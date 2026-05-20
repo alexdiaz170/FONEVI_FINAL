@@ -391,8 +391,14 @@ async function cargarDatos() {
       API.aportes.listar(),
       API.socios.listar()
     ]);
-    if (resAportes && resAportes.ok) window.pageAportes = resAportes.datos;
-    if (resSocios && resSocios.ok) window.pageSocios = resSocios.datos;
+    if (resAportes && resAportes.ok) {
+      window.pageAportes = resAportes.datos;
+      window.DB.aportes = resAportes.datos;
+    }
+    if (resSocios && resSocios.ok) {
+      window.pageSocios = resSocios.datos;
+      window.DB.socios = resSocios.datos;
+    }
   } catch (e) {
     console.error("Error cargando aportes:", e);
     Toast.error("Error al conectar con el servidor.");
@@ -742,6 +748,11 @@ async function guardarAporte() {
       btn.disabled    = false;
 
       Modal.close("modalNuevoAporte");
+
+      if (nuevo.periodoId) {
+        filtroPeriodo = nuevo.periodoId;
+      }
+
       renderKPIs();
       renderRecaudo();
       renderTabla();
@@ -816,7 +827,7 @@ function poblarSelectPeriodos() {
   });
 
   var sel = document.getElementById("selectPeriodo");
-  var cur = sel.value || filtroPeriodo;
+  var cur = filtroPeriodo || sel.value;
   sel.innerHTML = periodos.map(function(p) {
     return '<option value="' + p + '" ' + (p === cur ? "selected" : "") + '>' + p + '</option>';
   }).join("");
@@ -925,12 +936,15 @@ function exportarExcel() {
   ];
 
   lista.forEach(function(a) {
-    var socio = DB.socios.find(function(s){ return s.id === a.socio_id; }) || {};
+    // Use socio_nombre from the mapped aporte (populated via JOIN in backend)
+    var nombreSocio = a.socio_nombre || a.socio_id || "—";
+    // Try to get documento from socios list (matched by nombre as fallback)
+    var socio = (window.pageSocios || []).find(function(s){ return s.nombre === nombreSocio; }) || {};
     datos.push([
       a.id,
-      socio.nombre || DataHelper.getSocioNombre(a.socio_id),
+      nombreSocio,
       socio.documento || "—",
-      a.periodo,
+      a.periodo_nombre || a.periodo,
       a.monto,
       a.fecha_pago || "—",
       METODO_LABEL[a.metodo] || a.metodo || "—",
@@ -982,8 +996,8 @@ function exportarPDF() {
   var rows    = lista.map(function(a) {
     return [
       a.id,
-      DataHelper.getSocioNombre(a.socio_id),
-      a.periodo,
+      a.socio_nombre || a.socio_id || "—",
+      a.periodo_nombre || a.periodo,
       DataHelper.formatCOP(a.monto),
       a.fecha_pago ? DataHelper.formatFecha(a.fecha_pago) : "—",
       METODO_LABEL[a.metodo] || a.metodo || "—",
@@ -1039,9 +1053,9 @@ function exportarPDF() {
 
 /* ── Helper: lista filtrada actual ─────────────────────── */
 function listaFiltrada() {
-  var lista = DB.aportes;
+  var lista = window.pageAportes || window.DB.aportes || [];
   if (filtroPeriodo) {
-    lista = lista.filter(function(a){ return a.periodo === filtroPeriodo; });
+    lista = lista.filter(function(a){ return (a.periodo_nombre || a.periodo) === filtroPeriodo; });
   }
   if (filtroEstado !== "todos") {
     lista = lista.filter(function(a){

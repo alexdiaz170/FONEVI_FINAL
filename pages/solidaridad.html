@@ -375,9 +375,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 function renderKPIs() {
   var movs     = DB.solidaridad.movimientos;
   var ingresos = movs.filter(function(m){ return m.tipo==="ingreso"; })
-                     .reduce(function(t,m){ return t+m.monto; }, 0);
+                     .reduce(function(t,m){ return t + Number(m.monto || 0); }, 0);
   var egresos  = movs.filter(function(m){ return m.tipo==="egreso"; })
-                     .reduce(function(t,m){ return t+m.monto; }, 0);
+                     .reduce(function(t,m){ return t + Number(m.monto || 0); }, 0);
   var ayudas   = movs.filter(function(m){ return m.tipo==="egreso"; }).length;
   var saldo    = DB.solidaridad.saldo_actual;
 
@@ -404,9 +404,9 @@ function renderSaldoPanel() {
   var movs    = DB.solidaridad.movimientos;
   var saldo   = DB.solidaridad.saldo_actual;
   var ing     = movs.filter(function(m){ return m.tipo==="ingreso"; })
-                    .reduce(function(t,m){ return t+m.monto; }, 0);
+                    .reduce(function(t,m){ return t + Number(m.monto || 0); }, 0);
   var egr     = movs.filter(function(m){ return m.tipo==="egreso"; })
-                    .reduce(function(t,m){ return t+m.monto; }, 0);
+                    .reduce(function(t,m){ return t + Number(m.monto || 0); }, 0);
   var pct     = ing > 0 ? Math.min(100, Math.round(saldo / ing * 100)) : 0;
   var socios  = DB.socios.filter(function(s){ return s.estado==="activo"; }).length;
   var metaMes = socios * DB.config.aporte_solidaridad;
@@ -433,13 +433,13 @@ function renderSaldoPanel() {
 ═══════════════════════════════════════════════════════════ */
 function renderCategorias() {
   var egrs = DB.solidaridad.movimientos.filter(function(m){ return m.tipo==="egreso"; });
-  var total = egrs.reduce(function(t,m){ return t+m.monto; }, 0);
+  var total = egrs.reduce(function(t,m){ return t + Number(m.monto || 0); }, 0);
 
   // Agrupar por tipo detectando palabras clave en la descripción
   var cats = {};
   egrs.forEach(function(m) {
     var tipo = detectarTipo(m.descripcion);
-    cats[tipo] = (cats[tipo] || 0) + m.monto;
+    cats[tipo] = (cats[tipo] || 0) + Number(m.monto || 0);
   });
 
   if (!Object.keys(cats).length) {
@@ -487,7 +487,8 @@ function detectarTipo(desc) {
    LISTA DE MOVIMIENTOS
 ═══════════════════════════════════════════════════════════ */
 function renderMovimientos(filtro) {
-  var lista = DB.solidaridad.movimientos.slice().reverse();
+  // Eliminamos .reverse() porque el backend ya envía ordenado DESC (los más recientes primero)
+  var lista = DB.solidaridad.movimientos.slice();
   if (filtro !== "todos") {
     lista = lista.filter(function(m){ return m.tipo === filtro; });
   }
@@ -516,7 +517,7 @@ function renderMovimientos(filtro) {
       '</div>' +
       '<div class="mov-right">' +
         '<div class="mov-amount ' + (esIng?"pos":"neg") + '">' +
-          (esIng?"+":"−") + DataHelper.formatCOP(m.monto) +
+          (esIng?"+":"−") + DataHelper.formatCOP(Number(m.monto || 0)) +
         '</div>' +
         '<div class="mov-type">' + (esIng?"Ingreso":"Ayuda") + '</div>' +
       '</div>' +
@@ -597,12 +598,9 @@ async function guardarAyuda() {
         renderCategorias();
         renderMovimientos(filtroMov);
 
-        // Actualizar topbar subtitle
-        buildLayout(
-          "Fondo de Solidaridad",
-          "Saldo: " + DataHelper.formatCOP(DB.solidaridad.saldo_actual),
-          '<button class="btn btn-primary" onclick="Modal.open(\'modalNuevaAyuda\')">+ Registrar ayuda</button>'
-        );
+        // Actualizar topbar subtitle sin duplicar todo el layout
+        var topSub = document.querySelector(".topbar-sub");
+        if (topSub) topSub.textContent = "Saldo: " + DataHelper.formatCOP(DB.solidaridad.saldo_actual);
     } else {
       Toast.error(res?.mensaje || "Error al registrar ayuda");
       btn.textContent = "Registrar ayuda";
@@ -644,12 +642,9 @@ async function registrarAporte() {
       renderSaldoPanel();
       renderMovimientos(filtroMov);
       
-      // Actualizar topbar subtitle
-      buildLayout(
-        "Fondo de Solidaridad",
-        "Saldo: " + DataHelper.formatCOP(DB.solidaridad.saldo_actual),
-        '<button class="btn btn-primary" onclick="Modal.open(\'modalNuevaAyuda\')">+ Registrar ayuda</button>'
-      );
+      // Actualizar topbar subtitle sin duplicar todo el layout
+      var topSub = document.querySelector(".topbar-sub");
+      if (topSub) topSub.textContent = "Saldo: " + DataHelper.formatCOP(DB.solidaridad.saldo_actual);
 
       Toast.success("✓ Aporte de " + DataHelper.formatCOP(monto) + " registrado.");
     } else {
@@ -702,7 +697,8 @@ function poblarSelects() {
 function exportarExcel() {
   if (typeof XLSX === "undefined") { Toast.warn("Cargando exportador..."); return; }
 
-  var movs = DB.solidaridad.movimientos.slice().reverse();
+  // Eliminamos .reverse() para mantener el orden DESC original del backend
+  var movs = DB.solidaridad.movimientos.slice();
   var datos = [
     ["FONEVI — Fondo de Solidaridad"],
     ["Exportado:", new Date().toLocaleDateString("es-CO")],
@@ -721,8 +717,8 @@ function exportarExcel() {
     ]);
   });
 
-  var totalIng = movs.filter(function(m){return m.tipo==="ingreso";}).reduce(function(t,m){return t+m.monto;},0);
-  var totalEgr = movs.filter(function(m){return m.tipo==="egreso"; }).reduce(function(t,m){return t+m.monto;},0);
+  var totalIng = movs.filter(function(m){return m.tipo==="ingreso";}).reduce(function(t,m){return t + Number(m.monto||0);},0);
+  var totalEgr = movs.filter(function(m){return m.tipo==="egreso"; }).reduce(function(t,m){return t + Number(m.monto||0);},0);
   datos.push([]);
   datos.push(["Total ingresos","","","",totalIng,""]);
   datos.push(["Total en ayudas","","","",totalEgr,""]);
