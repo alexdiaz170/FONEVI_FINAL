@@ -416,8 +416,8 @@ document.addEventListener("DOMContentLoaded", async function() {
 
   await cargarDatos();
 
-  // Período actual como filtro inicial
-  filtroPeriodo = window.DB.config.periodo_actual;
+  // Mostrar todos los períodos por defecto (evita filtrar solo el período actual)
+  filtroPeriodo = null;
 
   poblarSelectSocios();
   poblarSelectPeriodos();
@@ -679,6 +679,13 @@ function autocompletarMonto() {
     document.getElementById("na-monto").value = val;
     document.getElementById("na-monto-hint").textContent =
       "Aporte habitual: " + DataHelper.formatCOP(val);
+    // Habilitar/deshabilitar campo de abono a crédito según tenga créditos activos
+    var creditosActivos = DataHelper.getCreditosSocio(s.id).filter(function(c){ return c.estado !== 'pagado'; });
+    var elCredito = document.getElementById('na-credito');
+    if (elCredito) {
+      if (!creditosActivos.length) { elCredito.value = 0; elCredito.disabled = true; elCredito.placeholder = 'Sin crédito activo'; }
+      else { elCredito.disabled = false; elCredito.placeholder = '0'; }
+    }
   } else {
     document.getElementById("na-monto-hint").textContent = "";
   }
@@ -812,9 +819,6 @@ function poblarSelectPeriodos() {
       vistos[p] = true;
     }
   });
-  if (!vistos[window.DB.config.periodo_actual]) {
-    periodos.unshift(window.DB.config.periodo_actual);
-  }
 
   var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
                "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -828,10 +832,15 @@ function poblarSelectPeriodos() {
 
   var sel = document.getElementById("selectPeriodo");
   var cur = filtroPeriodo || sel.value;
+  if (!vistos[window.DB.config.periodo_actual]) {
+    periodos.unshift(window.DB.config.periodo_actual);
+  }
+
   sel.innerHTML = periodos.map(function(p) {
     return '<option value="' + p + '" ' + (p === cur ? "selected" : "") + '>' + p + '</option>';
   }).join("");
-  if (!filtroPeriodo && periodos.length) filtroPeriodo = periodos[0];
+  // No sobrescribir filtro si fue explícitamente establecido (null significa mostrar todos)
+  if (typeof filtroPeriodo === 'undefined' && periodos.length) filtroPeriodo = periodos[0];
 }
 
 function poblarSelectPeriodoModal() {

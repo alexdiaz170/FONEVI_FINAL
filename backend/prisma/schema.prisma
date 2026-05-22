@@ -73,6 +73,8 @@ model Aporte {
   socioId   String    @map("socio_id")
   periodoId Int       @map("periodo_id")
   monto     Decimal  @db.Decimal(15, 2)
+  pagoSolidaridad Decimal @map("pago_solidaridad") @default(0) @db.Decimal(15, 2)
+  pagoCredito      Decimal @map("pago_credito")    @default(0) @db.Decimal(15, 2)
   fechaPago DateTime? @map("fecha_pago")
   estado    String    @default("pendiente")  // pagado | pendiente | mora | vencido
   metodo    String?

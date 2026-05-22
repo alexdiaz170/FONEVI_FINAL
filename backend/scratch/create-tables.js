@@ -53,6 +53,8 @@ async function main() {
         "socio_id" TEXT NOT NULL,
         "periodo_id" INTEGER NOT NULL,
         "monto" DECIMAL(15,2) NOT NULL,
+        "pago_solidaridad" DECIMAL(15,2) NOT NULL DEFAULT 0,
+        "pago_credito" DECIMAL(15,2) NOT NULL DEFAULT 0,
         "fecha_pago" TIMESTAMP(3),
         "estado" TEXT NOT NULL DEFAULT 'pendiente',
         "metodo" TEXT,

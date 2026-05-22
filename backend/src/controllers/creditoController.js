@@ -20,7 +20,7 @@ class CreditoController {
       if (!credito) {
         return res.status(404).json({ ok: false, mensaje: 'Crédito no encontrado' });
       }
-      return res.json({ ok: true, datos: credito });
+      return res.json({ ok: true, datos: mapCredito(credito) });
     } catch (e) {
       next(e);
     }
@@ -29,16 +29,48 @@ class CreditoController {
   async create(req, res, next) {
     try {
       const { socioId, monto, tasaMensual, cuotas, cuotasPagadas, saldoCapital, fechaDesembolso, estado, proposito, aprobadoPor, notas } = req.body;
-      if (!socioId || !monto || !tasaMensual || !cuotas) {
-        return res.status(400).json({ ok: false, mensaje: 'Campos requeridos faltantes (socioId, monto, tasaMensual, cuotas)' });
+      const montoNum = Number(monto);
+      const tasaNum = Number(tasaMensual);
+      const cuotasNum = Number(cuotas);
+      const fechaValida = fechaDesembolso && !isNaN(new Date(fechaDesembolso).getTime())
+        ? fechaDesembolso
+        : new Date();
+
+      if (!socioId || isNaN(montoNum) || montoNum <= 0 || isNaN(tasaNum) || tasaNum <= 0 || !Number.isInteger(cuotasNum) || cuotasNum <= 0) {
+        return res.status(400).json({ ok: false, mensaje: 'Campos requeridos faltantes o inválidos (socioId, monto, tasaMensual, cuotas)' });
       }
 
       const nuevoCredito = await creditoService.create({
-        socioId, monto, tasaMensual, cuotas, cuotasPagadas, saldoCapital, fechaDesembolso, estado, proposito, aprobadoPor, notas
+        socioId,
+        monto: montoNum,
+        tasaMensual: tasaNum,
+        cuotas: cuotasNum,
+        cuotasPagadas,
+        saldoCapital,
+        fechaDesembolso: fechaValida,
+        estado,
+        proposito,
+        aprobadoPor,
+        notas
       });
 
-      await audit(req, { accion: 'APROBAR_CREDITO', tabla: 'creditos', registroId: nuevoCredito.id, detalle: { monto } });
-      return res.status(201).json({ ok: true, datos: nuevoCredito });
+      await audit(req, { accion: 'APROBAR_CREDITO', tabla: 'creditos', registroId: nuevoCredito.id, detalle: { monto: montoNum } });
+      return res.status(201).json({ ok: true, datos: mapCredito(nuevoCredito) });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  async payInstallment(req, res, next) {
+    try {
+      const { numero_cuota } = req.body;
+      const actualizado = await creditoService.payInstallment(req.params.id, numero_cuota);
+      if (!actualizado) {
+        return res.status(404).json({ ok: false, mensaje: 'Crédito no encontrado o ya pagado' });
+      }
+
+      await audit(req, { accion: 'PAGO_CUOTA', tabla: 'creditos', registroId: actualizado.id, detalle: { numero_cuota } });
+      return res.json({ ok: true, datos: mapCredito(actualizado) });
     } catch (e) {
       next(e);
     }
@@ -52,7 +84,7 @@ class CreditoController {
       }
 
       await audit(req, { accion: 'ACTUALIZAR_CREDITO', tabla: 'creditos', registroId: actualizado.id, detalle: { monto: actualizado.monto } });
-      return res.json({ ok: true, datos: actualizado });
+      return res.json({ ok: true, datos: mapCredito(actualizado) });
     } catch (e) {
       next(e);
     }

@@ -29,7 +29,7 @@ return res.json({ ok: true, datos: mapAporte(aporte) });
 
   async create(req, res, next) {
     try {
-      const { socioId, periodoId, monto, fechaPago, estado, metodo, notas } = req.body;
+      const { socioId, periodoId, monto, fechaPago, estado, metodo, notas, pago_solidaridad, pago_credito } = req.body;
       if (!socioId || !periodoId || !monto) {
         return res.status(400).json({ ok: false, mensaje: 'Campos requeridos faltantes (socioId, periodoId, monto)' });
       }
@@ -52,7 +52,9 @@ return res.json({ ok: true, datos: mapAporte(aporte) });
       }
 
       const nuevoAporte = await aporteService.create({
-        socioId, periodoId: resolvedPeriodoId, monto, fechaPago, estado, metodo, notas
+        socioId, periodoId: resolvedPeriodoId, monto, fechaPago, estado, metodo, notas,
+        pago_solidaridad: Number(pago_solidaridad || 0),
+        pago_credito: Number(pago_credito || 0)
       });
 
       await audit(req, { accion: 'REGISTRAR_APORTE', tabla: 'aportes', registroId: nuevoAporte.id, detalle: { monto } });

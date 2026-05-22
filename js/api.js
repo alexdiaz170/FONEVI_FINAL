@@ -174,11 +174,12 @@ const API = {
   },
 
   creditos: {
-    listar:     (p={})  => API.get("/creditos?" + new URLSearchParams(p)),
-    obtener:    (id)    => API.get(`/creditos/${id}`),
-    simular:    (p)     => API.get("/creditos/simular?" + new URLSearchParams(p)),
-    crear:      (body)  => API.post("/creditos", body),
-    pagarCuota: (id, n) => API.post(`/creditos/${id}/pagar-cuota`, { numero_cuota: n }),
+    listar:        (p={})  => API.get("/creditos?" + new URLSearchParams(p)),
+    obtener:       (id)    => API.get(`/creditos/${id}`),
+    simular:       (p)     => API.get("/creditos/simular?" + new URLSearchParams(p)),
+    crear:         (body)  => API.post("/creditos", body),
+    pagarCuota:    (id, n) => API.post(`/creditos/${id}/pagar-cuota`, { numero_cuota: n }),
+    actualizarEstado: (id, estado) => API.put(`/creditos/${id}`, { estado }),
   },
 
   notificaciones: {

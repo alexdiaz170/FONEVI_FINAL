@@ -526,11 +526,12 @@ function renderMoraPanel() {
 }
 
 function calcularDiasMora(fechaDesembolso, cuotasPagadas) {
-  var fechaUltima = new Date(fechaDesembolso);
-  fechaUltima.setMonth(fechaUltima.getMonth() + cuotasPagadas + 1);
+  var fechaBase = new Date(fechaDesembolso);
+  if (isNaN(fechaBase.getTime())) return 0;
+  fechaBase.setMonth(fechaBase.getMonth() + Number(cuotasPagadas || 0) + 1);
   var hoy = new Date();
-  var diff = Math.floor((hoy - fechaUltima) / (1000*60*60*24));
-  return Math.max(1, diff);
+  var diff = Math.floor((hoy - fechaBase) / (1000*60*60*24));
+  return Math.max(0, diff);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -592,9 +593,10 @@ function buildCreditoCard(c) {
   var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
   var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
   var fechaDesembolso = c.fecha_desembolso || c.fechaDesembolso;
+  var totalCuotas = Number(c.cuotas) || 1;
 
-  var cuota     = Math.round(DataHelper.calcularCuota(c.monto, tasa, c.cuotas));
-  var pct       = Math.round((cuotasPagadas / c.cuotas) * 100);
+  var cuota     = Math.round(DataHelper.calcularCuota(c.monto, tasa, totalCuotas));
+  var pct       = totalCuotas > 0 ? Math.round((cuotasPagadas / totalCuotas) * 100) : 0;
   var progCls   = c.estado === "mora" ? "red" : c.estado === "pagado" ? "gold" : "green";
   var cuotaProx = cuotasPagadas + 1;
 
@@ -687,11 +689,13 @@ function abrirPago(creditoId) {
   var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
   var fechaDesembolso = c.fecha_desembolso || c.fechaDesembolso;
 
-  var cuota    = Math.round(DataHelper.calcularCuota(c.monto, tasa, c.cuotas));
+  var totalCuotas = Number(c.cuotas) || 1;
+  var cuota    = Math.round(DataHelper.calcularCuota(c.monto, tasa, totalCuotas));
   var numCuota = cuotasPagadas + 1;
   var r        = tasa / 100;
   var interes  = Math.round(saldoCapital * r);
-  var capital  = Math.round(cuota - interes);
+  var capital  = Math.min(Math.max(0, cuota - interes), saldoCapital);
+  var totalPago = Math.round(interes + capital);
 
   var sObj = (window.pageSocios || []).find(function(s){ return s.id === c.socio_id || s.id === c.socioId; });
   var socio = sObj ? sObj.nombre : (c.socio_nombre || "Socio #" + (c.socio_id || c.socioId));
@@ -712,7 +716,7 @@ function abrirPago(creditoId) {
   document.getElementById("pagoResumen").innerHTML =
     statPago("Socio", socio) +
     statPago("Cuota N°", numCuota + " de " + c.cuotas) +
-    statPago("Cuota total", DataHelper.formatCOP(cuota)) +
+    statPago("Cuota total", DataHelper.formatCOP(totalPago)) +
     statPago("Capital", DataHelper.formatCOP(capital)) +
     statPago("Interés", DataHelper.formatCOP(interes)) +
     statPago("Saldo tras pago", DataHelper.formatCOP(Math.max(0, saldoCapital - capital)));
@@ -799,17 +803,18 @@ function verDetalle(creditoId) {
   var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
   var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
   var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
+  var totalCuotas = Number(c.cuotas) || 1;
 
-  var cuota = DataHelper.calcularCuota(c.monto, tasa, c.cuotas);
-  var pct   = Math.round((cuotasPagadas / c.cuotas) * 100);
+  var cuota = DataHelper.calcularCuota(c.monto, tasa, totalCuotas);
+  var pct   = totalCuotas > 0 ? Math.round((cuotasPagadas / totalCuotas) * 100) : 0;
 
   document.getElementById("detalleTitle").textContent =
     "Plan de Pagos — Crédito #" + c.id + " · " + socio;
 
   // Generar tabla de amortización
-  var saldo = c.monto;
+  var saldo = Number(c.monto) || 0;
   var filas = "";
-  for (var i = 1; i <= c.cuotas; i++) {
+  for (var i = 1; i <= totalCuotas; i++) {
     var r   = tasa / 100;
     var int = saldo * r;
     var cap = cuota - int;

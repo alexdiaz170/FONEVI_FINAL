@@ -40,6 +40,16 @@ class CreditoService {
     return res.rows[0] || null;
   }
 
+  calcularCuota(monto, tasaMensual, cuotas) {
+    const montoNum = Number(monto) || 0;
+    const tasaNum = Number(tasaMensual) || 0;
+    const cuotasNum = Number(cuotas) || 0;
+    if (cuotasNum <= 0) return 0;
+    if (!tasaNum) return montoNum / cuotasNum;
+    const i = tasaNum / 100;
+    return (montoNum * i) / (1 - Math.pow(1 + i, -cuotasNum));
+  }
+
   async create({ socioId, monto, tasaMensual, cuotas, cuotasPagadas = 0, saldoCapital, fechaDesembolso = new Date(), estado = 'activo', proposito = null, aprobadoPor = null, notas = null }) {
     const id = uuidv4();
     const query = `
@@ -54,6 +64,51 @@ class CreditoService {
       id, socioId, monto, tasaMensual, cuotas, cuotasPagadas, saldoCapital || monto, fechaDesembolso, estado, proposito, aprobadoPor, notas
     ]);
     return res.rows[0];
+  }
+
+  async payInstallment(id, numeroCuota = null) {
+    return db.transaction(async (client) => {
+      const creditoRes = await client.query(`
+        SELECT id, socio_id, monto, tasa_mensual, cuotas, cuotas_pagadas, saldo_capital, estado
+        FROM creditos
+        WHERE id = $1
+        FOR UPDATE
+      `, [id]);
+      const credito = creditoRes.rows[0];
+      if (!credito) {
+        return null;
+      }
+
+      const cuotasTotales = Number(credito.cuotas || 0);
+      const cuotasPagadas = Number(credito.cuotas_pagadas || 0);
+      const saldoCapital = Number(credito.saldo_capital || 0);
+      if (cuotasTotales <= 0 || saldoCapital <= 0 || cuotasPagadas >= cuotasTotales) {
+        return null;
+      }
+
+      const cuota = Math.round(this.calcularCuota(credito.monto, credito.tasa_mensual, cuotasTotales));
+      const tasa = Number(credito.tasa_mensual || 0) / 100;
+      const interes = Math.max(0, Math.round(saldoCapital * tasa));
+      const capital = Math.min(Math.max(0, cuota - interes), saldoCapital);
+      const nuevasCuotasPagadas = Math.min(cuotasTotales, cuotasPagadas + 1);
+      const isFinalPayment = nuevasCuotasPagadas >= cuotasTotales;
+      const nuevoSaldo = isFinalPayment ? 0 : Math.max(0, saldoCapital - capital);
+      const nuevoEstado = isFinalPayment ? 'pagado' : (credito.estado === 'mora' ? 'mora' : 'activo');
+
+      const res = await client.query(`
+        UPDATE creditos
+        SET cuotas_pagadas = $1,
+            saldo_capital = $2,
+            estado = $3,
+            updated_at = NOW()
+        WHERE id = $4
+        RETURNING id, socio_id as "socioId", monto, tasa_mensual as "tasaMensual", 
+                  cuotas, cuotas_pagadas as "cuotasPagadas", saldo_capital as "saldoCapital",
+                  fecha_desembolso as "fechaDesembolso", estado, proposito, aprobado_por as "aprobadoPor", notas, created_at as "createdAt"
+      `, [nuevasCuotasPagadas, nuevoSaldo, nuevoEstado, id]);
+
+      return res.rows[0];
+    });
   }
 
   async update(id, { monto, tasaMensual, cuotas, cuotasPagadas, saldoCapital, fechaDesembolso, estado, proposito, aprobadoPor, notas }) {

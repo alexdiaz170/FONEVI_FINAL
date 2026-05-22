@@ -35,6 +35,8 @@ function mapAporte(a) {
     periodo: periodoNombre,
     periodo_nombre: periodoNombre,
     monto: Number(a.monto),
+    pago_solidaridad: Number(a.pago_solidaridad || a.pagoSolidaridad || 0),
+    pago_credito: Number(a.pago_credito || a.pagoCredito || 0),
     fecha_pago: a.fechaPago || a.fecha_pago || null,
     estado: a.estado,
     metodo: a.metodo,

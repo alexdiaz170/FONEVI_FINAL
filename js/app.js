@@ -51,9 +51,12 @@ window.DataHelper = {
     return window.DB?.notificaciones?.filter(n => !n.leida).length || 0;
   },
   calcularCuota(monto, tasaMensual, cuotas) {
-    if (!tasaMensual) return monto / cuotas;
+    const cuotasNum = Number(cuotas) || 0;
+    if (cuotasNum <= 0) return 0;
+    if (!tasaMensual) return Number(monto || 0) / cuotasNum;
     const i = tasaMensual / 100;
-    return (monto * i) / (1 - Math.pow(1 + i, -cuotas));
+    const montoNum = Number(monto || 0);
+    return (montoNum * i) / (1 - Math.pow(1 + i, -cuotasNum));
   },
   formatCOP(v) {
     return new Intl.NumberFormat("es-CO", {
