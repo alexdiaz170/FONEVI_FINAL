@@ -4,11 +4,11 @@ const { v4: uuidv4 } = require('uuid');
 class CreditoService {
   async listAll({ socioId, estado } = {}) {
     let sql = `
-      SELECT c.id, c.socio_id as "socioId", c.monto, c.tasa_mensual as "tasaMensual", 
-             c.cuotas, c.cuotas_pagadas as "cuotasPagadas", c.saldo_capital as "saldoCapital",
-             c.fecha_desembolso as "fechaDesembolso", c.estado, c.proposito, 
-             c.aprobado_por as "aprobadoPor", c.notas, c.created_at as "createdAt",
-             s.nombre as "socioNombre"
+            SELECT c.id, c.socio_id as "socioId", c.monto, c.tasa_mensual as "tasaMensual", 
+              c.cuotas, c.cuotas_pagadas as "cuotasPagadas", c.saldo_capital as "saldoCapital",
+              c.fecha_desembolso as "fechaDesembolso", c.estado, c.proposito, 
+              c.aprobado_por as "aprobadoPor", c.notas, c.created_at as "createdAt",
+              s.nombre as "socioNombre", s.codigo_socio as "socioCodigo"
       FROM creditos c
       JOIN socios s ON c.socio_id = s.id
       WHERE 1=1
@@ -47,7 +47,8 @@ class CreditoService {
     if (cuotasNum <= 0) return 0;
     if (!tasaNum) return montoNum / cuotasNum;
     const i = tasaNum / 100;
-    return (montoNum * i) / (1 - Math.pow(1 + i, -cuotasNum));
+    const cuota = (montoNum * i) / (1 - Math.pow(1 + i, -cuotasNum));
+    return Number(cuota.toFixed(2));
   }
 
   async create({ socioId, monto, tasaMensual, cuotas, cuotasPagadas = 0, saldoCapital, fechaDesembolso = new Date(), estado = 'activo', proposito = null, aprobadoPor = null, notas = null }) {
@@ -86,21 +87,28 @@ class CreditoService {
         return null;
       }
 
-      const cuota = Math.round(this.calcularCuota(credito.monto, credito.tasa_mensual, cuotasTotales));
+      const cuota = Number(this.calcularCuota(credito.monto, credito.tasa_mensual, cuotasTotales));
       const tasa = Number(credito.tasa_mensual || 0) / 100;
-      const interes = Math.max(0, Math.round(saldoCapital * tasa));
-      const capital = Math.min(Math.max(0, cuota - interes), saldoCapital);
+      const interes = Math.max(0, saldoCapital * tasa);
+      let capital = Math.min(Math.max(0, cuota - interes), saldoCapital);
       const nuevasCuotasPagadas = Math.min(cuotasTotales, cuotasPagadas + 1);
       const isFinalPayment = nuevasCuotasPagadas >= cuotasTotales;
-      const nuevoSaldo = isFinalPayment ? 0 : Math.max(0, saldoCapital - capital);
+      if (isFinalPayment) {
+        capital = saldoCapital; // liquidar todo lo que queda
+      }
+      let nuevoSaldo = isFinalPayment ? 0 : Math.max(0, saldoCapital - capital);
+      // Persist as two decimals
+      nuevoSaldo = Number(nuevoSaldo.toFixed(2));
+      capital = Number(capital.toFixed(2));
+      const interesRounded = Number(interes.toFixed(2));
       const nuevoEstado = isFinalPayment ? 'pagado' : (credito.estado === 'mora' ? 'mora' : 'activo');
 
       const res = await client.query(`
         UPDATE creditos
         SET cuotas_pagadas = $1,
-            saldo_capital = $2,
-            estado = $3,
-            updated_at = NOW()
+          saldo_capital = $2,
+          estado = $3,
+          updated_at = NOW()
         WHERE id = $4
         RETURNING id, socio_id as "socioId", monto, tasa_mensual as "tasaMensual", 
                   cuotas, cuotas_pagadas as "cuotasPagadas", saldo_capital as "saldoCapital",

@@ -10,6 +10,16 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 const ROUNDS = parseInt(process.env.BCRYPT_ROUNDS) || 12;
 
+// Safety checks: prevent accidental execution in production and require explicit env var
+if (process.env.NODE_ENV === 'production') {
+  console.error('Refusing to run seed in production (NODE_ENV=production). Aborting.');
+  process.exit(1);
+}
+if (process.env.REQUIRED_RUN_SEED !== 'true') {
+  console.error('REQUIRED_RUN_SEED != "true" — To run the seed set REQUIRED_RUN_SEED=true in your environment. Aborting.');
+  process.exit(1);
+}
+
 async function main() {
   console.log('🌱 Iniciando seed de FONEVI...\n');
 
@@ -45,7 +55,7 @@ async function main() {
       update: {},
       create: { nombre: u.nombre, email: u.email, password: hash, rol: u.rol, avatar: u.avatar, estado: 'activo' },
     });
-    console.log(`   ✓ ${u.email} (${u.rol}) — password: ${u.password}`);
+    console.log(`   ✓ ${u.email} (${u.rol})`);
   }
 
   // ── Períodos ──────────────────────────────────────────────
@@ -111,10 +121,8 @@ async function main() {
 
   console.log('\n✅ Seed completado exitosamente!\n');
   console.log('─'.repeat(50));
-  console.log('CREDENCIALES DE ACCESO:');
-  console.log('  Admin:    admin@fonevi.edu.co     / Admin2026!');
-  console.log('  Tesorero: tesorero@fonevi.edu.co  / Tesorero2026!');
-  console.log('  Socio:    ana.torres@fonevi.edu.co / Socio2026!');
+  console.log('NOTE: Default credentials are NOT printed. Use your secrets manager or check the seed configuration in a secure environment.');
+  console.log('If you need to run this seed locally, set REQUIRED_RUN_SEED=true and NODE_ENV!=production.');
   console.log('─'.repeat(50));
 }
 

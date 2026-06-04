@@ -25,6 +25,47 @@ const socios = await socioService.listAll();
     }
   }
 
+  async estadoCuenta(req, res, next) {
+    try {
+      const page = Number.isInteger(parseInt(req.query.page, 10)) ? parseInt(req.query.page, 10) : 1;
+      const limit = Number.isInteger(parseInt(req.query.limit, 10)) ? parseInt(req.query.limit, 10) : 10;
+      const datos = await socioService.estadoCuenta(req.params.id, { page, limit });
+      if (!datos) {
+        return res.status(404).json({ ok: false, mensaje: 'Socio no encontrado' });
+      }
+      return res.json({ ok: true, datos });
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  async perfil(req, res, next) {
+    try {
+      // Requiere autenticación previa (middleware `requireAuth` establece `req.usuario`)
+      if (!req.usuario) return res.status(401).json({ ok: false, mensaje: 'Token faltante' });
+
+      const rol = (req.usuario.rol || '').toString().toLowerCase();
+      if (rol !== 'socio') {
+        return res.status(403).json({ ok: false, mensaje: 'No tienes permisos suficientes' });
+      }
+
+      const socioId = req.usuario.socioId || req.usuario.id;
+      const socio = await socioService.findByIdOrCodigo(socioId);
+      if (!socio) return res.status(404).json({ ok: false, mensaje: 'Socio no encontrado' });
+
+      return res.json({ ok: true, datos: {
+        id: socio.id,
+        codigo_socio: socio.codigo_socio || socio.codigo || null,
+        nombre: socio.nombre,
+        documento: socio.documento,
+        estado: socio.estado,
+        ahorro_acumulado: Number(socio.ahorroAcumulado || 0),
+      } });
+    } catch (e) {
+      next(e);
+    }
+  }
+
   async create(req, res, next) {
     try {
       const { id, codigo, nombre, documento, email, telefono, fechaIngreso, aporteMensual, ahorroAcumulado, estado, cargo, sede } = req.body;

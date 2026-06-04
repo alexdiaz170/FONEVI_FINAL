@@ -4,15 +4,17 @@
 function mapSocio(s) {
   if (!s) return null;
   return {
-    id: s.documento, // Primary ID for frontend
-    codigo: s.codigo,
+    // The frontend historically treats the documento as the socio ID
+    id: s.documento || s.id,
+    codigo: s.codigo || null,
+    codigo_socio: s.codigo_socio || s.codigo || null,
     nombre: s.nombre,
     documento: s.documento,
     email: s.email,
     telefono: s.telefono,
     fecha_ingreso: s.fechaIngreso,
-    aporte_mensual: Number(s.aporteMensual),
-    ahorro_acumulado: Number(s.ahorroAcumulado),
+    aporte_mensual: Number(s.aporteMensual || 0),
+    ahorro_acumulado: Number(s.ahorroAcumulado || 0),
     estado: s.estado,
     cargo: s.cargo,
     sede: s.sede,
@@ -30,7 +32,6 @@ function mapAporte(a) {
     : (a.periodo || a.periodoNombre || '');
   return {
     id: a.id,
-    socio_id: (a.socio && a.socio.documento) ? a.socio.documento : a.socioId,
     periodo_id: a.periodoId,
     periodo: periodoNombre,
     periodo_nombre: periodoNombre,
@@ -43,6 +44,7 @@ function mapAporte(a) {
     notas: a.notas,
     // Prefer nested object, fallback to flat JOIN column
     socio_nombre: (a.socio && a.socio.nombre) ? a.socio.nombre : (a.socioNombre || null),
+    codigo_socio: (a.socio && a.socio.codigo_socio) ? a.socio.codigo_socio : (a.socioCodigo || null),
     created_at: a.createdAt,
   };
 }
@@ -56,12 +58,13 @@ function mapCredito(c) {
     tasa_mensual: Number(c.tasaMensual),
     cuotas: c.cuotas,
     cuotas_pagadas: c.cuotasPagadas,
-    saldo_capital: Number(c.saldoCapital),
+    saldo_capital: Number(c.saldoCapital || 0),
     fecha_desembolso: c.fechaDesembolso,
     estado: c.estado,
     proposito: c.proposito,
     aprobado_por: c.aprobadoPor,
     socio_nombre: (c.socio && c.socio.nombre) ? c.socio.nombre : (c.socioNombre || null),
+    socio_codigo: (c.socio && c.socio.codigo_socio) ? c.socio.codigo_socio : (c.socioCodigo || null),
     created_at: c.createdAt,
   };
 }

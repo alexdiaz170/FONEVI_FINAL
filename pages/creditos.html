@@ -500,7 +500,7 @@ function renderMoraPanel() {
 
   var lista = morosos.map(function(c) {
     var sObj = (window.pageSocios || []).find(function(s){ return s.id === c.socio_id || s.id === c.socioId; });
-    var socio = sObj ? sObj.nombre : (c.socio_nombre || "Socio #" + (c.socio_id || c.socioId));
+    var socio = sObj ? sObj.nombre : (c.socio_nombre || c.socio_codigo || c.socioCodigo || "Socio #" + (c.socio_id || c.socioId));
     var dias  = calcularDiasMora(c.fecha_desembolso || c.fechaDesembolso, c.cuotas_pagadas || c.cuotasPagadas || 0);
     var intMora = Math.round(Number(c.saldo_capital || c.saldoCapital || 0) * (window.DB.config.tasa_mora_diaria / 100) * dias);
     return '<div class="mora-item">' +
@@ -698,7 +698,7 @@ function abrirPago(creditoId) {
   var totalPago = Math.round(interes + capital);
 
   var sObj = (window.pageSocios || []).find(function(s){ return s.id === c.socio_id || s.id === c.socioId; });
-  var socio = sObj ? sObj.nombre : (c.socio_nombre || "Socio #" + (c.socio_id || c.socioId));
+  var socio = sObj ? sObj.nombre : (c.socio_nombre || c.socio_codigo || c.socioCodigo || "Socio #" + (c.socio_id || c.socioId));
 
   // Alerta si está en mora
   var alerta = "";
@@ -798,7 +798,7 @@ function verDetalle(creditoId) {
   if (!c) return;
 
   var sObj = (window.pageSocios || []).find(function(s){ return s.id === c.socio_id || s.id === c.socioId; });
-  var socio = sObj ? sObj.nombre : (c.socio_nombre || "Socio #" + (c.socio_id || c.socioId));
+  var socio = sObj ? sObj.nombre : (c.socio_nombre || c.socio_codigo || c.socioCodigo || "Socio #" + (c.socio_id || c.socioId));
 
   var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
   var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
@@ -1069,7 +1069,7 @@ function exportarCreditos() {
   var datos = [["Código","Socio","Monto","Cuotas","Pagadas","Saldo","Tasa","Estado","Propósito","Fecha"]];
   lista.forEach(function(c) {
     var sObj = (window.pageSocios || []).find(function(s){ return s.id === c.socio_id || s.id === c.socioId; });
-    var socio = sObj ? sObj.nombre : (c.socio_nombre || "Socio #" + (c.socio_id || c.socioId));
+    var socio = sObj ? sObj.nombre : (c.socio_nombre || c.socio_codigo || c.socioCodigo || "Socio #" + (c.socio_id || c.socioId));
     var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
     var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
     var tasa = c.tasa_mensual || c.tasaMensual || 1.5;

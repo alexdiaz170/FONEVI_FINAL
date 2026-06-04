@@ -2,33 +2,93 @@ const db = require('../db');
 const { v4: uuidv4 } = require('uuid');
 
 class AporteService {
-  async listAll({ socioId, periodoId, estado } = {}) {
+  async listAll({ socioId, periodoId, periodo, estado, fecha, metodo, q, page, limit } = {}) {
+    const isValid = (value) => value !== undefined && value !== null && value !== '' && value !== 'undefined' && value !== 'null';
+    const params = [];
     let sql = `
-            SELECT a.id, a.socio_id as "socioId", a.periodo_id as "periodoId", p.nombre as "periodo", a.monto, a.pago_solidaridad, a.pago_credito,
-              a.fecha_pago as "fechaPago", a.estado, a.metodo, a.notas, a.created_at as "createdAt",
-             s.nombre as "socioNombre"
+      SELECT a.id,
+             a.socio_id AS "socioId",
+             a.periodo_id AS "periodoId",
+             p.nombre AS "periodo",
+             a.monto,
+             a.pago_solidaridad,
+             a.pago_credito,
+             a.fecha_pago AS "fechaPago",
+             a.estado,
+             a.metodo,
+             a.notas,
+             a.created_at AS "createdAt",
+             s.nombre AS "socioNombre"
       FROM aportes a
       JOIN socios s ON a.socio_id = s.id
       JOIN periodos p ON a.periodo_id = p.id
       WHERE 1=1
     `;
-    const params = [];
-    if (socioId) {
+
+    if (isValid(socioId)) {
       params.push(socioId);
       sql += ` AND a.socio_id = $${params.length}`;
     }
-    if (periodoId) {
+    if (isValid(periodoId)) {
       params.push(periodoId);
       sql += ` AND a.periodo_id = $${params.length}`;
+    } else if (isValid(periodo)) {
+      params.push(periodo.trim());
+      sql += ` AND LOWER(p.nombre) = LOWER($${params.length})`;
     }
-    if (estado) {
+    if (isValid(estado)) {
       params.push(estado);
       sql += ` AND a.estado = $${params.length}`;
     }
+    if (isValid(fecha)) {
+      params.push(fecha);
+      sql += ` AND a.fecha_pago = $${params.length}`;
+    }
+    if (isValid(metodo)) {
+      params.push(metodo);
+      sql += ` AND a.metodo = $${params.length}`;
+    }
+    if (isValid(q)) {
+      const term = '%' + q.trim().toLowerCase() + '%';
+      params.push(term);
+      const idx = params.length;
+      sql += ` AND (LOWER(s.nombre) LIKE $${idx} OR LOWER(s.documento) LIKE $${idx} OR LOWER(p.nombre) LIKE $${idx})`;
+    }
+
     sql += ` ORDER BY a.created_at DESC`;
 
+    const usePagination = Number.isInteger(page) || Number.isInteger(limit);
+    if (usePagination) {
+      const pageNumber  = Number.isInteger(page) && page > 0 ? page : 1;
+      const limitNumber = Number.isInteger(limit) && limit > 0 ? limit : 10;
+      const offset      = (pageNumber - 1) * limitNumber;
+      const paginatedSql = `
+        SELECT sub.*, COUNT(*) OVER() AS total_count
+        FROM (
+          ${sql}
+        ) AS sub
+        LIMIT $${params.length + 1}
+        OFFSET $${params.length + 2}
+      `;
+      params.push(limitNumber, offset);
+      const res = await db.query(paginatedSql, params);
+      const total = res.rows.length ? Number(res.rows[0].total_count || 0) : 0;
+      const datos = res.rows.map((row) => {
+        const record = { ...row };
+        delete record.total_count;
+        return record;
+      });
+      return {
+        datos,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limitNumber)),
+        page: pageNumber,
+        limit: limitNumber,
+      };
+    }
+
     const res = await db.query(sql, params);
-    return res.rows;
+    return { datos: res.rows };
   }
 
   async findById(id) {
@@ -67,7 +127,9 @@ class AporteService {
 
       // Si hay abono a crédito, aplicarlo al crédito activo más reciente
       if (pagoCred > 0) {
-        const credRes = await client.query(`SELECT id, saldo_capital FROM creditos WHERE socio_id = $1 AND estado <> 'pagado' ORDER BY created_at DESC LIMIT 1`, [socioId]);
+        // Lock the chosen credit row to avoid concurrent updates that could cause double-application of payments.
+        // Using FOR UPDATE ensures that concurrent transactions attempting to modify the same credit will serialize.
+        const credRes = await client.query(`SELECT id, saldo_capital FROM creditos WHERE socio_id = $1 AND estado <> 'pagado' ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [socioId]);
         const credito = credRes.rows[0];
         if (credito) {
           const saldoActual = Number(credito.saldo_capital || 0);

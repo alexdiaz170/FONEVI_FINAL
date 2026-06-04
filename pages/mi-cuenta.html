@@ -134,262 +134,61 @@
     .rend-item { display:flex; align-items:center; gap:12px; padding:10px 20px; border-bottom:1px solid var(--border-faint); }
     .rend-item:last-child { border-bottom:none; }
     .rend-mes   { font-size:12.5px; font-weight:500; flex:1; }
-    .rend-pct   { font-size:12px; color:var(--text-muted); min-width:50px; text-align:right; }
-    .rend-monto { font-size:13px; font-weight:600; color:var(--green-500); min-width:90px; text-align:right; }
-    .rend-bar   { width:80px; height:6px; background:var(--bg-muted); border-radius:var(--r-full); overflow:hidden; }
-    .rend-fill  { height:100%; background:linear-gradient(90deg,var(--green-500),#5dcaa5); border-radius:var(--r-full); }
+    </head>
+    <body>
 
-    /* ══ INFO DEL FONDO ══════════════════════════════════════ */
-    .info-fondo-item { display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid var(--border-faint); }
-    .info-fondo-item:last-child { border-bottom:none; }
-    .if-label { font-size:13px; color:var(--text-secondary); }
-    .if-val   { font-size:13.5px; font-weight:600; color:var(--text-primary); }
-    .if-val.green { color:var(--green-500); }
-    .if-val.gold  { color:var(--gold-600); }
-
-    /* ══ ACCESOS RÁPIDOS ════════════════════════════════════ */
-    .acceso-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .acceso-card {
-      -webkit-appearance:none; appearance:none;
-      display:flex; flex-direction:column; align-items:flex-start; gap:6px;
-      width:100%; padding:14px;
-      background:var(--bg-surface); border:1px solid var(--border-faint);
-      border-radius:var(--r-lg); cursor:pointer; text-decoration:none;
-      color:var(--text-primary); font-family:var(--font-body);
-      box-sizing:border-box; position:relative; overflow:hidden;
-      transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-    }
-    .acceso-card::before {
-      content:''; position:absolute; top:0; left:0; right:0; height:3px;
-      border-radius:var(--r-lg) var(--r-lg) 0 0; opacity:0; transition:opacity .2s ease; pointer-events:none;
-    }
-    .acceso-card::after {
-      content:''; position:absolute; inset:0; border-radius:var(--r-lg);
-      opacity:0; transition:opacity .2s ease; pointer-events:none;
-    }
-    .acceso-card:hover { transform:translateY(-3px); border-color:var(--border-medium); }
-    .acceso-card:hover::before { opacity:1; }
-    .acceso-card:hover::after  { opacity:1; }
-    .acceso-card:active { transform:translateY(-1px); }
-    /* Borde lateral + hover shadow */
-    .acceso-card.gold  { box-shadow:inset 4px 0 0 var(--gold-500); }
-    .acceso-card.navy  { box-shadow:inset 4px 0 0 var(--navy-600); }
-    .acceso-card.green { box-shadow:inset 4px 0 0 var(--green-500); }
-    .acceso-card.blue  { box-shadow:inset 4px 0 0 var(--blue-500); }
-    .acceso-card.red   { box-shadow:inset 4px 0 0 var(--red-500); }
-    .acceso-card.gold::before  { background:linear-gradient(90deg,var(--gold-400),var(--gold-600)); }
-    .acceso-card.navy::before  { background:linear-gradient(90deg,var(--navy-400),var(--navy-700)); }
-    .acceso-card.green::before { background:linear-gradient(90deg,#3ab88a,#157a5a); }
-    .acceso-card.blue::before  { background:linear-gradient(90deg,#6aaee8,var(--blue-500)); }
-    .acceso-card.red::before   { background:linear-gradient(90deg,var(--red-300),var(--red-500)); }
-    .acceso-card.gold::after   { background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(201,146,42,.13) 0%,transparent 100%); }
-    .acceso-card.navy::after   { background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(15,45,82,.10)   0%,transparent 100%); }
-    .acceso-card.green::after  { background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(29,158,117,.12) 0%,transparent 100%); }
-    .acceso-card.blue::after   { background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(24,95,165,.10)  0%,transparent 100%); }
-    .acceso-card.red::after    { background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(163,45,45,.10)  0%,transparent 100%); }
-    .acceso-card.gold  .ac-icon { color:var(--gold-500); }
-    .acceso-card.navy  .ac-icon { color:var(--navy-600); }
-    .acceso-card.green .ac-icon { color:var(--green-500); }
-    .acceso-card.blue  .ac-icon { color:var(--blue-500); }
-    .acceso-card.red   .ac-icon { color:var(--red-500); }
-    .acceso-card.gold:hover  { box-shadow:inset 4px 0 0 var(--gold-500),  0 8px 24px rgba(201,146,42,.20); }
-    .acceso-card.navy:hover  { box-shadow:inset 4px 0 0 var(--navy-600),  0 8px 24px rgba(15,45,82,.16);   }
-    .acceso-card.green:hover { box-shadow:inset 4px 0 0 var(--green-500), 0 8px 24px rgba(29,158,117,.16); }
-    .acceso-card.blue:hover  { box-shadow:inset 4px 0 0 var(--blue-500),  0 8px 24px rgba(24,95,165,.14);  }
-    .acceso-card.red:hover   { box-shadow:inset 4px 0 0 var(--red-500),   0 8px 24px rgba(163,45,45,.14);  }
-    .ac-icon  { font-size:20px; line-height:1; }
-    .ac-title { font-size:12.5px; font-weight:700; color:var(--text-primary); line-height:1.2; }
-    .ac-desc  { font-size:10px; color:var(--text-muted); line-height:1.4; }
-    .acceso-card.full { flex-direction:row; align-items:center; gap:12px; padding:13px 16px; }
-    .acceso-card.full .ac-icon    { font-size:22px; flex-shrink:0; }
-    .acceso-card.full .ac-content { flex:1; min-width:0; }
-    .acceso-card.full .ac-title   { font-size:13px; margin-bottom:2px; }
-
-    /* ══ SIMULADOR DE CRÉDITO ════════════════════════════════ */
-    #simulModal { position:fixed; inset:0; z-index:9000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(5,15,30,.7); backdrop-filter:blur(6px); opacity:0; pointer-events:none; transition:opacity .22s ease; }
-    #simulModal.open { opacity:1; pointer-events:all; }
-    #simulBox { background:var(--bg-surface); border-radius:20px; width:100%; max-width:620px; max-height:92vh; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 72px rgba(5,15,30,.3); transform:translateY(-12px) scale(.97); transition:transform .25s cubic-bezier(.16,1,.3,1); }
-    #simulModal.open #simulBox { transform:translateY(0) scale(1); }
-    .simul-head { background:linear-gradient(135deg,var(--navy-900,#0a1f3c),var(--navy-800,#0f2d52)); padding:22px 26px 18px; position:relative; overflow:hidden; flex-shrink:0; }
-    .simul-head::after { content:''; position:absolute; width:200px; height:200px; background:radial-gradient(circle,rgba(201,146,42,.15) 0%,transparent 70%); border-radius:50%; right:-40px; bottom:-60px; }
-    .simul-head-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; position:relative; z-index:1; }
-    .simul-head-title { font-size:16px; font-weight:700; color:#fff; }
-    .simul-close { background:rgba(255,255,255,.12); border:none; color:#fff; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; transition:background .15s; }
-    .simul-close:hover { background:rgba(255,255,255,.22); }
-    .simul-cap-row { display:flex; gap:10px; flex-wrap:wrap; position:relative; z-index:1; }
-    .simul-cap-chip { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:8px 14px; font-size:11.5px; color:rgba(255,255,255,.65); }
-    .simul-cap-chip strong { display:block; font-size:14px; font-weight:700; color:var(--gold-300,#e0af50); margin-top:2px; }
-    .simul-body { padding:22px 26px; overflow-y:auto; flex:1; }
-    .simul-label { display:flex; justify-content:space-between; align-items:baseline; font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; }
-    .simul-label-val { font-size:15px; font-weight:700; color:var(--navy-800,#0f2d52); font-family:var(--font-display); letter-spacing:normal; text-transform:none; }
-    .simul-slider { -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:3px; background:var(--border-faint); outline:none; margin-bottom:18px; cursor:pointer; }
-    .simul-slider::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:var(--navy-800,#0f2d52); cursor:pointer; border:3px solid #fff; box-shadow:0 2px 8px rgba(15,45,82,.35); transition:transform .15s; }
-    .simul-slider::-webkit-slider-thumb:hover { transform:scale(1.15); }
-    .simul-resultado { background:linear-gradient(135deg,var(--navy-50,#e8f0f8),#fff); border:1.5px solid var(--navy-200,#b5d4f4); border-radius:14px; padding:18px 20px; margin-bottom:18px; }
-    .simul-cuota-lbl { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--text-muted); margin-bottom:4px; }
-    .simul-cuota-val { font-family:var(--font-display); font-size:42px; font-weight:400; color:var(--navy-800,#0f2d52); letter-spacing:-1px; line-height:1; }
-    .simul-cuota-per { font-size:14px; color:var(--text-muted); margin-top:2px; }
-    .simul-metricas  { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:18px; }
-    .simul-met       { background:var(--bg-subtle); border-radius:10px; padding:12px; text-align:center; border:1px solid var(--border-faint); }
-    .simul-met-lbl   { font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:4px; }
-    .simul-met-val   { font-size:14px; font-weight:700; color:var(--text-primary); }
-    .simul-met-val.red { color:var(--red-600); }
-    .simul-cap-barra-wrap { margin-bottom:18px; }
-    .simul-cap-barra-row  { display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-bottom:5px; }
-    .simul-barra-outer { height:8px; background:var(--border-faint); border-radius:4px; overflow:hidden; }
-    .simul-barra-inner { height:100%; border-radius:4px; transition:width .4s cubic-bezier(.16,1,.3,1); }
-    .simul-barra-inner.ok   { background:linear-gradient(90deg,var(--green-400,#3ab88a),var(--green-500)); }
-    .simul-barra-inner.warn { background:linear-gradient(90deg,var(--amber-400,#ba7517),var(--amber-500,#c9922a)); }
-    .simul-barra-inner.over { background:linear-gradient(90deg,var(--red-400),var(--red-500)); }
-    .simul-alert { display:none; border-radius:10px; padding:11px 14px; font-size:12.5px; margin-bottom:14px; line-height:1.5; }
-    .simul-alert.warn { background:var(--amber-50); border:1px solid var(--amber-100); color:var(--amber-700); }
-    .simul-alert.ok   { background:var(--green-50); border:1px solid var(--green-100); color:var(--green-700); }
-    .simul-amort      { background:var(--bg-surface); border:1px solid var(--border-faint); border-radius:10px; overflow:hidden; margin-bottom:18px; }
-    .simul-amort-title{ padding:10px 14px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); border-bottom:1px solid var(--border-faint); background:var(--bg-subtle); }
-    .simul-amort-table{ width:100%; border-collapse:collapse; font-size:12px; }
-    .simul-amort-table th { padding:8px 12px; text-align:right; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); background:var(--bg-subtle); border-bottom:1px solid var(--border-faint); }
-    .simul-amort-table th:first-child { text-align:center; }
-    .simul-amort-table td { padding:7px 12px; text-align:right; border-bottom:1px solid var(--border-faint); color:var(--text-secondary); }
-    .simul-amort-table td:first-child { text-align:center; font-weight:600; }
-    .simul-amort-table tr:last-child td { border-bottom:none; }
-    .simul-amort-table .capital-td { color:var(--navy-700); font-weight:600; }
-    .simul-amort-table .interes-td { color:var(--red-500); }
-    .simul-foot { padding:16px 26px; border-top:1px solid var(--border-faint); display:flex; gap:10px; justify-content:flex-end; background:var(--bg-subtle); border-radius:0 0 20px 20px; flex-shrink:0; }
-    .simul-btn-sol    { padding:11px 22px; border-radius:10px; border:none; background:var(--navy-800,#0f2d52); color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:var(--font-body); transition:all .15s; }
-    .simul-btn-sol:hover { background:var(--navy-700,#153d6e); transform:translateY(-1px); }
-    .simul-btn-sol:disabled { opacity:.5; cursor:not-allowed; transform:none; }
-    .simul-btn-cancel { padding:11px 18px; border-radius:10px; border:1.5px solid var(--border-light); background:transparent; color:var(--text-secondary); font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font-body); transition:all .15s; }
-    .simul-btn-cancel:hover { background:var(--bg-muted); }
-  </style>
-</head>
-<body>
-
-<div class="app-layout" id="app-layout">
-  <div class="main-content">
-    <div class="page-content">
-
-      <!-- ── HERO ──────────────────────────────────────────── -->
-      <div class="cuenta-hero" id="cuentaHero"></div>
-
-      <!-- ── GRID PRINCIPAL ─────────────────────────────────── -->
-      <div class="grid-main-aside" style="align-items:start;">
-
-        <!-- ══ COLUMNA PRINCIPAL ══════════════════════════════ -->
-        <div style="display:flex;flex-direction:column;gap:20px;">
-
-          <!-- Fila 1: Saldo + Crédito -->
-          <div class="grid-2">
-            <div class="saldo-principal" id="saldoPrincipal"></div>
-            <div id="creditoPanel" style="height:100%;"></div>
-          </div>
-
-          <!-- Fila 2: Info del fondo + Rendimientos -->
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-header">
-                <span class="card-title">Información del fondo</span>
-              </div>
-              <div id="infoFondo"></div>
-            </div>
-            <div class="card">
-              <div class="card-header">
-                <span class="card-title">Rendimientos estimados 2026</span>
-                <span id="tasaLabel" style="font-size:11px;color:var(--text-muted);">Tasa 1.5% m.e.a.</span>
-              </div>
-              <div id="rendimientos"></div>
-            </div>
-          </div>
-
-          <!-- Fila 3: Mis aportes + Métricas -->
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-header">
-                <span class="card-title">Mis aportes</span>
-                <span id="resumenAportes" style="font-size:12px;color:var(--text-muted);"></span>
-              </div>
-              <div id="misAportes"></div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:12px;">
-              <div class="fondo-card">
-                <div class="fondo-label">Total socios activos</div>
-                <div class="fondo-num navy" id="fTotalSocios">—</div>
-                <div class="fondo-sub">Miembros del fondo</div>
-              </div>
-              <div class="fondo-card">
-                <div class="fondo-label">Ahorros totales del fondo</div>
-                <div class="fondo-num green" id="fTotalAhorros">—</div>
-                <div class="fondo-sub">Suma de todos los socios</div>
-              </div>
-              <div class="fondo-card">
-                <div class="fondo-label">Tu participación</div>
-                <div class="fondo-num gold" id="fParticipacion">—</div>
-                <div class="fondo-sub">% del total del fondo</div>
-              </div>
-              <div class="fondo-card">
-                <div class="fondo-label">Dividendo estimado 2025</div>
-                <div class="fondo-num blue" id="fDividendo">—</div>
-                <div class="fondo-sub">Basado en tu ahorro acumulado</div>
-              </div>
-            </div>
-          </div>
-
+    <div class="app-layout" style="padding:40px;max-width:900px;margin:0 auto;">
+      <h1 style="font-family:var(--font-display);margin-bottom:14px;">Mi Cuenta</h1>
+      <div id="mc-root" style="background:var(--bg-surface);border:1px solid var(--border-faint);border-radius:12px;padding:20px;">
+        <div id="mc-loading">Cargando información de tu cuenta…</div>
+        <div id="mc-error" style="display:none;color:var(--red-600);"></div>
+        <div id="mc-content" style="display:none;">
+          <div style="margin-bottom:8px;"><strong>Nombre:</strong> <span id="mc-nombre">—</span></div>
+          <div style="margin-bottom:8px;"><strong>Documento:</strong> <span id="mc-documento">—</span></div>
+          <div style="margin-bottom:8px;"><strong>Código socio:</strong> <span id="mc-codigo">—</span></div>
+          <div style="margin-bottom:8px;"><strong>Estado:</strong> <span id="mc-estado">—</span></div>
+          <div style="margin-bottom:8px;"><strong>Ahorro acumulado:</strong> <span id="mc-ahorro">—</span></div>
         </div>
-        <!-- ══ FIN COLUMNA PRINCIPAL ══════════════════════════ -->
+      </div>
+    </div>
 
-        <!-- ══ ASIDE: ACCESOS RÁPIDOS ══════════════════════ -->
-        <div style="position:sticky;top:80px;display:flex;flex-direction:column;gap:10px;">
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+      (async function(){
+        try {
+          const session = Auth.getSession();
+          if (!session) { window.location.href = "../index.html"; return; }
+          if ((session.rol||'').toLowerCase() !== 'socio') {
+            document.getElementById('mc-loading').style.display='none';
+            document.getElementById('mc-error').style.display='block';
+            document.getElementById('mc-error').textContent = 'Acceso denegado: esta página es solo para socios.';
+            return;
+          }
 
-          <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;
-            letter-spacing:.8px;color:var(--text-muted);margin-bottom:2px;">
-            Accesos rápidos
-          </div>
+          const res = await API.get('/socios/perfil');
+          if (!res || !res.ok) throw new Error(res?.mensaje || 'No se pudo cargar el perfil');
+          const p = res.datos || {};
 
-          <button type="button" onclick="simulAbrir()" class="acceso-card gold full">
-            <span class="ac-icon">📊</span>
-            <div class="ac-content">
-              <div class="ac-title">Simular crédito</div>
-              <div class="ac-desc">Cuota, intereses y amortización</div>
-            </div>
-          </button>
+          document.getElementById('mc-nombre').textContent = p.nombre || '—';
+          document.getElementById('mc-documento').textContent = p.documento || '—';
+          document.getElementById('mc-codigo').textContent = p.codigo_socio || p.codigo || '—';
+          document.getElementById('mc-estado').textContent = p.estado || '—';
+          document.getElementById('mc-ahorro').textContent = (typeof p.ahorro_acumulado === 'number') ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(p.ahorro_acumulado) : (p.ahorro_acumulado || '—');
 
-          <div class="acceso-grid">
-            <button type="button"
-              onclick="if(_socioActual){Carne.mostrar(_socioActual.id);}else{Toast.warn('Cargando...');}"
-              class="acceso-card navy">
-              <span class="ac-icon">💳</span>
-              <div class="ac-title">Carné digital</div>
-              <div class="ac-desc">PNG o PDF</div>
-            </button>
-
-            <button type="button"
-              onclick="if(_socioActual){imprimirMiEstadoCuenta();}else{Toast.warn('Cargando...');}"
-              class="acceso-card blue">
-              <span class="ac-icon">🖨</span>
-              <div class="ac-title">Estado de cuenta</div>
-              <div class="ac-desc">Historial de aportes</div>
-            </button>
-
-            <button type="button"
-              onclick="if(_socioActual){imprimirMiPazYSalvo();}else{Toast.warn('Cargando...');}"
-              class="acceso-card green">
-              <span class="ac-icon">✅</span>
-              <div class="ac-title">Paz y salvo</div>
-              <div class="ac-desc">Certificado al día</div>
-            </button>
-
-            <a href="cambiar-password.html" class="acceso-card navy">
-              <span class="ac-icon">🔑</span>
-              <div class="ac-title">Contraseña</div>
-              <div class="ac-desc">Cambiar acceso</div>
-            </a>
-          </div>
-
-          <button type="button" onclick="doLogout()" class="acceso-card red full">
-            <span class="ac-icon">⏻</span>
-            <div class="ac-content">
-              <div class="ac-title">Cerrar sesión</div>
-              <div class="ac-desc">Salir de forma segura</div>
-            </div>
+          document.getElementById('mc-loading').style.display='none';
+          document.getElementById('mc-content').style.display='block';
+        } catch (err) {
+          document.getElementById('mc-loading').style.display='none';
+          document.getElementById('mc-error').style.display='block';
+          document.getElementById('mc-error').textContent = 'Error cargando perfil: ' + (err.message || 'Error de conexión');
+          console.error('[MiCuenta] ', err);
+        }
+      })();
+    </script>
+    </body>
+    </html>
           </button>
 
         </div>

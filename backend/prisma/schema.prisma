@@ -43,6 +43,9 @@ model Socio {
   aporteMensual    Decimal  @map("aporte_mensual") @db.Decimal(15, 2)
   ahorroAcumulado  Decimal  @map("ahorro_acumulado") @default(0) @db.Decimal(15, 2)
   estado           String   @default("activo")  // activo | mora | pendiente | retirado
+  password         String?  @db.Text
+  accesoActivo     Boolean  @map("acceso_activo") @default(true)
+  ultimoLogin      DateTime? @map("ultimo_login")
   cargo            String?
   sede             String?
   createdAt        DateTime @default(now()) @map("created_at")

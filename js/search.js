@@ -383,7 +383,7 @@ const Search = (() => {
           tipo:     "socio",
           id:       s.id,
           titulo:   s.nombre,
-          sub:      s.cargo + " · " + s.sede + " · " + s.codigo,
+          sub:      s.cargo + " · " + s.sede + " · " + (s.codigo_socio || s.codigo),
           badge:    est.lbl,
           badgeCls: est.cls,
           ico:      "👤",

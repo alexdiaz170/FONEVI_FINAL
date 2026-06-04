@@ -97,7 +97,7 @@ var Comprobantes = {
       '</div>' +
       '<div class="comp-socio-codigo">' +
         '<div style="font-size:9pt;color:#6b7280;">Código de socio</div>' +
-        '<div style="font-size:12pt;font-weight:700;">' + s.id + '</div>' +
+        '<div style="font-size:12pt;font-weight:700;">' + (s.codigo_socio || s.codigo || s.id) + '</div>' +
         '<div style="font-size:8.5pt;color:#6b7280;">Desde: ' +
           (s.fecha_ingreso
             ? new Date(s.fecha_ingreso+"T00:00:00").toLocaleDateString("es-CO",{month:"short",year:"numeric"})

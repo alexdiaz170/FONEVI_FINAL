@@ -18,6 +18,14 @@ const API = {
   TIMEOUT_MS:  CONFIG.APP.TIMEOUT_MS,
   TOKEN_KEY:   CONFIG.APP.TOKEN_KEY,
   SESSION_KEY: CONFIG.APP.SESSION_KEY,
+  _cleanQueryParams(params = {}) {
+    const cleaned = {};
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '' || value === 'undefined' || value === 'null') return;
+      cleaned[key] = value;
+    });
+    return cleaned;
+  },
   getToken()        { return sessionStorage.getItem(this.TOKEN_KEY) || null; },
   setToken(t)       { sessionStorage.setItem(this.TOKEN_KEY, t); },
   removeToken()     { sessionStorage.removeItem(this.TOKEN_KEY); },
@@ -158,16 +166,16 @@ const API = {
   },
 
   socios: {
-    listar:       (p={})  => API.get("/socios?" + new URLSearchParams(p)),
+    listar:       (p={})  => API.get("/socios?" + new URLSearchParams(API._cleanQueryParams(p))),
     obtener:      (id)    => API.get(`/socios/${id}`),
-    estadoCuenta: (id)    => API.get(`/socios/${id}/estado-cuenta`),
+    estadoCuenta: (id, p={}) => API.get(`/socios/${id}/estado-cuenta?` + new URLSearchParams(API._cleanQueryParams(p))),
     crear:        (body)  => API.post("/socios", body),
     actualizar:   (id,b)  => API.put(`/socios/${id}`, b),
     eliminar:     (id)    => API.delete(`/socios/${id}`),
   },
 
   aportes: {
-    listar:          (p={})        => API.get("/aportes?" + new URLSearchParams(p)),
+    listar:          (p={})        => API.get("/aportes?" + new URLSearchParams(API._cleanQueryParams(p))),
     registrar:       (body)        => API.post("/aportes", body),
     resumenPeriodo:  (periodo_id)  => API.get(`/aportes/resumen/${periodo_id}`),
     actualizarEstado:(id, estado)  => API.put(`/aportes/${id}/estado`, { estado }),
@@ -208,9 +216,9 @@ const API = {
   },
 
   solidaridad: {
-    listar: (tipo="") => API.get(`/solidaridad/movimientos${tipo ? '?tipo='+tipo : ''}`),
-    saldo:  ()        => API.get("/solidaridad/saldo"),
-    crear:  (body)    => API.post("/solidaridad/movimientos", body),
+    listar: (params={}) => API.get("/solidaridad/movimientos?" + new URLSearchParams(API._cleanQueryParams(params))),
+    saldo:  ()          => API.get("/solidaridad/saldo"),
+    crear:  (body)      => API.post("/solidaridad/movimientos", body),
   },
 
   movimientos: {

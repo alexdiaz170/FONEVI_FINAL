@@ -170,7 +170,7 @@
         <table class="data-table table-animated" id="tablaSocios">
           <thead>
             <tr>
-              <th>ID</th><th>Nombre</th><th>Documento</th>
+              <th>Código</th><th>Nombre</th><th>Documento</th>
               <th>Aporte mensual</th><th>Ahorro acum.</th>
               <th>Créditos</th><th>Estado</th><th>Acciones</th>
             </tr>
@@ -334,7 +334,7 @@ function renderTabla() {
   document.getElementById("sociosTbody").innerHTML = socios.map(function(s) {
     var creds = (window.pageCreditos || []).filter(function(c) { return c.socioId === s.id && c.estado !== "pagado"; });
     return "<tr>" +
-      "<td class='mono muted'>" + s.id + "</td>" +
+      "<td class='mono muted'>" + (s.codigo_socio || s.codigo || s.id) + "</td>" +
       "<td><strong style='font-weight:500;'>" + s.nombre + "</strong></td>" +
       "<td class='muted'>" + (s.documento || "—") + "</td>" +
       "<td>" + DataHelper.formatCOP(s.aporte_mensual || s.aporteMensual) + "</td>" +

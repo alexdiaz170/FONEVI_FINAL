@@ -135,7 +135,7 @@
 <script>
 async function cargarDatos() {
   try {
-    const [resumen, socios, creditos, aportes, solSaldo, movimientos] = await Promise.all([
+    const settled = await Promise.allSettled([
       API.dashboard.resumen(),
       API.socios.listar(),
       API.creditos.listar(),
@@ -143,7 +143,23 @@ async function cargarDatos() {
       API.solidaridad.saldo(),
       API.movimientos.listar()
     ]);
-    
+
+    const safe = result => result?.status === 'fulfilled' ? result.value : null;
+    const resumen = safe(settled[0]);
+    const socios = safe(settled[1]);
+    const creditos = safe(settled[2]);
+    const aportes = safe(settled[3]);
+    const solSaldo = safe(settled[4]);
+    const movimientos = safe(settled[5]);
+
+    const failed = settled.filter(r => r.status === 'rejected');
+    if (failed.length > 0) {
+      console.warn('Dashboard partial load failed:', failed.map(r => r.reason));
+    }
+    if (failed.length === settled.length) {
+      Toast.error('No se pudieron cargar los datos del dashboard. Intenta recargar la página.');
+    }
+
     window.pageDashboardResumen = resumen?.datos || null;
     window.pageSocios = socios?.datos || socios || [];
     window.pageCreditos = creditos?.datos || creditos || [];
@@ -161,7 +177,7 @@ async function cargarDatos() {
     window.DB.solidaridad.saldo_actual = window.pageSolidaridadSaldo;
   } catch (error) {
     console.error("Dashboard connection error:", error);
-    Toast.error("Error al conectar con el servidor.");
+    Toast.error("Error al cargar el dashboard.");
   }
 }
 
@@ -263,8 +279,8 @@ function crearGraficoBarrasTabbed(id, tab) {
       else if (m >= 9 && m <= 11) q4Creditos += monto;
     });
 
-    aportes  = [q1Aportes || 39060000, q2Aportes || 39780000, q3Aportes || 39780000, q4Aportes || 40200000];
-    creditos = [q1Creditos || 7100000,  q2Creditos || 6700000,  q3Creditos || 6400000,  q4Creditos || 7600000];
+    aportes  = [q1Aportes, q2Aportes, q3Aportes, q4Aportes];
+    creditos = [q1Creditos, q2Creditos, q3Creditos, q4Creditos];
   } else {
     labels   = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
     var monthlyAportes = Array(12).fill(0);
@@ -274,19 +290,17 @@ function crearGraficoBarrasTabbed(id, tab) {
       if (a.estado !== 'pagado') return;
       var f = new Date(a.fecha_pago || a.created_at || a.fecha || a.createdAt);
       var m = f.getMonth();
-      if (m >= 0 && m <= 11) monthlyAportes[m] += Number(a.monto);
+      if (m >= 0 && m <= 11) monthlyAportes[m] += Number(a.monto) || 0;
     });
 
     (window.pageCreditos || []).forEach(function(c) {
       var f = new Date(c.fecha_desembolso || c.fechaDesembolso || c.created_at || c.createdAt);
       var m = f.getMonth();
-      if (m >= 0 && m <= 11) monthlyCreditos[m] += Number(c.monto);
+      if (m >= 0 && m <= 11) monthlyCreditos[m] += Number(c.monto) || 0;
     });
 
-    var hasRealAportes = monthlyAportes.some(v => v > 0);
-    aportes = hasRealAportes ? monthlyAportes : [13080000,12900000,13080000,13200000,13080000,13500000,13200000,13080000,13500000,13200000,13080000,13500000];
-    var hasRealCreditos = monthlyCreditos.some(v => v > 0);
-    creditos = hasRealCreditos ? monthlyCreditos : [2100000,3200000,1800000,2500000,1200000,3000000,2200000,1800000,2600000,1500000,2000000,3100000];
+    aportes = monthlyAportes;
+    creditos = monthlyCreditos;
   }
 
   ChartInstances[id] = new Chart(ctx, {
@@ -365,21 +379,27 @@ function renderKPIs() {
 }
 
 function renderActividad() {
-  var list = window.pageMovimientos || [];
+  var list = (window.pageMovimientos || []).slice().sort(function(a, b) {
+    var dateA = new Date(a.fecha || a.created_at || a.createdAt || 0).getTime();
+    var dateB = new Date(b.fecha || b.created_at || b.createdAt || 0).getTime();
+    return dateB - dateA;
+  });
+
   if (!list.length) {
     document.getElementById("actividadReciente").innerHTML =
       '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">No hay transacciones recientes.</div>';
     return;
   }
+
   var items = list.slice(0, 5).map(function(m) {
     var isIngreso = m.tipo === "ingreso";
     var icon = isIngreso ? "\uD83D\uDCB0" : "\uD83D\uDCB3";
     var cls = isIngreso ? "green" : "navy";
     if (m.categoria === "Solidaridad") { icon = "\uD83E\uDD1D"; cls = "green"; }
-    
-    var fechaStr = DataHelper.formatFecha(m.fecha);
-    var monto = (isIngreso ? "+" : "-") + DataHelper.formatCOP(m.monto);
-    
+
+    var fechaStr = DataHelper.formatFecha(m.fecha || m.created_at || m.createdAt);
+    var monto = (isIngreso ? "+" : "-") + DataHelper.formatCOP(Number(m.monto) || 0);
+
     return {
       icon: icon,
       cls: cls,
@@ -390,7 +410,7 @@ function renderActividad() {
       tiempo: fechaStr
     };
   });
-  
+
   document.getElementById("actividadReciente").innerHTML = items.map(function(i){
     return '<div class="activity-item">' +
       '<div class="activity-icon '+i.cls+'">'+i.icon+'</div>' +
@@ -401,12 +421,16 @@ function renderActividad() {
 }
 
 function renderSociosResumen() {
-  var list = window.pageSocios || [];
+  var list = (window.pageSocios || []).slice().sort(function(a,b){
+    var ahorroA = Number(a.ahorro_acumulado || a.ahorroAcumulado || 0);
+    var ahorroB = Number(b.ahorro_acumulado || b.ahorroAcumulado || 0);
+    return ahorroB - ahorroA;
+  });
   document.getElementById("sociosResumen").innerHTML =
     "<thead><tr><th>Socio</th><th>Ahorro acum.</th><th>Estado</th></tr></thead><tbody>" +
     list.slice(0,5).map(function(s){
       var ahorro = s.ahorro_acumulado !== undefined ? s.ahorro_acumulado : (s.ahorroAcumulado || 0);
-      return "<tr><td>"+s.nombre+"</td><td>"+DataHelper.formatCOP(ahorro)+"</td><td>"+DataHelper.estadoPill(s.estado)+"</td></tr>";
+      return "<tr><td>"+ (s.nombre || "—") +"</td><td>"+DataHelper.formatCOP(Number(ahorro) || 0)+"</td><td>"+DataHelper.estadoPill(s.estado)+"</td></tr>";
     }).join("") + "</tbody>";
 }
 

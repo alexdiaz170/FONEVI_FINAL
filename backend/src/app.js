@@ -1,16 +1,18 @@
 // ─────────────────────────────────────────────────────────────
 // FONEVI — Servidor principal (src/app.js)
 // ─────────────────────────────────────────────────────────────
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const express     = require('express');
 const cors        = require('cors');
 const helmet      = require('helmet');
 const morgan      = require('morgan');
 const rateLimit   = require('express-rate-limit');
-const path        = require('path');
+// path already required above
 const fs          = require('fs');
 const db          = require('./db');
+const { prisma }  = require('./lib/prisma');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -141,27 +143,113 @@ app.use(errorHandler);
 // ── Arrancar ─────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT) || 3000;
 
+let server = null;
+
+function logLine(level, title, message, err) {
+  const ts = new Date().toISOString();
+  console.error(`[${ts}] [${level}] ${title}`);
+  if (message) console.error(message);
+  if (err && err.stack) {
+    console.error('Stack:');
+    console.error(err.stack);
+  } else if (err) {
+    console.error(err);
+  }
+}
+
+async function gracefulShutdown({ exitCode = 0, reason = 'shutdown' } = {}) {
+  try {
+    logLine('INFO', `Iniciando graceful shutdown — reason: ${reason}`);
+    // Stop accepting new connections
+    if (server && server.close) {
+      logLine('INFO', 'Cerrando servidor HTTP (no aceptar nuevas conexiones)');
+      // wrap close in Promise
+      await new Promise((resolve) => server.close(() => resolve()));
+      logLine('INFO', 'Servidor HTTP cerrado');
+    }
+
+    // Close PostgreSQL pool
+    if (db && db.pool) {
+      try {
+        logLine('INFO', 'Cerrando pg Pool');
+        await db.pool.end();
+        logLine('INFO', 'pg Pool cerrado');
+      } catch (e) {
+        logLine('WARN', 'Error cerrando pg Pool', null, e);
+      }
+    }
+
+    // Disconnect Prisma client if present
+    if (prisma && typeof prisma.$disconnect === 'function') {
+      try {
+        logLine('INFO', 'Desconectando Prisma Client');
+        await prisma.$disconnect();
+        logLine('INFO', 'Prisma Client desconectado');
+      } catch (e) {
+        logLine('WARN', 'Error desconectando Prisma', null, e);
+      }
+    }
+  } catch (e) {
+    logLine('ERROR', 'Error durante gracefulShutdown', null, e);
+  } finally {
+    logLine(exitCode === 0 ? 'INFO' : 'ERROR', `Exit process with code ${exitCode}`);
+    // small delay to allow logs flush
+    setTimeout(() => process.exit(exitCode), 100);
+  }
+}
+
 async function main() {
   try {
     // Probar la conexión a PostgreSQL real con el Pooler antes de levantar la app
     await db.query('SELECT 1');
     console.log('✅ PostgreSQL conectado y verificado vía pg Pool');
-    
+
     const HOST = process.env.HOST || '0.0.0.0';
-    app.listen(PORT, HOST, () => {
+    server = app.listen(PORT, HOST, () => {
       console.log(`🚀 FONEVI API corriendo en http://${HOST}:${PORT}`);
       console.log(`📋 Health:   http://${HOST}:${PORT}/api/health`);
       console.log(`🌍 Entorno:  ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (err) {
-    console.error('❌ No se pudo conectar a la base de datos PostgreSQL:', err.message);
-    console.error('   Verifica DATABASE_URL en el archivo .env');
-    process.exit(1);
+    logLine('ERROR', 'No se pudo conectar a la base de datos PostgreSQL', null, err);
+    logLine('ERROR', 'Verifica DATABASE_URL en el archivo .env');
+    await gracefulShutdown({ exitCode: 1, reason: 'db-connection-failed' });
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
 
-// Cierre limpio
-process.on('SIGINT',  () => { db.pool.end(); process.exit(0); });
-process.on('SIGTERM', () => { db.pool.end(); process.exit(0); });
+module.exports = app;
+
+// Global error handlers
+process.on('unhandledRejection', async (reason, promise) => {
+  logLine('ERROR', 'Unhandled Rejection', 'A promise was rejected and not handled', reason instanceof Error ? reason : { reason });
+  try {
+    await gracefulShutdown({ exitCode: 1, reason: 'unhandledRejection' });
+  } catch (e) {
+    // If graceful shutdown fails, force exit
+    setTimeout(() => process.exit(1), 100);
+  }
+});
+
+process.on('uncaughtException', async (err) => {
+  logLine('ERROR', 'Uncaught Exception', null, err);
+  try {
+    await gracefulShutdown({ exitCode: 1, reason: 'uncaughtException' });
+  } catch (e) {
+    setTimeout(() => process.exit(1), 100);
+  }
+});
+
+// Handle termination signals gracefully
+process.on('SIGINT', async () => {
+  logLine('INFO', 'SIGINT received');
+  await gracefulShutdown({ exitCode: 0, reason: 'SIGINT' });
+});
+
+process.on('SIGTERM', async () => {
+  logLine('INFO', 'SIGTERM received');
+  await gracefulShutdown({ exitCode: 0, reason: 'SIGTERM' });
+});

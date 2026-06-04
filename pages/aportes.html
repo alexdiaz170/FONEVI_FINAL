@@ -199,11 +199,22 @@
           <button class="tab-btn" data-tab="pendiente">Pendientes</button>
           <button class="tab-btn" data-tab="mora">En mora</button>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <div class="search-box">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div class="search-box" style="flex:1;min-width:220px;">
             <span class="search-icon">🔍</span>
-            <input type="text" id="searchAporte" placeholder="Buscar socio o período..."/>
+            <input type="text" id="searchAporte" placeholder="Buscar socio, documento o período..."/>
           </div>
+          <select id="filterSocio" class="periodo-select" style="min-width:180px;">
+            <option value="">Todos los socios</option>
+          </select>
+          <select id="filterMetodo" class="periodo-select" style="min-width:150px;">
+            <option value="">Todos los métodos</option>
+            <option value="nomina">Nómina</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="cheque">Cheque</option>
+          </select>
+          <input type="date" id="filterFecha" class="periodo-select" style="max-width:170px;" title="Filtrar por fecha de pago"/>
           <button class="btn btn-secondary btn-sm" onclick="exportarExcel()">⬇ Excel</button>
           <button class="btn btn-secondary btn-sm" onclick="exportarPDF()">🖨 PDF</button>
           <button class="btn btn-primary" onclick="Modal.open('modalNuevoAporte')">
@@ -219,7 +230,7 @@
           <span id="contadorAportes"
             style="font-size:12px;color:var(--text-muted);"></span>
         </div>
-        <div style="overflow-x:auto;">
+        <div id="tablaAportesContainer" style="overflow-x:auto; position:relative;">
           <table class="data-table table-animated" id="tablaAportes">
             <thead>
               <tr>
@@ -236,6 +247,13 @@
             </thead>
             <tbody id="aporteTbody"></tbody>
           </table>
+        </div>
+        <div id="aportesPagination" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px;">
+          <div id="aportesPaginationInfo" style="font-size:12px;color:var(--text-muted);"></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary btn-sm" id="btnPrevPage" onclick="cambiarPagina(-1)">Anterior</button>
+            <button class="btn btn-secondary btn-sm" id="btnNextPage" onclick="cambiarPagina(1)">Siguiente</button>
+          </div>
         </div>
         <div id="aporteEmpty" style="display:none;">
           <div class="empty-aportes">
@@ -373,6 +391,13 @@
 ═══════════════════════════════════════════════════════════ */
 var filtroPeriodo = "";        // "" = todos los períodos
 var filtroEstado  = "todos";   // todos / pagado / pendiente / mora
+var filtroSocio   = "";
+var filtroMetodo  = "";
+var filtroFecha   = "";
+var queryTexto    = "";
+var paginaActual  = 1;
+var limitePagina  = 10;
+var totalPaginas  = 1;
 var cambioEstadoPendiente = null; // { id, nuevoEstado, selectEl }
 
 var METODO_LABEL = {
@@ -405,6 +430,53 @@ async function cargarDatos() {
   }
 }
 
+async function cargarTablaAportes() {
+  paginaActual = Math.max(1, paginaActual);
+  try {
+    Spinner.overlay("tablaAportesContainer", "Cargando aportes...");
+    const params = {
+      page: paginaActual,
+      limit: limitePagina,
+      estado: filtroEstado !== "todos" ? filtroEstado : undefined,
+      periodo: filtroPeriodo || undefined,
+      socioId: filtroSocio || undefined,
+      metodo: filtroMetodo || undefined,
+      fecha: filtroFecha || undefined,
+      q: queryTexto ? queryTexto.trim() : undefined,
+    };
+    const res = await API.aportes.listar(params);
+    if (res && res.ok) {
+      window.pageAportesPageMeta = {
+        total: Number(res.total || res.datos.length),
+        totalPages: Number(res.totalPages || 1),
+        page: Number(res.page || paginaActual),
+        limit: Number(res.limit || limitePagina),
+      };
+      totalPaginas = window.pageAportesPageMeta.totalPages;
+      if (window.pageAportesPageMeta.page > totalPaginas && totalPaginas > 0) {
+        paginaActual = totalPaginas;
+        return cargarTablaAportes();
+      }
+      paginaActual = Math.max(1, Math.min(window.pageAportesPageMeta.page, totalPaginas));
+      window.pageAportesPage = res.datos;
+    } else {
+      Toast.error(res?.mensaje || "Error al cargar aportes");
+      window.pageAportesPage = [];
+      window.pageAportesPageMeta = { total: 0, totalPages: 1, page: 1, limit: limitePagina };
+      totalPaginas = 1;
+    }
+  } catch (e) {
+    console.error("Error cargando tabla de aportes:", e);
+    Toast.error(e.message || "Error al conectar con el servidor");
+    window.pageAportesPage = [];
+    window.pageAportesPageMeta = { total: 0, totalPages: 1, page: 1, limit: limitePagina };
+    totalPaginas = 1;
+  } finally {
+    Spinner.removeOverlay("tablaAportesContainer");
+    renderTabla();
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("aportes")) return;
 
@@ -420,8 +492,10 @@ document.addEventListener("DOMContentLoaded", async function() {
   filtroPeriodo = null;
 
   poblarSelectSocios();
+  poblarFiltroSocios();
   poblarSelectPeriodos();
   poblarSelectPeriodoModal();
+  poblarFiltroMetodo();
 
   document.getElementById("na-fecha").value = new Date().toISOString().split("T")[0];
   document.getElementById("na-socio").addEventListener("change", function() {
@@ -430,13 +504,36 @@ document.addEventListener("DOMContentLoaded", async function() {
   });
   document.getElementById("na-periodo").addEventListener("change", verificarDuplicado);
 
+  document.getElementById("searchAporte").addEventListener("input", debounce(function(event) {
+    queryTexto = event.target.value;
+    paginaActual = 1;
+    cargarTablaAportes();
+  }, 300));
+  document.getElementById("filterSocio").addEventListener("change", function(event) {
+    filtroSocio = event.target.value;
+    paginaActual = 1;
+    cargarTablaAportes();
+  });
+  document.getElementById("filterMetodo").addEventListener("change", function(event) {
+    filtroMetodo = event.target.value;
+    paginaActual = 1;
+    cargarTablaAportes();
+  });
+  document.getElementById("filterFecha").addEventListener("change", function(event) {
+    filtroFecha = event.target.value;
+    if (filtroFecha === "undefined" || filtroFecha === "null") filtroFecha = "";
+    paginaActual = 1;
+    cargarTablaAportes();
+  });
+
   renderKPIs();
   renderRecaudo();
-  renderTabla();
+  await cargarTablaAportes();
 
-  filterTable("searchAporte", "tablaAportes");
   initTabs("filtroEstado", function(tab) {
-    filtroEstado = tab; renderTabla();
+    filtroEstado = tab;
+    paginaActual = 1;
+    cargarTablaAportes();
   });
 });
 
@@ -510,22 +607,9 @@ function renderRecaudo() {
    TABLA PRINCIPAL
 ═══════════════════════════════════════════════════════════ */
 function renderTabla() {
-  var lista = window.pageAportes || [];
+  var lista = window.pageAportesPage || [];
+  var meta  = window.pageAportesPageMeta || { total: 0, totalPages: 1, page: paginaActual, limit: limitePagina };
 
-  // Filtro período
-  if (filtroPeriodo) {
-    lista = lista.filter(function(a){ return (a.periodo_nombre || a.periodo) === filtroPeriodo; });
-  }
-
-  // Filtro estado
-  if (filtroEstado !== "todos") {
-    lista = lista.filter(function(a){
-      if (filtroEstado === "mora") return ["mora","vencido"].includes(a.estado);
-      return a.estado === filtroEstado;
-    });
-  }
-
-  // Título dinámico
   var titulosEstado = {
     todos:"Todos los aportes", pagado:"Aportes pagados",
     pendiente:"Aportes pendientes", mora:"Aportes en mora"
@@ -533,7 +617,15 @@ function renderTabla() {
   document.getElementById("tituloTabla").textContent =
     (filtroPeriodo || "Todos los períodos") + " — " + (titulosEstado[filtroEstado] || "Todos");
   document.getElementById("contadorAportes").textContent =
-    lista.length + " registro" + (lista.length !== 1 ? "s" : "");
+    meta.total + " registro" + (meta.total !== 1 ? "s" : "");
+
+  document.getElementById("aportesPaginationInfo").textContent =
+    meta.total > 0
+      ? "Página " + meta.page + " de " + meta.totalPages + " — mostrando " + (lista.length) + " de " + meta.total
+      : "No hay aportes para estos filtros";
+
+  document.getElementById("btnPrevPage").disabled = meta.page <= 1;
+  document.getElementById("btnNextPage").disabled = meta.page >= meta.totalPages;
 
   var tbody = document.getElementById("aporteTbody");
   var empty = document.getElementById("aporteEmpty");
@@ -545,7 +637,6 @@ function renderTabla() {
   }
   empty.style.display = "none";
 
-  // Ordenar: mora primero, luego pendiente, luego pagado; dentro de cada grupo por período desc
   lista.sort(function(a, b) {
     var orden = { mora:0, vencido:1, pendiente:2, pagado:3 };
     var oa = orden[a.estado] !== undefined ? orden[a.estado] : 4;
@@ -566,8 +657,6 @@ function renderTabla() {
       '<td class="muted">' + (a.fecha_pago ? DataHelper.formatFecha(a.fecha_pago) : '<span style="color:var(--text-faint);">—</span>') + '</td>' +
       '<td class="muted">' + (METODO_LABEL[a.metodo] || a.metodo || "—") + '</td>' +
       '<td>' + DataHelper.estadoPill(a.estado) + '</td>' +
-
-      // Cambio de estado inline
       '<td class="no-print">' +
         '<select class="estado-select ' + (["mora","vencido"].includes(a.estado) ? "mora" : a.estado) + '" ' +
           'data-id="' + a.id + '" ' +
@@ -577,8 +666,6 @@ function renderTabla() {
           '<option value="mora"      ' + (["mora","vencido"].includes(a.estado) ? "selected" : "") + '>⚠ En mora</option>' +
         '</select>' +
       '</td>' +
-
-      // Comprobante
       '<td class="no-print">' +
         (a.estado === "pagado"
           ? '<button class="btn btn-secondary btn-sm" ' +
@@ -592,6 +679,40 @@ function renderTabla() {
 /* ═══════════════════════════════════════════════════════════
    CAMBIO DE ESTADO
 ═══════════════════════════════════════════════════════════ */
+function cambiarPagina(delta) {
+  var meta = window.pageAportesPageMeta || { page: paginaActual, totalPages: totalPaginas };
+  paginaActual = Math.max(1, Math.min(meta.totalPages || 1, paginaActual + delta));
+  cargarTablaAportes();
+}
+
+function debounce(fn, delay) {
+  var timeout;
+  return function() {
+    var args = arguments;
+    var context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(function() { fn.apply(context, args); }, delay);
+  };
+}
+
+function poblarFiltroSocios() {
+  var sel = document.getElementById("filterSocio");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Todos los socios</option>' +
+    (window.pageSocios || []).sort(function(a,b){ return (a.nombre||"").localeCompare(b.nombre||""); }).map(function(s) {
+      return '<option value="' + s.id + '">' + s.nombre + '</option>';
+    }).join("");
+}
+
+function poblarFiltroMetodo() {
+  var sel = document.getElementById("filterMetodo");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Todos los métodos</option>' +
+    Object.keys(METODO_LABEL).map(function(key) {
+      return '<option value="' + key + '">' + METODO_LABEL[key] + '</option>';
+    }).join("");
+}
+
 function solicitarCambioEstado(selectEl) {
   var id          = selectEl.dataset.id;
   var nuevoEstado = selectEl.value;
@@ -602,7 +723,7 @@ function solicitarCambioEstado(selectEl) {
   cambioEstadoPendiente = { id: id, nuevoEstado: nuevoEstado, selectEl: selectEl };
 
   var sObj = (window.pageSocios || []).find(function(s){ return s.id === aporte.socio_id || s.id === aporte.socioId; });
-  var socio = sObj ? sObj.nombre : (aporte.socio_nombre || "Socio #" + (aporte.socio_id || aporte.socioId));
+  var socio = sObj ? sObj.nombre : (aporte.socio_nombre || (aporte.codigo_socio || aporte.socio_codigo) || "Socio #" + (aporte.socio_id || aporte.socioId));
 
   document.getElementById("cambioEstadoBody").innerHTML =
     '<p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">' +
@@ -750,6 +871,7 @@ async function guardarAporte() {
 
     if (res && res.ok) {
       await cargarDatos();
+      await cargarTablaAportes();
       
       btn.textContent = "Registrar aporte";
       btn.disabled    = false;
@@ -762,7 +884,6 @@ async function guardarAporte() {
 
       renderKPIs();
       renderRecaudo();
-      renderTabla();
 
       // Actualizar selector de período si es nuevo
       poblarSelectPeriodos();
@@ -790,7 +911,8 @@ async function guardarAporte() {
 function cambiarPeriodo(valor) {
   filtroPeriodo = valor;
   renderRecaudo();
-  renderTabla();
+  paginaActual = 1;
+  cargarTablaAportes();
 }
 
 /* ═══════════════════════════════════════════════════════════

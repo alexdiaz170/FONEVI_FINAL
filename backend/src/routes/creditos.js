@@ -5,6 +5,8 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 router.use(requireAuth);
 
 router.get('/', requireRole('administrador', 'tesorero'), creditoController.list);
+// Ruta para simular crédito (solo cálculo en memoria)
+router.get('/simular', creditoController.simular);
 router.get('/:id', creditoController.get);
 router.post('/', requireRole('administrador', 'tesorero'), creditoController.create);
 router.post('/:id/pagar-cuota', requireRole('administrador', 'tesorero'), creditoController.payInstallment);

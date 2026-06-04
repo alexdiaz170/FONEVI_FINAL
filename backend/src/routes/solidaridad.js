@@ -6,9 +6,11 @@ const { requireAuth } = require("../middleware/auth");
 // GET /api/solidaridad/movimientos — Obtener todos los movimientos
 router.get("/movimientos", requireAuth, async (req, res) => {
   try {
-    const movs = await prisma.solidaridadMovimiento.findMany({
-      orderBy: { fecha: "desc" },
-    });
+    const query = { orderBy: { fecha: "desc" } };
+    if (req.query.beneficiario) {
+      query.where = { beneficiario: req.query.beneficiario };
+    }
+    const movs = await prisma.solidaridadMovimiento.findMany(query);
     res.json({ ok: true, datos: movs });
   } catch (error) {
     res.status(500).json({ ok: false, mensaje: "Error al listar movimientos" });

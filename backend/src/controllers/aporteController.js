@@ -3,12 +3,41 @@ const db = require('../db');
 const { audit } = require('../middleware/audit');
 const { mapAporte } = require('../lib/mappings');
 
+function normalizeQueryValue(value) {
+  return value === undefined || value === null || value === '' || value === 'undefined' || value === 'null'
+    ? undefined
+    : value;
+}
+
 class AporteController {
   async list(req, res, next) {
     try {
-      const { socioId, periodoId, estado } = req.query;
-      const aportes = await aporteService.listAll({ socioId, periodoId, estado });
-      const datos = aportes.map(mapAporte);
+      const pageValue  = normalizeQueryValue(req.query.page);
+      const limitValue = normalizeQueryValue(req.query.limit);
+      const page  = pageValue !== undefined ? parseInt(pageValue, 10) : undefined;
+      const limit = limitValue !== undefined ? parseInt(limitValue, 10) : undefined;
+      const result = await aporteService.listAll({
+        socioId:   normalizeQueryValue(req.query.socioId),
+        periodoId: normalizeQueryValue(req.query.periodoId),
+        periodo:   normalizeQueryValue(req.query.periodo),
+        estado:    normalizeQueryValue(req.query.estado),
+        fecha:     normalizeQueryValue(req.query.fecha),
+        metodo:    normalizeQueryValue(req.query.metodo),
+        q:         normalizeQueryValue(req.query.q),
+        page,
+        limit,
+      });
+      const datos = result.datos.map(mapAporte);
+      if (page !== undefined || limit !== undefined) {
+        return res.json({
+          ok: true,
+          datos,
+          total: result.total,
+          totalPages: result.totalPages,
+          page: result.page,
+          limit: result.limit,
+        });
+      }
       return res.json({ ok: true, datos });
     } catch (e) {
       next(e);
