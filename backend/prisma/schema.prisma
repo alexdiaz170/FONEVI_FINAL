@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────
-// FONEVI — Schema Prisma (SQLite para desarrollo local)
-// Para producción: cambiar provider a "postgresql" y añadir
-// @db.Decimal(12,2) en campos de dinero
-// ─────────────────────────────────────────────────────────────
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,46 +7,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── Modelos ──────────────────────────────────────────────────
-// SQLite no soporta enums → se usan String con validación en el servidor
-
 model Usuario {
-  id         String   @id @default(uuid())
+  id         String      @id @default(uuid())
   nombre     String
-  email      String   @unique
+  email      String      @unique
   password   String
-  rol        String   @default("socio")       // administrador | tesorero | socio
-  estado     String   @default("activo")      // activo | inactivo
+  rol        String      @default("socio")
+  estado     String      @default("activo")
   avatar     String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt              @map("updated_at")
-
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
   auditorias Auditoria[]
 
   @@map("usuarios")
 }
 
 model Socio {
-  id               String   @id // Usaremos el número de documento como ID
-  codigo           String   @unique
-  nombre           String
-  documento        String   @unique
-  email            String?
-  telefono         String?
-  fechaIngreso     DateTime @map("fecha_ingreso")
-  aporteMensual    Decimal  @map("aporte_mensual") @db.Decimal(15, 2)
-  ahorroAcumulado  Decimal  @map("ahorro_acumulado") @default(0) @db.Decimal(15, 2)
-  estado           String   @default("activo")  // activo | mora | pendiente | retirado
-  password         String?  @db.Text
-  accesoActivo     Boolean  @map("acceso_activo") @default(true)
-  ultimoLogin      DateTime? @map("ultimo_login")
-  cargo            String?
-  sede             String?
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt           @map("updated_at")
-
-  aportes  Aporte[]
-  creditos Credito[]
+  id              String    @id
+  codigo          String    @unique
+  nombre          String
+  documento       String    @unique
+  email           String?
+  telefono        String?
+  fechaIngreso    DateTime  @map("fecha_ingreso")
+  aporteMensual   Decimal   @map("aporte_mensual") @db.Decimal(15, 2)
+  ahorroAcumulado Decimal   @default(0) @map("ahorro_acumulado") @db.Decimal(15, 2)
+  estado          String    @default("activo")
+  cargo           String?
+  sede            String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  password        String?
+  accesoActivo    Boolean   @default(true) @map("acceso_activo")
+  ultimoLogin     DateTime? @map("ultimo_login") @db.Timestamp(6)
+  codigo_socio    String?
+  aportes         Aporte[]
+  creditos        Credito[]
 
   @@index([estado])
   @@map("socios")
@@ -65,28 +55,26 @@ model Periodo {
   mes       Int
   activo    Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
-
-  aportes Aporte[]
+  aportes   Aporte[]
 
   @@map("periodos")
 }
 
 model Aporte {
-  id        String    @id @default(uuid())
-  socioId   String    @map("socio_id")
-  periodoId Int       @map("periodo_id")
-  monto     Decimal  @db.Decimal(15, 2)
-  pagoSolidaridad Decimal @map("pago_solidaridad") @default(0) @db.Decimal(15, 2)
-  pagoCredito      Decimal @map("pago_credito")    @default(0) @db.Decimal(15, 2)
-  fechaPago DateTime? @map("fecha_pago")
-  estado    String    @default("pendiente")  // pagado | pendiente | mora | vencido
-  metodo    String?
-  notas     String?
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt      @map("updated_at")
-
-  socio   Socio   @relation(fields: [socioId],   references: [id])
-  periodo Periodo @relation(fields: [periodoId], references: [id])
+  id              String    @id @default(uuid())
+  socioId         String    @map("socio_id")
+  periodoId       Int       @map("periodo_id")
+  monto           Decimal   @db.Decimal(15, 2)
+  fechaPago       DateTime? @map("fecha_pago")
+  estado          String    @default("pendiente")
+  metodo          String?
+  notas           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  pagoSolidaridad Decimal   @default(0) @map("pago_solidaridad") @db.Decimal(15, 2)
+  pagoCredito     Decimal   @default(0) @map("pago_credito") @db.Decimal(15, 2)
+  periodo         Periodo   @relation(fields: [periodoId], references: [id])
+  socio           Socio     @relation(fields: [socioId], references: [id])
 
   @@index([socioId])
   @@index([periodoId])
@@ -100,17 +88,16 @@ model Credito {
   monto           Decimal  @db.Decimal(15, 2)
   tasaMensual     Decimal  @map("tasa_mensual") @db.Decimal(5, 2)
   cuotas          Int
-  cuotasPagadas   Int      @map("cuotas_pagadas") @default(0)
+  cuotasPagadas   Int      @default(0) @map("cuotas_pagadas")
   saldoCapital    Decimal  @map("saldo_capital") @db.Decimal(15, 2)
   fechaDesembolso DateTime @map("fecha_desembolso")
-  estado          String   @default("activo")     // activo | mora | pagado | rechazado
+  estado          String   @default("activo")
   proposito       String?
   aprobadoPor     String?  @map("aprobado_por")
   notas           String?
   createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt      @map("updated_at")
-
-  socio Socio @relation(fields: [socioId], references: [id])
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  socio           Socio    @relation(fields: [socioId], references: [id])
 
   @@index([socioId])
   @@index([estado])
@@ -171,11 +158,10 @@ model Auditoria {
   accion     String
   tabla      String?
   registroId String?  @map("registro_id")
-  detalle    String?  // JSON serializado como texto en SQLite
+  detalle    String?
   ip         String?
   createdAt  DateTime @default(now()) @map("created_at")
-
-  usuario Usuario? @relation(fields: [usuarioId], references: [id])
+  usuario    Usuario? @relation(fields: [usuarioId], references: [id])
 
   @@index([usuarioId])
   @@index([createdAt])
@@ -183,13 +169,13 @@ model Auditoria {
 }
 
 model WaLog {
-  id          String   @id @default(uuid())
-  numero      String
-  template    String
-  estado      String
-  messageId   String?  @map("message_id")
-  enviadoEn   DateTime @map("enviado_en")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id        String   @id @default(uuid())
+  numero    String
+  template  String
+  estado    String
+  messageId String?  @map("message_id")
+  enviadoEn DateTime @map("enviado_en")
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@index([numero])
   @@index([enviadoEn])

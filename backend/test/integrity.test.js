@@ -12,7 +12,15 @@ describe('Integridad referencial', () => {
   });
 
   test('No existen movimientos solidaridad huérfanos', async () => {
-    const res = await pool.query('SELECT id FROM solidaridad_movimientos sm LEFT JOIN socios s ON sm.beneficiario = s.id WHERE sm.beneficiario IS NOT NULL AND s.id IS NULL LIMIT 1');
-    expect(res.rows.length).toBe(0);
+  const res = await pool.query(`
+    SELECT sm.id
+    FROM solidaridad_movimientos sm
+    LEFT JOIN socios s ON sm.beneficiario = s.id
+    WHERE sm.beneficiario IS NOT NULL
+      AND s.id IS NULL
+    LIMIT 1
+  `);
+
+  expect(res.rows.length).toBe(0);
   });
 });

@@ -7,7 +7,7 @@ describe('Aportes API - regresión financiera', () => {
   beforeAll(async () => {
     periodoId = await createPeriodo(pool, `Periodo Aportes ${Date.now()}`);
     socioId = await createSocio(pool, { aporte_mensual: 120000 });
-    token = makeToken({ id: 'testuser', rol: 'administrador', email: 'test@local' });
+    token = makeToken({ id: 'd02bfc7b-8183-4d45-b034-f5c0a74b6964', rol: 'administrador', email: 'test@local' });
   });
 
   afterAll(async () => {

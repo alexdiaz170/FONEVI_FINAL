@@ -7,15 +7,32 @@ describe('Creditos - regresión financiera', () => {
   beforeAll(async () => {
     periodoId = await createPeriodo(pool, `Periodo Creditos ${Date.now()}`);
     socioId = await createSocio(pool, {});
-    token = makeToken({ id: 'testuser', rol: 'administrador', email: 'test@local' });
+    token = makeToken({ id: 'd02bfc7b-8183-4d45-b034-f5c0a74b6964', rol: 'administrador', email: 'test@local' });
   });
 
-  afterAll(async () => {
-    await pool.query('DELETE FROM periodos WHERE id = $1', [periodoId]);
-    await pool.query('DELETE FROM creditos WHERE socio_id = $1', [socioId]);
-    await pool.query('DELETE FROM socios WHERE id = $1', [socioId]);
-    await pool.end();
-  });
+ afterAll(async () => {
+  await pool.query(
+    'DELETE FROM aportes WHERE periodo_id = $1',
+    [periodoId]
+  );
+
+  await pool.query(
+    'DELETE FROM creditos WHERE socio_id = $1',
+    [socioId]
+  );
+
+  await pool.query(
+    'DELETE FROM periodos WHERE id = $1',
+    [periodoId]
+  );
+
+  await pool.query(
+    'DELETE FROM socios WHERE id = $1',
+    [socioId]
+  );
+
+  await pool.end();
+});
 
   test('Crear crédito y aplicar abonos hasta pagado', async () => {
     const creditoId = await createCredito(pool, socioId, 1000);
