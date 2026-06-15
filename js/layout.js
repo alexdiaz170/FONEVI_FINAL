@@ -34,7 +34,11 @@ function buildLayout(titulo, subtitulo, accionHTML) {
       <a href="dashboard.html" class="nav-link" data-page="dashboard"><span class="nav-icon">⊞</span> Dashboard</a></div>`;
   }
 
-  document.getElementById("app-layout").insertAdjacentHTML("afterbegin", `
+  const appLayout = document.getElementById("app-layout");
+
+console.log("APP-LAYOUT =", appLayout);
+
+appLayout.insertAdjacentHTML("afterbegin", `
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <div class="logo-icon">F</div>

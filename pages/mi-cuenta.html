@@ -134,15 +134,28 @@
     .rend-item { display:flex; align-items:center; gap:12px; padding:10px 20px; border-bottom:1px solid var(--border-faint); }
     .rend-item:last-child { border-bottom:none; }
     .rend-mes   { font-size:12.5px; font-weight:500; flex:1; }
+    </style>
     </head>
     <body>
 
     <div class="app-layout" style="padding:40px;max-width:900px;margin:0 auto;">
+      
       <h1 style="font-family:var(--font-display);margin-bottom:14px;">Mi Cuenta</h1>
       <div id="mc-root" style="background:var(--bg-surface);border:1px solid var(--border-faint);border-radius:12px;padding:20px;">
         <div id="mc-loading">Cargando información de tu cuenta…</div>
         <div id="mc-error" style="display:none;color:var(--red-600);"></div>
+
+
         <div id="mc-content" style="display:none;">
+            <div id="cuentaHero"></div>
+           <div id="saldoPrincipal"></div>
+
+            <div id="creditoPanel"></div>
+            <div id="rendimientosGrid"></div>
+            <div style="margin-bottom:8px;">
+              <strong>Nombre:</strong>
+              <span id="mc-nombre">—</span>
+            </div>
           <div style="margin-bottom:8px;"><strong>Nombre:</strong> <span id="mc-nombre">—</span></div>
           <div style="margin-bottom:8px;"><strong>Documento:</strong> <span id="mc-documento">—</span></div>
           <div style="margin-bottom:8px;"><strong>Código socio:</strong> <span id="mc-codigo">—</span></div>
@@ -590,8 +603,8 @@ function simulAbrir() {
   var socio = _socioActual;
   if (!socio) { Toast.warn("Carga tu perfil primero."); return; }
   _simulSocio = socio;
-  var tasa = DB.config.tasa_credito_mensual||1.5;
-  var mult = DB.config.max_credito_multiplicador||3;
+  var tasa = DB.config.tasa_credito_mensual||1;
+  var mult = DB.config.max_credito_multiplicador||4;
   var deuda = DataHelper.getCreditosSocio(socio.id)
     .filter(function(c){return c.estado!=="pagado";})
     .reduce(function(t,cr){return t+cr.saldo_capital;},0);
@@ -614,8 +627,8 @@ function simulCalc() {
   if (!_simulSocio) return;
   var monto  = parseInt(document.getElementById("sc-monto").value)||0;
   var cuotas = parseInt(document.getElementById("sc-cuotas").value)||12;
-  var tasa   = DB.config.tasa_credito_mensual||1.5;
-  var mult   = DB.config.max_credito_multiplicador||3;
+  var tasa   = DB.config.tasa_credito_mensual||1;
+  var mult   = DB.config.max_credito_multiplicador||4;
   var deuda  = DataHelper.getCreditosSocio(_simulSocio.id)
     .filter(function(c){return c.estado!=="pagado";})
     .reduce(function(t,cr){return t+cr.saldo_capital;},0);
@@ -719,7 +732,7 @@ function simulExportarPDF() {
   var {jsPDF}=window.jspdf;
   var monto=parseInt(document.getElementById("sc-monto").value)||0;
   var cuotas=parseInt(document.getElementById("sc-cuotas").value)||12;
-  var tasa=DB.config.tasa_credito_mensual||1.5;
+  var tasa=DB.config.tasa_credito_mensual||1;
   var r=tasa/100;
   var cuota=Math.round(monto*(r*Math.pow(1+r,cuotas))/(Math.pow(1+r,cuotas)-1));
   var total=cuota*cuotas, interes=Math.max(0,total-monto);

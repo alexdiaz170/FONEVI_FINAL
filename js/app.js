@@ -11,11 +11,11 @@ window.DB = {
     nit: "800.123.456-7",
     representante: "Carlos Alberto Muñoz",
     periodo_actual: "Marzo 2026",
-    aporte_minimo: 120000,
-    aporte_solidaridad: 30000,
-    tasa_credito_mensual: 1.5,
+    aporte_minimo: 130000,
+    aporte_solidaridad: 5000,
+    tasa_credito_mensual: 1,
     tasa_mora_diaria: 0.1,
-    max_credito_multiplicador: 3
+    max_credito_multiplicador: 4
   },
   dividendos: [],
   notificaciones: []

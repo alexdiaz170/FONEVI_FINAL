@@ -1,6 +1,7 @@
 const creditoService = require('../services/creditoService');
 const { audit } = require('../middleware/audit');
 const { mapCredito } = require('../lib/mappings');
+const db = require('../db');
 
 class CreditoController {
   async list(req, res, next) {
@@ -76,6 +77,70 @@ class CreditoController {
       if (!socioId || isNaN(montoNum) || montoNum <= 0 || isNaN(tasaNum) || tasaNum < 0 || !Number.isInteger(cuotasNum) || cuotasNum <= 0) {
         return res.status(400).json({ ok: false, mensaje: 'Campos requeridos faltantes o inválidos (socioId, monto, tasaMensual, cuotas)' });
       }
+      // VALIDAR ANTIGÜEDAD DEL SOCIO
+// =====================================================
+
+      const socioResult = await db.query(`
+          SELECT
+            fecha_ingreso,
+            ahorro_acumulado,
+            nombre
+          FROM socios
+          WHERE id = $1
+        `, [socioId]);
+
+      const socio = socioResult.rows[0];
+
+        if (!socio) {
+          return res.status(404).json({
+            ok: false,
+            mensaje: 'Socio no encontrado'
+          });
+        }
+
+        const configResult = await db.query(`
+  SELECT clave, valor
+  FROM configuracion
+  WHERE clave IN (
+    'meses_minimos_credito'
+  )
+`);
+
+const config = {};
+
+for (const row of configResult.rows) {
+  config[row.clave] = row.valor;
+}
+
+const mesesMinimos =
+  Number(config.meses_minimos_credito || 3);
+
+  const fechaIngreso =
+  new Date(socio.fecha_ingreso);
+
+const hoy =
+  new Date();
+
+const mesesAfiliado =
+  (hoy.getFullYear() - fechaIngreso.getFullYear()) * 12 +
+  (hoy.getMonth() - fechaIngreso.getMonth());
+
+  console.log("========== VALIDACION CREDITO ==========");
+console.log("Socio:", socio.nombre);
+console.log("Fecha ingreso:", socio.fecha_ingreso);
+console.log("Meses afiliado:", mesesAfiliado);
+console.log("Meses mínimos:", mesesMinimos);
+console.log("========================================");
+
+  if (mesesAfiliado < mesesMinimos) {
+
+  return res.status(400).json({
+    ok: false,
+    mensaje:
+      `El socio ${socio.nombre} tiene ${mesesAfiliado} meses de afiliación. Debe tener mínimo ${mesesMinimos} meses para solicitar crédito.`
+  });
+
+}
 
       const nuevoCredito = await creditoService.create({
         socioId,

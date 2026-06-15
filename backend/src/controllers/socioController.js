@@ -50,8 +50,35 @@ const socios = await socioService.listAll();
       }
 
       const socioId = req.usuario.socioId || req.usuario.id;
-      const socio = await socioService.findByIdOrCodigo(socioId);
-      if (!socio) return res.status(404).json({ ok: false, mensaje: 'Socio no encontrado' });
+      // =====================================================
+// VALIDAR ESTADO DEL SOCIO
+// =====================================================
+
+if (!socio) {
+  return res.status(404).json({
+    ok: false,
+    codigo: "SOCIO_NO_EXISTE",
+    mensaje: "El socio no existe."
+  });
+}
+
+const estadoSocio =
+  (socio.estado || "")
+    .toLowerCase()
+    .trim();
+
+if (
+  estadoSocio === "mora" ||
+  estadoSocio === "retirado" ||
+  estadoSocio === "suspendido"
+) {
+  return res.status(400).json({
+    ok: false,
+    codigo: "SOCIO_NO_HABILITADO",
+    mensaje:
+      `El socio se encuentra en estado "${socio.estado}" y no está habilitado para solicitar créditos.`
+  });
+}
 
       return res.json({ ok: true, datos: {
         id: socio.id,

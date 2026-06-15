@@ -102,59 +102,253 @@ class AporteService {
     return res.rows[0] || null;
   }
 
-  async create({ socioId, periodoId, monto, fechaPago = null, estado = 'pendiente', metodo = null, notas = null, pago_solidaridad = 0, pago_credito = 0 }) {
-    const id = uuidv4();
-    const pagoSolid = Number(pago_solidaridad || 0);
-    const pagoCred  = Number(pago_credito || 0);
-    return await db.transaction(async (client) => {
-      const query = `
-        INSERT INTO aportes (id, socio_id, periodo_id, monto, pago_solidaridad, pago_credito, fecha_pago, estado, metodo, notas, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-        RETURNING id, socio_id as "socioId", periodo_id as "periodoId", monto, pago_solidaridad as "pago_solidaridad", pago_credito as "pago_credito",
-                  fecha_pago as "fechaPago", estado, metodo, notas, created_at as "createdAt"
-      `;
-      const res = await client.query(query, [id, socioId, periodoId, monto, pagoSolid, pagoCred, fechaPago, estado, metodo, notas]);
-      const aporte = res.rows[0];
+  async create({
+  socioId,
+  periodoId,
+  monto,
+  fechaPago = null,
+  estado = 'pendiente',
+  metodo = null,
+  notas = null
+}) {
 
-      // Si hay aporte a solidaridad, registrar movimiento (ingreso al fondo)
-      if (pagoSolid > 0) {
-        const movId = uuidv4();
+  const id = uuidv4();
+  const montoTotal = Number(monto);
+
+  return await db.transaction(async (client) => {
+
+    let pagoSolid = 5000;
+    let pagoCred = 0;
+    let ahorro = 0;
+
+    let restante = montoTotal - pagoSolid;
+
+    if (restante < 0) {
+      restante = 0;
+    }
+
+    const creditoRes = await client.query(`
+      SELECT *
+      FROM creditos
+      WHERE socio_id = $1
+      AND estado <> 'pagado'
+      ORDER BY created_at ASC
+      LIMIT 1
+      FOR UPDATE
+    `,[socioId]);
+
+    const credito = creditoRes.rows[0];
+
+    if (credito) {
+
+      const saldo =
+        Number(credito.saldo_capital || 0);
+
+      const interes =
+        Number(
+          (
+            saldo *
+            (Number(credito.tasa_mensual || 0) / 100)
+          ).toFixed(2)
+        );
+
+      const seguro =
+        Number(
+          (
+            saldo * 0.005
+          ).toFixed(2)
+        );
+
+      const pagoInteres =
+        Math.min(restante, interes);
+
+      restante -= pagoInteres;
+
+      const pagoSeguro =
+        Math.min(restante, seguro);
+
+      restante -= pagoSeguro;
+
+      pagoCred = restante;
+
+      restante = 0;
+
+      const nuevoSaldo =
+        Math.max(
+          0,
+          saldo - pagoCred
+        );
+
+      const nuevoEstado =
+        nuevoSaldo <= 0
+          ? 'pagado'
+          : 'activo';
+
+      await client.query(`
+        UPDATE creditos
+        SET saldo_capital = $1,
+            estado = $2,
+            updated_at = NOW()
+        WHERE id = $3
+      `,[
+        nuevoSaldo,
+        nuevoEstado,
+        credito.id
+      ]);
+    }
+    else {
+
+      ahorro = restante;
+      restante = 0;
+    }
+
+    const res = await client.query(`
+      INSERT INTO aportes (
+        id,
+        socio_id,
+        periodo_id,
+        monto,
+        fecha_pago,
+        estado,
+        metodo,
+        notas,
+        pago_solidaridad,
+        pago_credito,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+        NOW(),
+        NOW()
+      )
+      RETURNING
+        id,
+        socio_id as "socioId",
+        periodo_id as "periodoId",
+        monto,
+        fecha_pago as "fechaPago",
+        estado,
+        metodo,
+        notas,
+        pago_solidaridad,
+        pago_credito,
+        created_at as "createdAt"
+    `,[
+      id,
+      socioId,
+      periodoId,
+      montoTotal,
+      fechaPago,
+      estado,
+      metodo,
+      notas,
+      pagoSolid,
+      pagoCred
+    ]);
+
+    const aporte = res.rows[0];
+
+    const socioInfo = await client.query(`
+  SELECT nombre
+  FROM socios
+  WHERE id = $1
+`, [socioId]);
+
+const nombreSocio = socioInfo.rows[0]?.nombre || 'Socio';
+
+    await client.query(`
+      INSERT INTO solidaridad_movimientos (
+        id,
+        tipo,
+        descripcion,
+        monto,
+        fecha,
+        beneficiario,
+        created_at
+      )
+      VALUES (
+        $1,
+        'ingreso',
+        $2,
+        $3,
+        NOW(),
+        $4,
+        NOW()
+      )
+    `,[
+      uuidv4(),
+      'Aporte solidaridad',
+      pagoSolid,
+      nombreSocio
+    ]);
+
+    if (estado === 'mora' || estado === 'vencido') {
+
+       await client.query(`
+    UPDATE socios
+    SET estado = 'mora'
+    WHERE id = $1
+      AND estado NOT IN (
+        'retirado',
+        'fallecido',
+        'suspendido'
+      )
+  `,[socioId]);
+    }
+
+    if (estado === 'pagado') {
+
+      const moraPendiente = await client.query(`
+        SELECT COUNT(*) AS total
+        FROM aportes
+        WHERE socio_id = $1
+        AND estado IN ('mora','vencido')
+      `,[socioId]);
+
+      if (
+        Number(
+          moraPendiente.rows[0].total
+        ) === 0
+      ) {
         await client.query(`
-          INSERT INTO solidaridad_movimientos (id, tipo, descripcion, monto, fecha, beneficiario, created_at)
-          VALUES ($1, 'ingreso', $2, $3, COALESCE($4, NOW()), $5, NOW())
-        `, [movId, 'Aporte solidaridad — ' + socioId, pagoSolid, fechaPago || new Date(), socioId]);
+          UPDATE socios
+          SET estado = 'activo'
+          WHERE id = $1
+           AND estado NOT IN (
+    'retirado',
+    'fallecido',
+    'suspendido'
+  )
+        `,[socioId]);
       }
+    }
 
-      // Si hay abono a crédito, aplicarlo al crédito activo más reciente
-      if (pagoCred > 0) {
-        // Lock the chosen credit row to avoid concurrent updates that could cause double-application of payments.
-        // Using FOR UPDATE ensures that concurrent transactions attempting to modify the same credit will serialize.
-        const credRes = await client.query(`SELECT id, saldo_capital FROM creditos WHERE socio_id = $1 AND estado <> 'pagado' ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [socioId]);
-        const credito = credRes.rows[0];
-        if (credito) {
-          const saldoActual = Number(credito.saldo_capital || 0);
-          const aplicado = Math.min(saldoActual, pagoCred);
-          const nuevoSaldo = Math.max(0, saldoActual - aplicado);
-          const nuevoEstado = nuevoSaldo <= 0 ? 'pagado' : 'activo';
-          await client.query(`UPDATE creditos SET saldo_capital = $1, estado = $2 WHERE id = $3`, [nuevoSaldo, nuevoEstado, credito.id]);
-        }
-      }
+    await client.query(`
+      UPDATE socios s
+      SET ahorro_acumulado =
+      COALESCE((
+        SELECT SUM(
+          CASE
+            WHEN a.estado='pagado'
+            THEN (
+              a.monto
+              - COALESCE(a.pago_solidaridad,0)
+              - COALESCE(a.pago_credito,0)
+            )
+            ELSE 0
+          END
+        )
+        FROM aportes a
+        WHERE a.socio_id = s.id
+      ),0)
+      WHERE s.id = $1
+    `,[socioId]);
 
-      // Actualizar ahorro acumulado: solo sumar la porción correspondiente al ahorro
-      if (estado === 'pagado') {
-        const sumaAhorro = Math.max(0, Number(monto) - pagoSolid - pagoCred);
-        if (sumaAhorro > 0) {
-          await client.query(`
-            UPDATE socios
-            SET ahorro_acumulado = ahorro_acumulado + $1
-            WHERE id = $2
-          `, [sumaAhorro, socioId]);
-        }
-      }
+    return aporte;
 
-      return aporte;
-    });
-  }
+  });
+}
 
   async update(id, { monto, fechaPago, estado, metodo, notas }) {
     return await db.transaction(async (client) => {

@@ -27,15 +27,19 @@ async function main() {
   console.log('⚙️  Configurando parámetros del fondo...');
   const configs = [
     { clave: 'nombre', valor: 'FONEVI' },
-    { clave: 'nombre_completo', valor: 'Fondo de Empleados Docentes FONEVI' },
-    { clave: 'nit', valor: '800.123.456-7' },
-    { clave: 'representante', valor: 'Carlos Alberto Muñoz' },
-    { clave: 'aporte_minimo', valor: '120000' },
-    { clave: 'tasa_credito_mensual', valor: '1' },
-    { clave: 'tasa_mora_diaria', valor: '0.1' },
-    { clave: 'aporte_solidaridad', valor: '5000' },
-    { clave: 'max_credito_multiplicador', valor: '3' },
-    { clave: 'periodo_actual', valor: 'Marzo 2026' },
+{ clave: 'nombre_completo', valor: 'Fondo de Empleados Docentes FONEVI' },
+{ clave: 'nit', valor: '800.123.456-7' },
+{ clave: 'representante', valor: 'Carlos Armando Martinez' },
+{ clave: 'aporte_minimo', valor: '125000' },
+{ clave: 'aporte_solidaridad', valor: '5000' },
+{ clave: 'aporte_ingreso_nuevo_socio', valor: '82000' },
+{ clave: 'tasa_credito_mensual', valor: '1' },
+{ clave: 'tasa_mora_diaria', valor: '0.1' },
+{ clave: 'seguro_credito_por_mil', valor: '5' },
+{ clave: 'max_credito_multiplicador', valor: '4' },
+{ clave: 'permite_multiples_creditos', valor: 'true' },
+{ clave: 'destino_intereses', valor: 'fondo_utilidades' },
+{ clave: 'periodo_actual', valor: 'Junio 2026' }
   ];
   for (const c of configs) {
     await prisma.configuracion.upsert({ where: { clave: c.clave }, update: { valor: c.valor }, create: c });

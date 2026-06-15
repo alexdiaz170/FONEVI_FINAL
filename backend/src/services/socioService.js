@@ -21,13 +21,32 @@ async function generarCodigoSocio(db) {
 class SocioService {
   async listAll() {
     const res = await db.query(`
-      SELECT id, codigo, codigo_socio, nombre, documento, email, telefono, 
-             fecha_ingreso as "fechaIngreso", 
-             aporte_mensual as "aporteMensual", 
-             ahorro_acumulado as "ahorroAcumulado", 
-             estado, cargo, sede, created_at as "createdAt"
-      FROM socios
-      ORDER BY nombre ASC
+      SELECT
+             s.id,
+             s.codigo,
+             s.codigo_socio,
+             s.nombre,
+             s.documento,
+             s.email,
+             s.telefono,
+             s.fecha_ingreso as "fechaIngreso",
+             s.aporte_mensual as "aporteMensual",
+             s.ahorro_acumulado as "ahorroAcumulado",
+             CASE
+               WHEN EXISTS (
+                 SELECT 1
+                 FROM aportes a
+                 WHERE a.socio_id = s.id
+                 AND a.estado IN ('mora','vencido')
+               )
+               THEN 'mora'
+               ELSE 'activo'
+             END as estado,
+             s.cargo,
+             s.sede,
+             s.created_at as "createdAt"
+      FROM socios s
+      ORDER BY s.nombre ASC
     `);
     return res.rows;
   }

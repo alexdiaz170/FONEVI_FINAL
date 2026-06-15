@@ -340,7 +340,7 @@ function mesAFecha(periodoStr) {
 function calcularDiasMora(aporteEstado, periodo) {
   if (!["mora","vencido","pendiente"].includes(aporteEstado)) return 0;
   var fechaLimite = mesAFecha(periodo);
-  var hoy = new Date("2026-03-22"); // Fecha simulada del sistema
+  var hoy = new Date(); // Fecha simulada del sistema
   var diff = Math.floor((hoy - fechaLimite) / (1000*60*60*24));
   return Math.max(0, diff);
 }

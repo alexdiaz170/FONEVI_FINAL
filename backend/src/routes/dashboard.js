@@ -15,7 +15,25 @@ router.get('/resumen', requireAuth, async (req, res) => {
     const totalAhorros  = socios.reduce((t, s) => t + Number(s.ahorroAcumulado), 0);
     const cartera       = creditos.filter(c => c.estado !== 'pagado').reduce((t, c) => t + Number(c.saldoCapital), 0);
     const creditosAct   = creditos.filter(c => c.estado === 'activo');
-    const sociosMora    = socios.filter(s => s.estado === 'mora');
+    
+    const sociosMoraIds = new Set(
+  aportes
+    .filter(a => ['mora', 'vencido'].includes(a.estado))
+    .map(a => a.socioId || a.socio_id)
+);
+
+const sociosMora = socios.filter(
+  s => String(s.estado || '').toLowerCase() === 'mora'
+);
+
+console.log(
+  'SOCIOS MORA DASHBOARD:',
+  sociosMora.map(s => ({
+    id: s.id,
+    nombre: s.nombre,
+    estado: s.estado
+  }))
+);
     const aportePagados = aportes.filter(a => a.estado === 'pagado');
 
     // Periodo actual

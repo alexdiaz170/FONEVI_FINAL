@@ -177,7 +177,7 @@
               </div>
               <div class="form-group form-full">
                 <label class="form-label">Período actual</label>
-                <input type="text" class="form-control" id="cfg-periodo" value="Marzo 2026" />
+                <input type="text" class="form-control" id="cfg-periodo" />
               </div>
             </div>
             <div class="form-actions">
@@ -210,6 +210,41 @@
                 <input type="number" class="form-control" id="cfg-solidaridad"
                   value="30000" step="5000" />
               </div>
+              <div class="form-group" style="margin-bottom:14px;">
+  <label class="form-label">
+    Cuota ingreso nuevo socio ($)
+  </label>
+
+  <input
+    type="number"
+    class="form-control"
+    id="cfg-aporte-ingreso"
+    value="82000"
+    step="1000"
+  />
+
+  <span class="form-hint">
+    Valor que paga un socio al ingresar al fondo.
+  </span>
+</div>
+<div class="form-group" style="margin-bottom:14px;">
+  <label class="form-label">
+    Aporte ingreso nuevo socio ($)
+  </label>
+
+  <input
+    type="number"
+    class="form-control"
+    id="cfg-ingreso-socio"
+    step="1000"
+  />
+
+  <span class="form-hint">
+    Valor único que paga un nuevo socio al ingresar al fondo.
+  </span>
+</div>
+
+
               <div class="form-actions">
                 <button class="btn btn-primary" onclick="guardarConfig('ahorro')">Guardar</button>
               </div>
@@ -227,7 +262,7 @@
               <div class="form-group" style="margin-bottom:14px;">
                 <label class="form-label">Tasa mensual de interés (%)</label>
                 <input type="number" class="form-control" id="cfg-tasa"
-                  value="1.5" step="0.1" min="0" max="10" oninput="previsualizarTasa()" />
+                  value="1" step="0.1" min="0" max="10" oninput="previsualizarTasa()" />
               </div>
               <div id="tasaPreview" style="margin-bottom:14px;"></div>
               <div class="form-group" style="margin-bottom:14px;">
@@ -238,9 +273,76 @@
               <div class="form-group" style="margin-bottom:14px;">
                 <label class="form-label">Máximo crédito (multiplicador del ahorro)</label>
                 <input type="number" class="form-control" id="cfg-mult"
-                  value="3" min="1" max="10" />
-                <span class="form-hint">Ej: 3 = hasta 3 veces el ahorro acumulado</span>
+                  value="4" min="1" max="10" />
+                <span class="form-hint">Ej: 4 = hasta 4 veces el ahorro acumulado</span>
               </div>
+              <div class="form-group" style="margin-bottom:14px;">
+  <label class="form-label">
+    Meses mínimos de afiliación para crédito
+  </label>
+
+  <input
+    type="number"
+    class="form-control"
+    id="cfg-meses-minimos-credito"
+    min="0"
+    value="3"
+  />
+
+  <span class="form-hint">
+    Tiempo mínimo que debe tener un socio para solicitar créditos.
+  </span>
+</div>
+              <div class="form-group" style="margin-bottom:14px;">
+  <label class="form-label">
+    Seguro crédito (por mil)
+  </label>
+
+  <input
+    type="number"
+    class="form-control"
+    id="cfg-seguro-credito"
+    value="5"
+    step="0.1"
+  />
+
+  <span class="form-hint">
+    Seguro calculado sobre saldo de crédito.
+  </span>
+</div>
+
+<div class="form-group" style="margin-bottom:14px;">
+  <label class="form-label">
+    Permitir múltiples créditos
+  </label>
+
+  <select
+    class="form-control"
+    id="cfg-multiples-creditos"
+  >
+    <option value="true">Sí</option>
+    <option value="false">No</option>
+  </select>
+</div>
+
+<div class="form-group" style="margin-bottom:14px;">
+  <label class="form-label">
+    Destino de intereses
+  </label>
+
+  <select
+    class="form-control"
+    id="cfg-destino-intereses"
+  >
+    <option value="fondo_utilidades">
+      Fondo de utilidades
+    </option>
+
+    <option value="fondo_general">
+      Fondo general
+    </option>
+  </select>
+</div>
               <div class="form-actions">
                 <button class="btn btn-primary" onclick="guardarConfig('credito')">Guardar</button>
               </div>
@@ -309,7 +411,7 @@
                 </div>
                 <div class="info-row">
                   <span class="info-row-label">Total socios en BD</span>
-                  <span class="info-row-value">127</span>
+                  <span class="info-row-value">65</span>
                 </div>
               </div>
               <div class="form-actions">
@@ -442,16 +544,51 @@ document.addEventListener("DOMContentLoaded", async () => {
 /* Rellena los inputs con los valores actuales de DB.config */
 function cargarFormularios() {
   const c = DB.config;
-  document.getElementById("cfg-nombre").value          = c.nombre          || "";
-  document.getElementById("cfg-nombre-completo").value = c.nombre_completo || "";
-  document.getElementById("cfg-nit").value             = c.nit             || "";
-  document.getElementById("cfg-rep").value             = c.representante   || "";
-  document.getElementById("cfg-periodo").value         = c.periodo_actual  || "";
-  document.getElementById("cfg-aporte-min").value      = c.aporte_minimo   || 120000;
-  document.getElementById("cfg-solidaridad").value     = c.aporte_solidaridad || 30000;
-  document.getElementById("cfg-tasa").value            = c.tasa_credito_mensual || 1.5;
-  document.getElementById("cfg-mora").value            = c.tasa_mora_diaria    || 0.1;
-  document.getElementById("cfg-mult").value            = c.max_credito_multiplicador || 3;
+
+document.getElementById("cfg-nombre").value =
+  c.nombre || "";
+
+document.getElementById("cfg-nombre-completo").value =
+  c.nombre_completo || "";
+
+document.getElementById("cfg-nit").value =
+  c.nit || "";
+
+document.getElementById("cfg-rep").value =
+  c.representante || "";
+
+document.getElementById("cfg-periodo").value =
+  c.periodo_actual || "";
+
+document.getElementById("cfg-aporte-min").value =
+  c.aporte_minimo || 125000;
+
+document.getElementById("cfg-solidaridad").value =
+  c.aporte_solidaridad || 5000;
+
+document.getElementById("cfg-aporte-ingreso").value =
+  c.aporte_ingreso_nuevo_socio || 82000;
+
+document.getElementById("cfg-tasa").value =
+  c.tasa_credito_mensual || 1;
+
+document.getElementById("cfg-mora").value =
+  c.tasa_mora_diaria || 0.1;
+
+document.getElementById("cfg-mult").value =
+  c.max_credito_multiplicador || 4;
+
+document.getElementById("cfg-seguro-credito").value =
+  c.seguro_credito_por_mil || 5;
+
+document.getElementById("cfg-multiples-creditos").value =
+  String(c.permite_multiples_creditos ?? true);
+
+document.getElementById("cfg-meses-minimos-credito").value =
+  c.meses_minimos_credito || 3;
+
+document.getElementById("cfg-destino-intereses").value =
+  c.destino_intereses || "fondo_utilidades";
 }
 
 /* Persiste DB.config en localStorage */
@@ -471,13 +608,67 @@ async function guardarConfig(seccion) {
     dataToUpdate.push({ clave: "periodo_actual", valor: document.getElementById("cfg-periodo").value });
   }
   if (seccion === "ahorro") {
-    dataToUpdate.push({ clave: "aporte_minimo", valor: parseFloat(document.getElementById("cfg-aporte-min").value) || 0 });
-    dataToUpdate.push({ clave: "aporte_solidaridad", valor: parseFloat(document.getElementById("cfg-solidaridad").value) || 0 });
+     dataToUpdate.push({
+    clave: "aporte_minimo",
+    valor: parseFloat(
+      document.getElementById("cfg-aporte-min").value
+    ) || 0
+  });
+
+  dataToUpdate.push({
+    clave: "aporte_solidaridad",
+    valor: parseFloat(
+      document.getElementById("cfg-solidaridad").value
+    ) || 0
+  });
+
+  dataToUpdate.push({
+    clave: "aporte_ingreso_nuevo_socio",
+    valor: parseFloat(
+      document.getElementById("cfg-aporte-ingreso").value
+    ) || 0
+  });
   }
   if (seccion === "credito") {
-    dataToUpdate.push({ clave: "tasa_credito_mensual", valor: parseFloat(document.getElementById("cfg-tasa").value) || 0 });
-    dataToUpdate.push({ clave: "tasa_mora_diaria", valor: parseFloat(document.getElementById("cfg-mora").value) || 0 });
-    dataToUpdate.push({ clave: "max_credito_multiplicador", valor: parseFloat(document.getElementById("cfg-mult").value) || 1 });
+     dataToUpdate.push({
+    clave: "tasa_credito_mensual",
+    valor: parseFloat(
+      document.getElementById("cfg-tasa").value
+    ) || 0
+  });
+
+  dataToUpdate.push({
+    clave: "tasa_mora_diaria",
+    valor: parseFloat(
+      document.getElementById("cfg-mora").value
+    ) || 0
+  });
+
+  dataToUpdate.push({
+    clave: "max_credito_multiplicador",
+    valor: parseFloat(
+      document.getElementById("cfg-mult").value
+    ) || 1
+  });
+
+  dataToUpdate.push({
+    clave: "seguro_credito_por_mil",
+    valor: parseFloat(
+      document.getElementById("cfg-seguro-credito").value
+    ) || 5
+  });
+
+  dataToUpdate.push({
+    clave: "permite_multiples_creditos",
+    valor:
+      document.getElementById("cfg-multiples-creditos").value
+  });
+
+  dataToUpdate.push({
+    clave: "destino_intereses",
+    valor:
+      document.getElementById("cfg-destino-intereses").value
+  });
   }
 
   try {
@@ -495,6 +686,14 @@ async function guardarConfig(seccion) {
   } catch (error) {
     Toast.error("Error al guardar la configuración.");
   }
+  dataToUpdate.push({
+  clave: "meses_minimos_credito",
+  valor: parseInt(
+    document.getElementById(
+      "cfg-meses-minimos-credito"
+    ).value
+  ) || 3
+});
 }
 
 function resetConfig(seccion) {
@@ -509,7 +708,7 @@ function resetConfig(seccion) {
 }
 
 function previsualizarTasa() {
-  const tasa = parseFloat(document.getElementById("cfg-tasa")?.value) || 1.5;
+  const tasa = parseFloat(document.getElementById("cfg-tasa")?.value) || 1;
   const ejemplo = 2000000;
   const cuota = DataHelper.calcularCuota(ejemplo, tasa, 12);
   document.getElementById("tasaPreview").innerHTML = `

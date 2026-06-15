@@ -61,17 +61,57 @@ function destroyChart(id) {
    ============================================================ */
 function crearGraficoBarras(canvasId) {
   destroyChart(canvasId);
+
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
 
-  const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun",
-                 "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  const meses = [
+    "Ene","Feb","Mar","Abr","May","Jun",
+    "Jul","Ago","Sep","Oct","Nov","Dic"
+  ];
 
-  // Datos reales desde DB + proyección
-  const dataAportes  = [13080000, 12900000, 13080000, 13200000, 13080000, 13500000,
-                        13200000, 13080000, 13500000, 13200000, 13080000, 13500000];
-  const dataCreditos = [2100000,  3200000,  1800000,  2500000,  1200000,  3000000,
-                        2200000,  1800000,  2600000,  1500000,  2000000,  3100000];
+  const dataAportes = Array(12).fill(0);
+  const dataCreditos = Array(12).fill(0);
+
+  (window.pageAportes || []).forEach(a => {
+
+    if (a.estado !== "pagado") return;
+
+    const fecha =
+      a.fecha_pago ||
+      a.fechaPago ||
+      a.fecha ||
+      a.created_at ||
+      a.createdAt;
+
+    if (!fecha) return;
+
+    const f = new Date(fecha);
+
+    if (isNaN(f.getTime())) return;
+
+    dataAportes[f.getMonth()] += Number(a.monto || 0);
+
+  });
+
+  (window.pageCreditos || []).forEach(c => {
+
+    const fecha =
+      c.fecha_desembolso ||
+      c.fechaDesembolso ||
+      c.fecha ||
+      c.created_at ||
+      c.createdAt;
+
+    if (!fecha) return;
+
+    const f = new Date(fecha);
+
+    if (isNaN(f.getTime())) return;
+
+    dataCreditos[f.getMonth()] += Number(c.monto || 0);
+
+  });
 
   ChartInstances[canvasId] = new Chart(ctx, {
     type: "bar",
@@ -79,22 +119,22 @@ function crearGraficoBarras(canvasId) {
       labels: meses,
       datasets: [
         {
-          label: "Aportes",
+          label: "Aportes Recaudados",
           data: dataAportes,
           backgroundColor: ChartColors.navy,
           borderRadius: { topLeft: 5, topRight: 5 },
           borderSkipped: false,
           barPercentage: 0.55,
-          categoryPercentage: 0.75,
+          categoryPercentage: 0.75
         },
         {
-          label: "Créditos pagados",
+          label: "Créditos Desembolsados",
           data: dataCreditos,
           backgroundColor: ChartColors.gold,
           borderRadius: { topLeft: 5, topRight: 5 },
           borderSkipped: false,
           barPercentage: 0.55,
-          categoryPercentage: 0.75,
+          categoryPercentage: 0.75
         }
       ]
     },
@@ -110,27 +150,33 @@ function crearGraficoBarras(canvasId) {
             usePointStyle: true,
             pointStyle: "rectRounded",
             padding: 16,
-            font: { size: 12 },
+            font: { size: 12 }
           }
         },
         tooltip: {
           callbacks: {
-            label: ctx => " " + ctx.dataset.label + ": " +
-              new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",
-                minimumFractionDigits:0}).format(ctx.raw)
+            label: ctx =>
+              " " +
+              ctx.dataset.label +
+              ": " +
+              new Intl.NumberFormat("es-CO", {
+                style: "currency",
+                currency: "COP",
+                minimumFractionDigits: 0
+              }).format(ctx.raw)
           }
         }
       },
       scales: {
         x: {
           grid: { display: false },
-          border: { display: false },
+          border: { display: false }
         },
         y: {
           border: { display: false },
           ticks: {
-            callback: v => "$" + (v/1000000).toFixed(0) + "M",
-            maxTicksLimit: 5,
+            callback: v => "$" + (v / 1000000).toFixed(0) + "M",
+            maxTicksLimit: 5
           }
         }
       }
@@ -140,23 +186,76 @@ function crearGraficoBarras(canvasId) {
   return ChartInstances[canvasId];
 }
 
+
 /* ============================================================
    2. GRÁFICO DE LÍNEA — Ahorro acumulado (tendencia anual)
    Usado en: Dashboard
    ============================================================ */
 function crearGraficoLinea(canvasId) {
   destroyChart(canvasId);
+
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
 
-  const meses = ["Ene","Feb","Mar","Abr","May","Jun",
-                 "Jul","Ago","Sep","Oct","Nov","Dic"];
-  const ahorroBase = (DB.socios || []).reduce((t,s)=>t+Number(s.ahorro_acumulado || s.ahorroAcumulado || 0),0);
-  // Simular curva de crecimiento mensual acumulado
-  const aporteMensual = (DB.socios || []).reduce((t,s)=>t+Number(s.aporte_mensual || s.aporteMensual || 0),0);
-  const dataTendencia = meses.map((_,i) => {
-    return Math.round((ahorroBase - (11-i) * aporteMensual) * (1 + i * 0.003));
+  const meses = [
+    "Ene","Feb","Mar","Abr","May","Jun",
+    "Jul","Ago","Sep","Oct","Nov","Dic"
+  ];
+
+  const dataTendencia = Array(12).fill(0);
+
+  let acumulado = 0;
+
+  const aportesOrdenados = (window.pageAportes || [])
+    .filter(a => a.estado === "pagado")
+    .sort((a,b) => {
+
+      const fa = new Date(
+        a.fecha_pago ||
+        a.fechaPago ||
+        a.fecha ||
+        a.created_at ||
+        a.createdAt
+      );
+
+      const fb = new Date(
+        b.fecha_pago ||
+        b.fechaPago ||
+        b.fecha ||
+        b.created_at ||
+        b.createdAt
+      );
+
+      return fa - fb;
+    });
+
+  aportesOrdenados.forEach(a => {
+
+    const fecha =
+      a.fecha_pago ||
+      a.fechaPago ||
+      a.fecha ||
+      a.created_at ||
+      a.createdAt;
+
+    if (!fecha) return;
+
+    const f = new Date(fecha);
+
+    if (isNaN(f.getTime())) return;
+
+    acumulado += Number(a.monto || 0);
+
+    dataTendencia[f.getMonth()] += Number(a.monto || 0);
+
   });
+
+  let suma = 0;
+
+  for (let i = 0; i < dataTendencia.length; i++) {
+    suma += dataTendencia[i];
+    dataTendencia[i] = suma;
+  }
 
   ChartInstances[canvasId] = new Chart(ctx, {
     type: "line",
@@ -167,12 +266,22 @@ function crearGraficoLinea(canvasId) {
         data: dataTendencia,
         borderColor: ChartColors.navy,
         backgroundColor: (ctx) => {
+
           const chart = ctx.chart;
-          const {ctx: c, chartArea} = chart;
+          const { ctx:c, chartArea } = chart;
+
           if (!chartArea) return "transparent";
-          const grad = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          grad.addColorStop(0, "rgba(15,45,82,0.18)");
-          grad.addColorStop(1, "rgba(15,45,82,0.01)");
+
+          const grad = c.createLinearGradient(
+            0,
+            chartArea.top,
+            0,
+            chartArea.bottom
+          );
+
+          grad.addColorStop(0,"rgba(15,45,82,0.18)");
+          grad.addColorStop(1,"rgba(15,45,82,0.01)");
+
           return grad;
         },
         borderWidth: 2.5,
@@ -182,32 +291,37 @@ function crearGraficoLinea(canvasId) {
         pointBorderWidth: 2,
         pointHoverRadius: 6,
         fill: true,
-        tension: 0.4,
+        tension: 0.4
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
+        legend: { display:false },
         tooltip: {
           callbacks: {
-            label: ctx => " " +
-              new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",
-                minimumFractionDigits:0}).format(ctx.raw)
+            label: ctx =>
+              " " +
+              new Intl.NumberFormat("es-CO",{
+                style:"currency",
+                currency:"COP",
+                minimumFractionDigits:0
+              }).format(ctx.raw)
           }
         }
       },
       scales: {
         x: {
-          grid: { display: false },
-          border: { display: false },
+          grid: { display:false },
+          border: { display:false }
         },
         y: {
-          border: { display: false },
+          border: { display:false },
           ticks: {
-            callback: v => "$" + (v/1000000).toFixed(0) + "M",
-            maxTicksLimit: 5,
+            callback:v =>
+              "$" + (v/1000000).toFixed(0) + "M",
+            maxTicksLimit:5
           }
         }
       }
@@ -223,75 +337,79 @@ function crearGraficoLinea(canvasId) {
    ============================================================ */
 function crearGraficoDistribucion(canvasId) {
   destroyChart(canvasId);
+
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
 
-  const totalAhorros   = DataHelper.getTotalAhorros();
-  const totalCartera   = DataHelper.getTotalCartera();
-  const totalSolid     = Number(DB?.solidaridad?.saldo_actual || 0);
-  const total          = totalAhorros + totalCartera + totalSolid;
+  const totalAhorros =
+    (window.DB?.socios || []).reduce(
+      (t, s) => t + Number(s.ahorro_acumulado || s.ahorroAcumulado || 0),
+      0
+    );
+
+  const totalCartera =
+    (window.DB?.creditos || []).reduce(
+      (t, c) => t + Number(c.saldo_capital || c.saldoCapital || c.monto || 0),
+      0
+    );
+
+  const fondoSolidaridad =
+    Number(window.DB?.solidaridad?.saldo_actual || 0);
 
   ChartInstances[canvasId] = new Chart(ctx, {
     type: "doughnut",
     data: {
-      labels: ["Ahorro socios", "Cartera créditos", "Solidaridad"],
+      labels: [
+        "Ahorros",
+        "Cartera",
+        "Solidaridad"
+      ],
       datasets: [{
-        data: [totalAhorros, totalCartera, totalSolid],
-        backgroundColor: [ChartColors.navy, ChartColors.gold, ChartColors.green],
+        data: [
+          totalAhorros,
+          totalCartera,
+          fondoSolidaridad
+        ],
+        backgroundColor: [
+          ChartColors.navy,
+          ChartColors.gold,
+          ChartColors.green
+        ],
         borderWidth: 0,
-        hoverOffset: 6,
-        borderRadius: 4,
-        spacing: 3,
+        hoverOffset: 6
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: "70%",
+      cutout: "65%",
       plugins: {
         legend: {
-          display: true,
           position: "bottom",
           labels: {
             usePointStyle: true,
             pointStyle: "circle",
-            padding: 14,
-            font: { size: 12 },
+            padding: 12
           }
         },
         tooltip: {
           callbacks: {
-            label: ctx => {
-              const pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(1) : "0.0";
-              return " " + ctx.label + ": " + pct + "%";
-            },
-            afterLabel: ctx =>
-              " " + new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",
-                minimumFractionDigits:0}).format(ctx.raw)
+            label: function(ctx) {
+              return (
+                " " +
+                ctx.label +
+                ": " +
+                new Intl.NumberFormat("es-CO", {
+                  style: "currency",
+                  currency: "COP",
+                  minimumFractionDigits: 0
+                }).format(ctx.raw)
+              );
+            }
           }
         }
       }
-    },
-    plugins: [{
-      // Texto central de la dona
-      id: "centerText",
-      beforeDraw(chart) {
-        const {ctx: c, chartArea} = chart;
-        if (!chartArea) return;
-        const cx = (chartArea.left + chartArea.right) / 2;
-        const cy = (chartArea.top + chartArea.bottom) / 2;
-        c.save();
-        c.textAlign = "center";
-        c.textBaseline = "middle";
-        c.font = "600 11px 'Plus Jakarta Sans'";
-        c.fillStyle = ChartColors.text;
-        c.fillText("TOTAL", cx, cy - 12);
-        c.font = "600 16px 'Plus Jakarta Sans'";
-        c.fillStyle = ChartColors.textDark;
-        c.fillText("$" + (total/1000000).toFixed(1) + "M", cx, cy + 8);
-        c.restore();
-      }
-    }]
+    }
   });
 
   return ChartInstances[canvasId];
@@ -306,10 +424,20 @@ function crearGraficoAportesMes(canvasId) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
 
-  const aportes   = DB.aportes;
-  const pagados   = aportes.filter(a => a.estado === "pagado").length;
-  const pendiente = aportes.filter(a => a.estado === "pendiente").length;
-  const mora      = aportes.filter(a => ["mora","vencido"].includes(a.estado)).length;
+  const aportes = window.DB?.aportes || [];
+  const pagados = aportes.filter(
+  a => (a.estado || "").toLowerCase() === "pagado"
+).length;
+
+const pendiente = aportes.filter(
+  a => (a.estado || "").toLowerCase() === "pendiente"
+).length;
+
+const mora = aportes.filter(
+  a => ["mora","vencido"].includes(
+    (a.estado || "").toLowerCase()
+  )
+).length;
 
   ChartInstances[canvasId] = new Chart(ctx, {
     type: "bar",
@@ -353,62 +481,91 @@ function crearGraficoAportesMes(canvasId) {
    5. MINI SPARKLINE — Para KPI cards
    ============================================================ */
 function crearSparkline(canvasId, data, color) {
+
   destroyChart(canvasId);
+
   const ctx = document.getElementById(canvasId);
+
   if (!ctx) return;
 
   ChartInstances[canvasId] = new Chart(ctx, {
     type: "line",
     data: {
-      labels: data.map((_,i) => i),
+      labels: data.map((_, i) => i + 1),
       datasets: [{
-        data,
-        borderColor: color || ChartColors.navy,
+        data: data,
+        borderColor: color,
+        backgroundColor: "transparent",
         borderWidth: 2,
         pointRadius: 0,
-        fill: false,
         tension: 0.4,
+        fill: false
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
-      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false }
+      },
       scales: {
         x: { display: false },
         y: { display: false }
+      },
+      elements: {
+        line: {
+          capBezierPoints: true
+        }
       }
     }
   });
 
   return ChartInstances[canvasId];
 }
-
 /* ============================================================
    6. GRÁFICO DE CRÉDITOS — Estado de cartera (dona)
    Usado en: Módulo de créditos
    ============================================================ */
 function crearGraficoCartera(canvasId) {
   destroyChart(canvasId);
+
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
 
-  const activos = DB.creditos.filter(c => c.estado === "activo").length;
-  const mora    = DB.creditos.filter(c => c.estado === "mora").length;
-  const pagados = DB.creditos.filter(c => c.estado === "pagado").length;
+  const activos = (window.DB?.creditos || []).filter(
+    c => (c.estado || "").toLowerCase() === "activo"
+  ).length;
+
+  const mora = (window.DB?.creditos || []).filter(
+    c => (c.estado || "").toLowerCase() === "mora"
+  ).length;
+
+  const pagados = (window.DB?.creditos || []).filter(
+    c => (c.estado || "").toLowerCase() === "pagado"
+  ).length;
 
   ChartInstances[canvasId] = new Chart(ctx, {
     type: "doughnut",
     data: {
-      labels: ["Activos", "En mora", "Pagados"],
+      labels: [
+        "Activos",
+        "En mora",
+        "Pagados"
+      ],
       datasets: [{
-        data: [activos, mora, pagados],
-        backgroundColor: [ChartColors.blue, ChartColors.red, ChartColors.green],
+        data: [
+          activos,
+          mora,
+          pagados
+        ],
+        backgroundColor: [
+          ChartColors.blue,
+          ChartColors.red,
+          ChartColors.green
+        ],
         borderWidth: 0,
-        hoverOffset: 5,
-        borderRadius: 3,
-        spacing: 2,
+        hoverOffset: 5
       }]
     },
     options: {
@@ -417,16 +574,10 @@ function crearGraficoCartera(canvasId) {
       cutout: "65%",
       plugins: {
         legend: {
-          display: true,
           position: "bottom",
           labels: {
-            usePointStyle: true, pointStyle: "circle",
-            padding: 12, font: { size: 11 }
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: ctx => " " + ctx.label + ": " + ctx.raw + " crédito(s)"
+            usePointStyle: true,
+            pointStyle: "circle"
           }
         }
       }
@@ -441,15 +592,48 @@ function crearGraficoCartera(canvasId) {
    Usado en: Contabilidad
    ============================================================ */
 function crearGraficoFlujoCaja(canvasId) {
+
   destroyChart(canvasId);
+
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
 
-  // Agrupar movimientos por mes
-  const meses = ["Ene","Feb","Mar"];
-  const ingresos = [13080000 + 920000, 12900000 + 980000, 13080000];
-  const egresos  = [0, 2500000, 500000 + 150000];
-  const neto     = ingresos.map((v,i) => v - egresos[i]);
+  const meses = [
+    "Ene","Feb","Mar","Abr","May","Jun",
+    "Jul","Ago","Sep","Oct","Nov","Dic"
+  ];
+
+  const ingresos = Array(12).fill(0);
+  const egresos  = Array(12).fill(0);
+
+  (window.DB.movimientos || []).forEach(m => {
+
+    const fecha =
+      m.fecha ||
+      m.created_at ||
+      m.createdAt;
+
+    if (!fecha) return;
+
+    const f = new Date(fecha);
+
+    if (isNaN(f.getTime())) return;
+
+    const mes = f.getMonth();
+
+    const monto = Number(m.monto || 0);
+
+    if (
+      (m.tipo || "").toLowerCase() === "ingreso"
+    ) {
+      ingresos[mes] += monto;
+    } else {
+      egresos[mes] += monto;
+    }
+
+  });
+
+  const neto = ingresos.map((v,i) => v - egresos[i]);
 
   ChartInstances[canvasId] = new Chart(ctx, {
     type: "bar",
@@ -460,19 +644,15 @@ function crearGraficoFlujoCaja(canvasId) {
           label: "Ingresos",
           data: ingresos,
           backgroundColor: ChartColors.green,
-          borderRadius: { topLeft: 5, topRight: 5 },
-          borderSkipped: false,
-          order: 2,
-          barPercentage: 0.5,
+          borderRadius: 5,
+          borderSkipped: false
         },
         {
           label: "Egresos",
           data: egresos,
           backgroundColor: ChartColors.red,
-          borderRadius: { topLeft: 5, topRight: 5 },
-          borderSkipped: false,
-          order: 2,
-          barPercentage: 0.5,
+          borderRadius: 5,
+          borderSkipped: false
         },
         {
           label: "Neto",
@@ -480,13 +660,9 @@ function crearGraficoFlujoCaja(canvasId) {
           type: "line",
           borderColor: ChartColors.gold,
           backgroundColor: "transparent",
-          borderWidth: 2.5,
-          pointRadius: 5,
-          pointBackgroundColor: "#fff",
-          pointBorderColor: ChartColors.gold,
-          pointBorderWidth: 2,
-          tension: 0.3,
-          order: 1,
+          borderWidth: 3,
+          pointRadius: 4,
+          tension: 0.3
         }
       ]
     },
@@ -495,31 +671,36 @@ function crearGraficoFlujoCaja(canvasId) {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: true,
           position: "top",
-          align: "end",
-          labels: {
-            usePointStyle: true,
-            pointStyle: "rectRounded",
-            padding: 14,
-            font: { size: 12 }
-          }
+          align: "end"
         },
         tooltip: {
           callbacks: {
-            label: ctx => " " + ctx.dataset.label + ": " +
-              new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",
-                minimumFractionDigits:0}).format(ctx.raw)
+            label: function(c){
+              return (
+                " " +
+                c.dataset.label +
+                ": " +
+                new Intl.NumberFormat("es-CO",{
+                  style:"currency",
+                  currency:"COP",
+                  minimumFractionDigits:0
+                }).format(c.raw)
+              );
+            }
           }
         }
       },
       scales: {
-        x: { grid: { display: false }, border: { display: false } },
+        x: {
+          grid:{display:false},
+          border:{display:false}
+        },
         y: {
-          border: { display: false },
-          ticks: {
-            callback: v => "$" + (v/1000000).toFixed(0) + "M",
-            maxTicksLimit: 5
+          border:{display:false},
+          ticks:{
+            callback:v =>
+              "$" + (v/1000000).toFixed(0) + "M"
           }
         }
       }

@@ -144,40 +144,99 @@ async function cargarDatos() {
       API.movimientos.listar()
     ]);
 
-    const safe = result => result?.status === 'fulfilled' ? result.value : null;
-    const resumen = safe(settled[0]);
-    const socios = safe(settled[1]);
-    const creditos = safe(settled[2]);
-    const aportes = safe(settled[3]);
-    const solSaldo = safe(settled[4]);
-    const movimientos = safe(settled[5]);
+    const safe = result => result?.status === 'fulfilled'
+      ? result.value
+      : null;
 
-    const failed = settled.filter(r => r.status === 'rejected');
+    const resumen      = safe(settled[0]);
+    const socios       = safe(settled[1]);
+    const creditos     = safe(settled[2]);
+    const aportes      = safe(settled[3]);
+    const solSaldo     = safe(settled[4]);
+    const movimientos  = safe(settled[5]);
+
+    const failed = settled.filter(r => r.status === "rejected");
+
     if (failed.length > 0) {
-      console.warn('Dashboard partial load failed:', failed.map(r => r.reason));
+      console.warn(
+        "Dashboard partial load failed:",
+        failed.map(r => r.reason)
+      );
     }
+
     if (failed.length === settled.length) {
-      Toast.error('No se pudieron cargar los datos del dashboard. Intenta recargar la página.');
+      Toast.error(
+        "No se pudieron cargar los datos del dashboard. Intenta recargar la página."
+      );
     }
 
-    window.pageDashboardResumen = resumen?.datos || null;
-    window.pageSocios = socios?.datos || socios || [];
-    window.pageCreditos = creditos?.datos || creditos || [];
-    window.pageAportes = aportes?.datos || aportes || [];
-    window.pageSolidaridadSaldo = solSaldo?.saldo_actual || 0;
-    window.pageMovimientos = movimientos?.datos || movimientos || [];
+    /* ======================================================
+       DATOS PARA DASHBOARD
+    ====================================================== */
 
-    // Sync to DB for global helpers/charts
-    if (!window.DB) { window.DB = {}; }
-    window.DB.socios = window.pageSocios;
-    window.DB.creditos = window.pageCreditos;
-    window.DB.aportes = window.pageAportes;
-    window.DB.movimientos = window.pageMovimientos;
-    if (!window.DB.solidaridad) { window.DB.solidaridad = {}; }
-    window.DB.solidaridad.saldo_actual = window.pageSolidaridadSaldo;
+    window.pageDashboardResumen = resumen?.datos || {};
+
+    window.pageSocios =
+      socios?.datos ||
+      socios ||
+      [];
+
+    window.pageCreditos =
+      creditos?.datos ||
+      creditos ||
+      [];
+
+    window.pageAportes =
+      aportes?.datos ||
+      aportes ||
+      [];
+
+    window.pageMovimientos =
+      movimientos?.datos ||
+      movimientos ||
+      [];
+
+    window.pageSolidaridadSaldo =
+      solSaldo?.saldo_actual || 0;
+
+    /* ======================================================
+       SINCRONIZAR CON DB GLOBAL
+    ====================================================== */
+
+    window.DB = window.DB || {};
+
+    window.DB.socios       = window.pageSocios;
+    window.DB.creditos     = window.pageCreditos;
+    window.DB.aportes      = window.pageAportes;
+    window.DB.movimientos  = window.pageMovimientos;
+
+    window.DB.solidaridad =
+      window.DB.solidaridad || {};
+
+    window.DB.solidaridad.saldo_actual =
+      window.pageSolidaridadSaldo;
+
+    /* ======================================================
+       RENDER
+    ====================================================== */
+
+    renderKPIs();
+    renderActividad();
+
+    crearGraficoBarrasTabbed(
+      "chartBarras",
+      "mensual"
+    );
+
   } catch (error) {
-    console.error("Dashboard connection error:", error);
-    Toast.error("Error al cargar el dashboard.");
+    console.error(
+      "Dashboard connection error:",
+      error
+    );
+
+    Toast.error(
+      "Error al cargar el dashboard."
+    );
   }
 }
 
@@ -214,6 +273,7 @@ document.addEventListener("DOMContentLoaded", async function() {
   window.refreshUI = function() {
     renderKPIs();
     renderActividad();
+
     renderSociosResumen();
     renderAlertas();
     renderAccesoRapido();
@@ -250,57 +310,112 @@ document.addEventListener("DOMContentLoaded", async function() {
 
 function crearGraficoBarrasTabbed(id, tab) {
   destroyChart(id);
+
   var ctx = document.getElementById(id);
   if (!ctx) return;
 
-  var labels, aportes, creditos;
+  var labels = [];
+  var aportes = [];
+  var creditos = [];
+
   if (tab === "trimestral") {
-    labels   = ["Q1 2026","Q2 2026","Q3 2026","Q4 2026"];
-    var q1Aportes = 0, q2Aportes = 0, q3Aportes = 0, q4Aportes = 0;
-    var q1Creditos = 0, q2Creditos = 0, q3Creditos = 0, q4Creditos = 0;
+
+    labels = ["Q1", "Q2", "Q3", "Q4"];
+
+    aportes = [0,0,0,0];
+    creditos = [0,0,0,0];
     
-    (window.pageAportes || []).forEach(function(a) {
-      if (a.estado !== 'pagado') return;
-      var f = new Date(a.fecha_pago || a.created_at || a.fecha || a.createdAt);
-      var m = f.getMonth();
-      if (m >= 0 && m <= 2) q1Aportes += Number(a.monto);
-      else if (m >= 3 && m <= 5) q2Aportes += Number(a.monto);
-      else if (m >= 6 && m <= 8) q3Aportes += Number(a.monto);
-      else if (m >= 9 && m <= 11) q4Aportes += Number(a.monto);
+    (window.pageAportes || []).forEach(function(a){
+
+      if (a.estado !== "pagado") return;
+
+      var fecha =
+        a.fecha_pago ||
+        a.fechaPago ||
+        a.fecha ||
+        a.created_at ||
+        a.createdAt;
+
+      if (!fecha) return;
+
+      var f = new Date(fecha);
+
+      if (isNaN(f.getTime())) return;
+
+      var trimestre = Math.floor(f.getMonth() / 3);
+
+      aportes[trimestre] += Number(a.monto || 0);
     });
 
-    (window.pageCreditos || []).forEach(function(c) {
-      var f = new Date(c.fecha_desembolso || c.fechaDesembolso || c.created_at || c.createdAt);
-      var m = f.getMonth();
-      var monto = Number(c.monto);
-      if (m >= 0 && m <= 2) q1Creditos += monto;
-      else if (m >= 3 && m <= 5) q2Creditos += monto;
-      else if (m >= 6 && m <= 8) q3Creditos += monto;
-      else if (m >= 9 && m <= 11) q4Creditos += monto;
+    (window.pageCreditos || []).forEach(function(c){
+
+      var fecha =
+        c.fecha_desembolso ||
+        c.fechaDesembolso ||
+        c.fecha ||
+        c.created_at ||
+        c.createdAt;
+
+      if (!fecha) return;
+
+      var f = new Date(fecha);
+
+      if (isNaN(f.getTime())) return;
+
+      var trimestre = Math.floor(f.getMonth() / 3);
+
+      creditos[trimestre] += Number(c.monto || 0);
     });
 
-    aportes  = [q1Aportes, q2Aportes, q3Aportes, q4Aportes];
-    creditos = [q1Creditos, q2Creditos, q3Creditos, q4Creditos];
-  } else {
-    labels   = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-    var monthlyAportes = Array(12).fill(0);
-    var monthlyCreditos = Array(12).fill(0);
+    } else {
+
+    labels = [
+      "Ene","Feb","Mar","Abr","May","Jun",
+      "Jul","Ago","Sep","Oct","Nov","Dic"
+    ];
+
+    aportes = Array(12).fill(0);
+    creditos = Array(12).fill(0);
     
-    (window.pageAportes || []).forEach(function(a) {
-      if (a.estado !== 'pagado') return;
-      var f = new Date(a.fecha_pago || a.created_at || a.fecha || a.createdAt);
-      var m = f.getMonth();
-      if (m >= 0 && m <= 11) monthlyAportes[m] += Number(a.monto) || 0;
+     (window.pageAportes || []).forEach(function(a){
+
+      if (a.estado !== "pagado") return;
+
+      var fecha =
+        a.fecha_pago ||
+        a.fechaPago ||
+        a.fecha ||
+        a.created_at ||
+        a.createdAt;
+
+      if (!fecha) return;
+
+      var f = new Date(fecha);
+
+      if (isNaN(f.getTime())) return;
+
+      aportes[f.getMonth()] += Number(a.monto || 0);
     });
 
-    (window.pageCreditos || []).forEach(function(c) {
-      var f = new Date(c.fecha_desembolso || c.fechaDesembolso || c.created_at || c.createdAt);
-      var m = f.getMonth();
-      if (m >= 0 && m <= 11) monthlyCreditos[m] += Number(c.monto) || 0;
+      (window.pageCreditos || []).forEach(function(c){
+
+      var fecha =
+        c.fecha_desembolso ||
+        c.fechaDesembolso ||
+        c.fecha ||
+        c.created_at ||
+        c.createdAt;
+
+      if (!fecha) return;
+
+      var f = new Date(fecha);
+
+      if (isNaN(f.getTime())) return;
+
+      creditos[f.getMonth()] += Number(c.monto || 0);
     });
 
-    aportes = monthlyAportes;
-    creditos = monthlyCreditos;
+    
   }
 
   ChartInstances[id] = new Chart(ctx, {
@@ -309,19 +424,19 @@ function crearGraficoBarrasTabbed(id, tab) {
       labels: labels,
       datasets: [
         {
-          label: "Aportes",
+          label: "Aportes Recaudados",
           data: aportes,
           backgroundColor: ChartColors.navy,
-          borderRadius: { topLeft: 5, topRight: 5 },
+          borderRadius: 6,
           borderSkipped: false,
           barPercentage: 0.55,
           categoryPercentage: 0.75
         },
         {
-          label: "Cr\u00e9ditos pagados",
+          label: "Créditos Desembolsados",
           data: creditos,
           backgroundColor: ChartColors.gold,
-          borderRadius: { topLeft: 5, topRight: 5 },
+          borderRadius: 6,
           borderSkipped: false,
           barPercentage: 0.55,
           categoryPercentage: 0.75
@@ -333,42 +448,90 @@ function crearGraficoBarrasTabbed(id, tab) {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: true, position: "top", align: "end",
-          labels: { usePointStyle: true, pointStyle: "rectRounded", padding: 14, font: { size: 12 } }
+          display: true,
+          position: "top",
+          align: "end"
         },
         tooltip: {
           callbacks: {
-            label: function(c) {
-              return " " + c.dataset.label + ": " +
-                new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",minimumFractionDigits:0}).format(c.raw);
+            label: function(ctx){
+              return (
+                " " +
+                ctx.dataset.label +
+                ": " +
+                new Intl.NumberFormat("es-CO",{
+                  style:"currency",
+                  currency:"COP",
+                  minimumFractionDigits:0
+                }).format(ctx.raw)
+              );
             }
           }
         }
       },
       scales: {
-        x: { grid: { display: false }, border: { display: false } },
+        x: {
+          grid: { display:false },
+          border: { display:false }
+        },
         y: {
-          border: { display: false },
-          ticks: { callback: function(v){ return "$"+(v/1000000).toFixed(0)+"M"; }, maxTicksLimit: 5 }
+          border: { display:false },
+          ticks: {
+            callback:function(v){
+              return "$" + (v/1000000).toFixed(0) + "M";
+            }
+          }
         }
       }
     }
   });
 }
 
+
 function renderKPIs() {
   function fmtM(v){
-    if(v>=1000000) return "$"+(v/1000000).toFixed(1)+"M";
-    if(v>=1000)    return "$"+Math.round(v/1000)+"k";
-    return "$"+v;
-  }
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0
+  }).format(v || 0);
+}
   var r = window.pageDashboardResumen || { socios:{}, ahorros:{}, creditos:{}, mora:{} };
+  console.log("KPIs Dashboard:", r);
   var kpis = [
-    { label:"Total Ahorros",    value:fmtM(r.ahorros?.total || 0), sub:"\u2191 3.2% vs mes anterior", subCls:"kpi-up",   icon:"\uD83D\uDCB0", cls:"green" },
-    { label:"Socios Activos",   value:r.socios?.activos || 0, sub:"+4 nuevos este mes", subCls:"kpi-up", icon:"\uD83D\uDC65", cls:"blue" },
-    { label:"Cr\u00e9ditos Activos", value:r.creditos?.activos || 0, sub:fmtM(r.creditos?.cartera || 0)+" en cartera", subCls:"", icon:"\uD83D\uDCB3", cls:"gold" },
-    { label:"En Mora", value:r.mora?.socios || 0, sub:"\u2191 2 socios morosos", subCls:"kpi-down", icon:"\u26A0", cls:"red" }
-  ];
+  {
+    label: "Total Ahorros",
+    value: fmtM(r.ahorros?.total || 0),
+    sub: "Capital acumulado de socios",
+    subCls: "",
+    icon: "💰",
+    cls: "green"
+  },
+  {
+    label: "Socios Activos",
+    value: r.socios?.activos || 0,
+    sub: (r.socios?.total || 0) + " socios registrados",
+    subCls: "",
+    icon: "👥",
+    cls: "blue"
+  },
+  {
+    label: "Créditos Activos",
+    value: r.creditos?.activos || 0,
+    sub: fmtM(r.creditos?.cartera || 0) + " en cartera",
+    subCls: "",
+    icon: "💳",
+    cls: "gold"
+  },
+  {
+    label: "En Mora",
+  value: r.mora?.socios || 0,
+  sub: "Socios con obligaciones vencidas",
+  subCls: "",
+  icon: "⚠",
+  cls: "red"
+  }
+];
   document.getElementById("kpiGrid").innerHTML = kpis.map(function(k){
     return '<div class="kpi-card '+k.cls+'">' +
       '<div class="kpi-label">'+k.label+'</div>' +
@@ -437,7 +600,7 @@ function renderSociosResumen() {
 function renderAlertas() {
   var listSocios = window.pageSocios || [];
   var listCreditos = window.pageCreditos || [];
-  var mora = listSocios.filter(function(s){return s.estado==="mora";}).length;
+  var mora = window.pageDashboardResumen?.mora?.socios || 0;
   var creditosMora = listCreditos.filter(function(c){return c.estado==="mora";}).length;
   
   document.getElementById("alertasPanel").innerHTML =

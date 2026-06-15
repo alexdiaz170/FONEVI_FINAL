@@ -251,6 +251,7 @@
 <div class="app-layout" id="app-layout">
   <div class="main-content">
     <div class="page-content">
+      
 
       <!-- Breadcrumb -->
       <div class="breadcrumb">
@@ -730,14 +731,64 @@ function renderAportes() {
     (mora ? '<span style="font-size:12px;color:var(--red-500);font-weight:600;">⚠ ' + mora + ' en mora</span>' : '');
 
   document.getElementById("pTimeline").innerHTML = aportes.slice().map(function(a) {
-    return '<div class="timeline-item">' +
-      '<div class="t-dot ' + (a.estado === 'pagado' ? 'dp' : a.estado === 'pendiente' ? 'dn' : 'dm') + '"></div>' +
-      '<span class="t-periodo">' + (a.periodo || a.periodoName || "—") + '</span>' +
-      '<span class="t-monto">' + DataHelper.formatCOP(a.monto) + '</span>' +
-      '<span class="t-fecha">' + (a.fechaPago ? DataHelper.formatFecha(a.fechaPago) : "—") + '</span>' +
+
+  var solidaridad =
+    Number(a.pago_solidaridad || 0);
+
+  var credito =
+    Number(a.pago_credito || 0);
+
+  var ahorro =
+    Math.max(
+      0,
+      Number(a.monto || 0) -
+      solidaridad -
+      credito
+    );
+
+  return '<div class="timeline-item">' +
+
+    '<div class="t-dot ' +
+      (a.estado === 'pagado'
+        ? 'dp'
+        : a.estado === 'pendiente'
+          ? 'dn'
+          : 'dm') +
+    '"></div>' +
+
+    '<div style="flex:1;">' +
+
+      '<div><strong>' +
+        (a.periodo || a.periodoName || "—") +
+      '</strong></div>' +
+
+      '<div class="t-fecha">' +
+        (a.fechaPago
+          ? DataHelper.formatFecha(a.fechaPago)
+          : "—") +
+      '</div>' +
+
+      '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">' +
+        'Solidaridad: ' + DataHelper.formatCOP(solidaridad) +
+        ' · Crédito: ' + DataHelper.formatCOP(credito) +
+        ' · Ahorro: ' + DataHelper.formatCOP(ahorro) +
+      '</div>' +
+
+    '</div>' +
+
+    '<div style="text-align:right;">' +
+      '<div class="t-monto">' +
+        DataHelper.formatCOP(a.monto) +
+      '</div>' +
       DataHelper.estadoPill(a.estado) +
-    '</div>';
-  }).join("") || '<div style="padding:32px;text-align:center;color:var(--text-muted);">Sin aportes registrados.</div>';
+    '</div>' +
+
+  '</div>';
+  }).join("") ||
+
+'<div style="padding:32px;text-align:center;color:var(--text-muted);">' +
+'Sin movimientos registrados.' +
+'</div>';
 
   var pager = '';
   if (PROFILE.aportes.totalPages > 1) {
@@ -748,6 +799,15 @@ function renderAportes() {
       '</div>';
   }
   document.getElementById("pTimeline").innerHTML += pager;
+}
+
+function credInfoItem(label, value) {
+  return (
+    '<div class="info-item">' +
+      '<div class="info-label">' + label + '</div>' +
+      '<div class="info-value">' + value + '</div>' +
+    '</div>'
+  );
 }
 
 function renderCreditos() {

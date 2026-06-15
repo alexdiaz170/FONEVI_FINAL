@@ -298,7 +298,7 @@
         <div class="form-group">
           <label class="form-label">Monto ($) <span style="color:var(--red-500);">*</span></label>
           <input type="number" class="form-control" id="na-monto"
-            placeholder="120000" min="1" step="1000"/>
+            placeholder="0" min="1" step="1000"/>
           <span class="form-hint" id="na-monto-hint"></span>
         </div>
         <div class="form-group">
@@ -327,18 +327,26 @@
           <input type="text" class="form-control" id="na-obs"
             placeholder="Nota adicional sobre el aporte..."/>
         </div>
-        <div class="form-group">
-          <label class="form-label">Pago Solidaridad ($)</label>
-          <input type="number" class="form-control" id="na-solidaridad"
-            placeholder="30000" min="0" step="1000"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Abono a Crédito ($)</label>
-          <input type="number" class="form-control" id="na-credito"
-            placeholder="0" min="0" step="1000"/>
-        </div>
-      </div>
+        
+       <div class="form-group form-full">
+  <div id="na-resumen" style="
+    display:none;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:12px;
+    font-size:14px;
+    line-height:1.8;
+  ">
+    <strong>Distribución automática del aporte</strong>
 
+    <div id="na-solidaridad-prev">Solidaridad: $0</div>
+    <div id="na-interes-prev">Interés: $0</div>
+    <div id="na-seguro-prev">Seguro: $0</div>
+    <div id="na-capital-prev">Capital: $0</div>
+    <div id="na-ahorro-prev">Ahorro: $0</div>
+  </div>
+</div> 
       <!-- Aviso de aporte duplicado -->
       <div id="naWarning" style="display:none;margin-top:10px;"></div>
     </div>
@@ -544,7 +552,17 @@ function renderKPIs() {
   var todos     = window.pageAportes || [];
   var pagados   = todos.filter(function(a){ return a.estado === "pagado"; });
   var pendientes= todos.filter(function(a){ return a.estado === "pendiente"; });
-  var mora      = todos.filter(function(a){ return ["mora","vencido"].includes(a.estado); });
+  var mora = [
+  ...new Set(
+    todos
+      .filter(function(a){
+        return ["mora","vencido"].includes(a.estado);
+      })
+      .map(function(a){
+        return a.socio_nombre;
+      })
+  )
+];
   var totalRec  = pagados.reduce(function(t,a){ return t + Number(a.monto || 0); }, 0);
 
   document.getElementById("kpiAportes").innerHTML = [
@@ -793,25 +811,37 @@ async function confirmarCambioEstado() {
    REGISTRAR NUEVO APORTE
 ═══════════════════════════════════════════════════════════ */
 function autocompletarMonto() {
-  var id = document.getElementById("na-socio").value;
-  var s = (window.pageSocios || []).find(function(x){ return x.id === id; });
-  if (s) {
-    var val = s.aporte_mensual || s.aporteMensual || 120000;
-    document.getElementById("na-monto").value = val;
-    document.getElementById("na-monto-hint").textContent =
-      "Aporte habitual: " + DataHelper.formatCOP(val);
-    // Habilitar/deshabilitar campo de abono a crédito según tenga créditos activos
-    var creditosActivos = DataHelper.getCreditosSocio(s.id).filter(function(c){ return c.estado !== 'pagado'; });
-    var elCredito = document.getElementById('na-credito');
-    if (elCredito) {
-      if (!creditosActivos.length) { elCredito.value = 0; elCredito.disabled = true; elCredito.placeholder = 'Sin crédito activo'; }
-      else { elCredito.disabled = false; elCredito.placeholder = '0'; }
-    }
-  } else {
-    document.getElementById("na-monto-hint").textContent = "";
-  }
-}
 
+  var id =
+    document.getElementById("na-socio").value;
+
+  var s =
+    (window.pageSocios || [])
+    .find(function(x){
+      return x.id === id;
+    });
+
+  if (!s) {
+
+    document.getElementById("na-monto").value = "";
+
+    document.getElementById(
+      "na-monto-hint"
+    ).textContent = "";
+
+    return;
+  }
+
+  document.getElementById(
+    "na-monto"
+  ).value = "";
+
+   document.getElementById(
+    "na-monto-hint"
+  ).textContent =
+    "Ingrese el valor recibido del socio";
+}
+  
 function verificarDuplicado() {
   var socioId = document.getElementById("na-socio").value;
   var periodo = document.getElementById("na-periodo").value;
@@ -841,67 +871,77 @@ function verificarDuplicado() {
 }
 
 async function guardarAporte() {
+
   var socioId = document.getElementById("na-socio").value;
   var monto   = parseFloat(document.getElementById("na-monto").value);
   var periodo = document.getElementById("na-periodo").value;
   var estado  = document.getElementById("na-estado").value;
 
-  if (!socioId) { Toast.warn("Selecciona un socio."); return; }
-  if (!monto || monto <= 0) { Toast.warn("Ingresa un monto válido."); return; }
-  if (!periodo) { Toast.warn("Selecciona el período."); return; }
+  if (!socioId) {
+    Toast.warn("Selecciona un socio.");
+    return;
+  }
+
+  if (!monto || monto <= 0) {
+    Toast.warn("Ingresa un valor válido.");
+    return;
+  }
+
+  if (!periodo) {
+    Toast.warn("Selecciona el período.");
+    return;
+  }
 
   var btn = document.getElementById("btnGuardarAporte");
+
   btn.textContent = "Registrando...";
-  btn.disabled    = true;
+  btn.disabled = true;
 
   var nuevo = {
-    socioId:    socioId,
-    periodoId:  periodo,
-    monto:      monto,
-    fechaPago:  estado === "pagado" ? document.getElementById("na-fecha").value : null,
-    estado:     estado,
-    metodo:     document.getElementById("na-metodo").value,
-    notas:      document.getElementById("na-obs").value.trim(),
-    pago_solidaridad: parseFloat(document.getElementById("na-solidaridad").value || 0),
-    pago_credito:     parseFloat(document.getElementById("na-credito").value || 0),
+    socioId: socioId,
+    periodoId: periodo,
+    monto: monto,
+    fechaPago: estado === "pagado"
+      ? document.getElementById("na-fecha").value
+      : null,
+    estado: estado,
+    metodo: document.getElementById("na-metodo").value,
+    notas: document.getElementById("na-obs").value.trim()
   };
 
   try {
+
     const res = await API.aportes.registrar(nuevo);
 
     if (res && res.ok) {
+
       await cargarDatos();
       await cargarTablaAportes();
-      
-      btn.textContent = "Registrar aporte";
-      btn.disabled    = false;
 
       Modal.close("modalNuevoAporte");
-
-      if (nuevo.periodoId) {
-        filtroPeriodo = nuevo.periodoId;
-      }
 
       renderKPIs();
       renderRecaudo();
 
-      // Actualizar selector de período si es nuevo
-      poblarSelectPeriodos();
-
-      // Limpiar campos extra
-      document.getElementById("na-solidaridad").value = "";
-      document.getElementById("na-credito").value = "";
-
-      Toast.success("✓ Pago múltiple procesado exitosamente.");
-    } else {
-      Toast.error(res?.mensaje || "Error al registrar aporte");
       btn.textContent = "Registrar aporte";
-      btn.disabled    = false;
+      btn.disabled = false;
+
+      Toast.success("✓ Aporte registrado correctamente.");
+
+    } else {
+
+      Toast.error(res?.mensaje || "Error al registrar aporte");
+
+      btn.textContent = "Registrar aporte";
+      btn.disabled = false;
     }
+
   } catch (error) {
-    Toast.error(error?.message || "Error de conexión con el servidor");
+
+    Toast.error(error?.message || "Error de conexión");
+
     btn.textContent = "Registrar aporte";
-    btn.disabled    = false;
+    btn.disabled = false;
   }
 }
 
