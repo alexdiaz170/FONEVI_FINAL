@@ -310,6 +310,29 @@
             <option value="cheque">Cheque</option>
           </select>
         </div>
+
+        <!-- NUEVO BLOQUE -->
+<div class="form-group">
+  <label class="form-label">Tipo de operación</label>
+  <select class="form-control" id="na-tipo-operacion">
+  <option value="pago_normal" selected>
+    💰 Pago normal
+  </option>
+
+  <option value="adelantar_cuotas">
+    ⏩ Adelantar cuotas
+  </option>
+
+  <option value="abono_ahorro">
+    🏦 Abono extraordinario a ahorro acumulado
+  </option>
+
+  <option value="abono_capital_credito">
+    💳 Abono extraordinario a capital de crédito
+  </option>
+</select>
+</div>
+
         <div class="form-group">
           <label class="form-label">Fecha de pago</label>
           <input type="date" class="form-control" id="na-fecha"/>
@@ -812,6 +835,7 @@ async function confirmarCambioEstado() {
 ═══════════════════════════════════════════════════════════ */
 function autocompletarMonto() {
 
+
   var id =
     document.getElementById("na-socio").value;
 
@@ -874,6 +898,7 @@ async function guardarAporte() {
 
   var socioId = document.getElementById("na-socio").value;
   var monto   = parseFloat(document.getElementById("na-monto").value);
+  var tipoPago = document.getElementById("na-tipo-operacion").value;
   var periodo = document.getElementById("na-periodo").value;
   var estado  = document.getElementById("na-estado").value;
 
@@ -906,7 +931,8 @@ async function guardarAporte() {
       : null,
     estado: estado,
     metodo: document.getElementById("na-metodo").value,
-    notas: document.getElementById("na-obs").value.trim()
+    notas: document.getElementById("na-obs").value.trim(),
+    tipoPago: tipoPago
   };
 
   try {

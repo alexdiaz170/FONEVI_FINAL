@@ -1,6 +1,7 @@
 const creditoService = require('../services/creditoService');
 const { audit } = require('../middleware/audit');
 const { mapCredito } = require('../lib/mappings');
+const configuracionService = require("../services/configuracionService");
 const db = require('../db');
 
 class CreditoController {
@@ -125,7 +126,7 @@ const mesesAfiliado =
   (hoy.getFullYear() - fechaIngreso.getFullYear()) * 12 +
   (hoy.getMonth() - fechaIngreso.getMonth());
 
-  console.log("========== VALIDACION CREDITO ==========");
+console.log("========== VALIDACION CREDITO ==========");
 console.log("Socio:", socio.nombre);
 console.log("Fecha ingreso:", socio.fecha_ingreso);
 console.log("Meses afiliado:", mesesAfiliado);

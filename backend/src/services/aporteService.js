@@ -1,5 +1,6 @@
 const db = require('../db');
 const { v4: uuidv4 } = require('uuid');
+const configuracionService = require("./configuracionService");
 
 class AporteService {
   async listAll({ socioId, periodoId, periodo, estado, fecha, metodo, q, page, limit } = {}) {
@@ -117,7 +118,7 @@ class AporteService {
 
   return await db.transaction(async (client) => {
 
-    let pagoSolid = 5000;
+    const pagoSolid = await configuracionService.obtenerNumero("aporte_solidaridad", 5000);
     let pagoCred = 0;
     let ahorro = 0;
 
@@ -152,12 +153,12 @@ class AporteService {
           ).toFixed(2)
         );
 
-      const seguro =
-        Number(
-          (
-            saldo * 0.005
-          ).toFixed(2)
+      const tasaSeguro = await configuracionService.obtenerNumero(
+          "seguro_credito",
+          0.005
         );
+
+      const seguro = saldo * tasaSeguro;
 
       const pagoInteres =
         Math.min(restante, interes);
