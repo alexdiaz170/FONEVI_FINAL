@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   Bell,
+  HandHeart,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { cn } from '../../lib/utils';
@@ -31,6 +32,12 @@ const navItems = [
     to: '/movimientos',
     label: 'Movimientos',
     icon: ArrowLeftRight,
+    roles: ['admin', 'superadmin'],
+  },
+  {
+    to: '/solidaridad',
+    label: 'Solidaridad',
+    icon: HandHeart,
     roles: ['admin', 'superadmin'],
   },
   {

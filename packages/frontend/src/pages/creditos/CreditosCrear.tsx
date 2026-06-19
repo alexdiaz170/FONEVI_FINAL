@@ -9,10 +9,10 @@ export default function CreditosCrear() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     socioId: '',
-    monto: 0,
-    tasaMensual: 0,
-    cuotas: 0,
-    fechaDesembolso: '',
+    monto: '',
+    tasaMensual: '',
+    cuotas: '',
+    fechaDesembolso: new Date().toISOString().split('T')[0],
     proposito: '',
     notas: '',
   });
@@ -27,10 +27,11 @@ export default function CreditosCrear() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
-    const value =
-      e.target.name === 'monto' || e.target.name === 'tasaMensual' || e.target.name === 'cuotas'
-        ? Number(e.target.value)
-        : e.target.value;
+    let value = e.target.value;
+    if (e.target.name === 'tasaMensual' && value) {
+      const num = Number(value);
+      if (!isNaN(num)) value = String(Math.round(num * 10) / 10);
+    }
     setForm((prev) => ({ ...prev, [e.target.name]: value }));
   };
 
@@ -38,20 +39,28 @@ export default function CreditosCrear() {
     e.preventDefault();
     setError('');
 
+    const monto = Number(form.monto);
+    const tasaMensual = Number(form.tasaMensual);
+    const cuotas = Number(form.cuotas);
+
     if (!form.socioId) {
       setError('Seleccione un socio');
       return;
     }
-    if (form.monto <= 0) {
+    if (!form.monto || monto <= 0) {
       setError('El monto debe ser mayor a 0');
       return;
     }
-    if (form.tasaMensual <= 0 || form.tasaMensual > 100) {
-      setError('La tasa debe ser entre 0 y 100');
+    if (!form.tasaMensual || tasaMensual <= 0 || tasaMensual > 100) {
+      setError('La tasa debe ser entre 0.01 y 100');
       return;
     }
-    if (form.cuotas < 1) {
+    if (!form.cuotas || cuotas < 1 || !Number.isInteger(cuotas)) {
       setError('Debe haber al menos 1 cuota');
+      return;
+    }
+    if (!form.fechaDesembolso) {
+      setError('Seleccione una fecha de desembolso');
       return;
     }
 
@@ -59,14 +68,19 @@ export default function CreditosCrear() {
     try {
       await apiCrearCredito({
         socioId: form.socioId,
-        monto: form.monto,
-        tasaMensual: form.tasaMensual,
-        cuotas: form.cuotas,
-        fechaDesembolso: form.fechaDesembolso || undefined,
+        monto,
+        tasaMensual,
+        cuotas,
+        fechaDesembolso: form.fechaDesembolso,
         proposito: form.proposito || null,
         notas: form.notas || null,
       });
-      navigate('/creditos');
+      navigate('/creditos', {
+        state: {
+          success:
+            'Crédito creado correctamente. Queda en estado pendiente hasta que un administrador lo apruebe.',
+        },
+      });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error al crear crédito');
     } finally {
@@ -74,12 +88,13 @@ export default function CreditosCrear() {
     }
   };
 
+  const montoNum = Number(form.monto);
+  const tasaNum = Number(form.tasaMensual);
+  const cuotasNum = Number(form.cuotas);
   const cuotaEstimada =
-    form.monto > 0 && form.tasaMensual > 0 && form.cuotas > 0
-      ? (form.monto *
-          (form.tasaMensual / 100) *
-          Math.pow(1 + form.tasaMensual / 100, form.cuotas)) /
-        (Math.pow(1 + form.tasaMensual / 100, form.cuotas) - 1)
+    montoNum > 0 && tasaNum > 0 && cuotasNum > 0
+      ? (montoNum * (tasaNum / 100) * Math.pow(1 + tasaNum / 100, cuotasNum)) /
+        (Math.pow(1 + tasaNum / 100, cuotasNum) - 1)
       : 0;
 
   return (
@@ -100,7 +115,7 @@ export default function CreditosCrear() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Socio *</label>
             <select
@@ -122,9 +137,10 @@ export default function CreditosCrear() {
             <input
               name="monto"
               type="number"
-              step="0.01"
+              min="1"
               value={form.monto}
               onChange={handleChange}
+              placeholder="0"
               className="w-full px-3 py-2 border rounded-md text-sm"
             />
           </div>
@@ -133,9 +149,11 @@ export default function CreditosCrear() {
             <input
               name="tasaMensual"
               type="number"
-              step="0.01"
+              min="0"
+              step="0.1"
               value={form.tasaMensual}
               onChange={handleChange}
+              placeholder="0.0"
               className="w-full px-3 py-2 border rounded-md text-sm"
             />
           </div>
@@ -146,18 +164,24 @@ export default function CreditosCrear() {
             <input
               name="cuotas"
               type="number"
+              min="1"
+              step="1"
               value={form.cuotas}
               onChange={handleChange}
+              placeholder="0"
               className="w-full px-3 py-2 border rounded-md text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Desembolso</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha Desembolso *
+            </label>
             <input
               name="fechaDesembolso"
               type="date"
               value={form.fechaDesembolso}
               onChange={handleChange}
+              min={new Date().toISOString().split('T')[0]}
               className="w-full px-3 py-2 border rounded-md text-sm"
             />
           </div>
@@ -196,7 +220,7 @@ export default function CreditosCrear() {
               disabled={loading}
               className="px-6 py-2 bg-navy-700 text-white rounded-md text-sm font-medium hover:bg-navy-800 disabled:opacity-50"
             >
-              {loading ? 'Guardando...' : 'Crear Crédito'}
+              {loading ? 'Guardando...' : 'Solicitar Crédito'}
             </button>
             <Link
               to="/creditos"

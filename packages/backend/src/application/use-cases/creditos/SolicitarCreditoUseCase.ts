@@ -27,11 +27,6 @@ export class SolicitarCreditoUseCase {
       throw new DomainError('El socio no puede solicitar créditos en su estado actual');
     }
 
-    const activo = await this.creditoRepo.findActivoBySocioId(dto.socioId);
-    if (activo) {
-      throw new DomainError('El socio ya tiene un crédito activo');
-    }
-
     const monto = Monto.create(dto.monto);
     const tasaMensual = TasaInteres.create(dto.tasaMensual);
     const fechaDesembolso = dto.fechaDesembolso ? new Date(dto.fechaDesembolso) : new Date();

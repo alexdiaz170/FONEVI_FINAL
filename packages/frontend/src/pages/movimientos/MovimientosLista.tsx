@@ -38,7 +38,7 @@ export default function MovimientosLista() {
     ) ?? [];
 
   const exportColumns: ExportColumn[] = [
-    { header: 'Fecha', key: 'fecha', format: (v) => formatDate(String(v)) },
+    { header: 'Fecha', key: 'fecha', format: (v) => (v ? formatDate(String(v)) : '—') },
     { header: 'Tipo', key: 'tipo' },
     { header: 'Categoría', key: 'categoria' },
     { header: 'Descripción', key: 'descripcion' },

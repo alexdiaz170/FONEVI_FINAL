@@ -67,7 +67,7 @@ export class PrismaAporteRepository implements IAporteRepository {
     const [data, total] = await Promise.all([
       this.prisma.aporte.findMany({
         where: where as never,
-        orderBy: { createdAt: 'desc' } as never,
+        orderBy: { fechaPago: 'desc' } as never,
         skip,
         take: limit,
       }) as unknown as Promise<AporteRow[]>,
@@ -121,7 +121,7 @@ export class PrismaAporteRepository implements IAporteRepository {
 
   async recalcularAhorroAcumulado(socioId: string): Promise<Monto> {
     const result = (await this.prisma.aporte.aggregate({
-      where: { socioId, estado: 'pagado' } as never,
+      where: { socioId, estado: { not: 'anulado' } } as never,
       _sum: { monto: true, pagoSolidaridad: true, pagoCredito: true },
     })) as unknown as {
       _sum: { monto: number | null; pagoSolidaridad: number | null; pagoCredito: number | null };

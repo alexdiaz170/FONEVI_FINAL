@@ -73,7 +73,7 @@ async function fetchApi(path: string, options: RequestInit = {}): Promise<Respon
     } catch {
       body = { ok: false, mensaje: res.statusText };
     }
-    throw new ApiError(res.status, body.mensaje ?? 'Error de conexión', body.codigo);
+    throw new ApiError(res.status, body.mensaje ?? 'Error de conexión', body.codigo, body.detalles);
   }
 
   return res;
@@ -196,6 +196,7 @@ export interface AporteDTO {
   pagoCredito: number;
   createdAt: string;
   updatedAt: string;
+  nombreSocio?: string | null;
 }
 
 export interface PeriodoDTO {
@@ -232,6 +233,7 @@ export async function apiCrearAporte(data: {
   monto: number;
   fechaPago?: string | null;
   estado?: string;
+  tipoOperacion?: string;
   metodo?: string | null;
   notas?: string | null;
 }) {
@@ -269,6 +271,7 @@ export interface CreditoDTO {
   eliminado: boolean;
   createdAt: string;
   updatedAt: string;
+  nombreSocio?: string | null;
 }
 
 export interface PagoCuotaDTO {
@@ -321,6 +324,10 @@ export async function apiCrearCredito(data: {
   notas?: string | null;
 }) {
   return api<CreditoDTO>('/api/creditos', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function apiAprobarCredito(creditoId: string) {
+  return api<{ mensaje: string }>(`/api/creditos/${creditoId}/aprobar`, { method: 'POST' });
 }
 
 export async function apiPagarCuota(creditoId: string, data: { fechaPago?: string } = {}) {
@@ -487,6 +494,41 @@ export async function apiCrearNotificacion(data: {
 
 export async function apiMarcarNotificacionLeida(id: string) {
   return api<NotificacionDTO>(`/api/notificaciones/${id}/leer`, { method: 'PATCH' });
+}
+
+// ─── Solidaridad ──────────────────────────
+
+export interface SolidaridadMovimientoDTO {
+  id: string;
+  tipo: string;
+  descripcion: string;
+  monto: number;
+  fecha: string;
+  beneficiario: string | null;
+  createdAt: string;
+}
+
+export async function apiListarSolidaridad(
+  params: { tipo?: string; page?: number; limit?: number } = {},
+) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined) qs.set(k, String(v));
+  });
+  return apiPaginated<SolidaridadMovimientoDTO>(`/api/solidaridad?${qs.toString()}`);
+}
+
+export async function apiCrearMovimientoSolidaridad(data: {
+  tipo: 'ingreso' | 'egreso';
+  descripcion: string;
+  monto: number;
+  fecha?: string;
+  beneficiario?: string | null;
+}) {
+  return api<SolidaridadMovimientoDTO>('/api/solidaridad', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 // ─── Configuración ─────────────────────────

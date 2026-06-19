@@ -61,7 +61,11 @@ export default function SociosLista() {
     { header: 'Aporte Mensual', key: 'aporteMensual', format: (v) => formatCurrency(Number(v)) },
     { header: 'Cargo', key: 'cargo' },
     { header: 'Sede', key: 'sede' },
-    { header: 'Fecha Ingreso', key: 'fechaIngreso', format: (v) => formatDate(String(v)) },
+    {
+      header: 'Fecha Ingreso',
+      key: 'fechaIngreso',
+      format: (v) => (v ? formatDate(String(v)) : '—'),
+    },
   ];
 
   const handleExportExcel = () => {

@@ -15,12 +15,16 @@ export function formatCurrency(value: number | null | undefined): string {
 }
 
 export function formatDate(date: Date | string | null | undefined): string {
-  if (!date) return '—';
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return '—';
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(d);
+  try {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '—';
+    return new Intl.DateTimeFormat('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(d);
+  } catch {
+    return '—';
+  }
 }

@@ -8,7 +8,10 @@ export const solicitarCreditoSchema = z.object({
     .positive('La tasa debe ser mayor a 0')
     .max(100, 'La tasa no puede exceder 100'),
   cuotas: z.number().int().min(1, 'Debe haber al menos 1 cuota'),
-  fechaDesembolso: z.string().optional(),
+  fechaDesembolso: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido (YYYY-MM-DD)')
+    .optional(),
   proposito: z.string().nullable().optional(),
   notas: z.string().nullable().optional(),
 });

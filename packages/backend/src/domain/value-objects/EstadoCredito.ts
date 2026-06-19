@@ -1,12 +1,13 @@
 import { ValueObjectError } from '../errors.js';
 
-export type EstadoCreditoType = 'activo' | 'pagado' | 'cancelado';
+export type EstadoCreditoType = 'pendiente' | 'activo' | 'pagado' | 'cancelado';
 
-const VALID_ESTADOS: EstadoCreditoType[] = ['activo', 'pagado', 'cancelado'];
+const VALID_ESTADOS: EstadoCreditoType[] = ['pendiente', 'activo', 'pagado', 'cancelado'];
 
 export class EstadoCredito {
   private constructor(readonly value: EstadoCreditoType) {}
 
+  static PENDIENTE = new EstadoCredito('pendiente');
   static ACTIVO = new EstadoCredito('activo');
   static PAGADO = new EstadoCredito('pagado');
   static CANCELADO = new EstadoCredito('cancelado');
@@ -19,6 +20,10 @@ export class EstadoCredito {
       );
     }
     return new EstadoCredito(normalized);
+  }
+
+  esPendiente(): boolean {
+    return this.value === 'pendiente';
   }
 
   esActivo(): boolean {

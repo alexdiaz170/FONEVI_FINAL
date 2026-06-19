@@ -20,6 +20,12 @@ router.post(
   authorize('admin', 'superadmin'),
   creditoController.create.bind(creditoController),
 );
+router.post(
+  '/:id/aprobar',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  creditoController.aprobar.bind(creditoController),
+);
 router.post('/:id/pagar', authenticate, creditoController.pagarCuota.bind(creditoController));
 
 export default router;

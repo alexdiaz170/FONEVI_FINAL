@@ -14,6 +14,7 @@ import {
   listarAportesSchema,
 } from '../../application/dto/aporte.dto.js';
 import { ValidationError } from '../../application/errors.js';
+import { getPrismaClient } from '../../infrastructure/persistence/prismaClient.js';
 
 export function createAporteController(
   aporteRepo: IAporteRepository,
@@ -67,9 +68,22 @@ export function createAporteController(
         const query = listarAportesSchema.parse(req.query);
         const result = await listarUseCase.execute(query);
 
+        const socioIds = [...new Set(result.data.map((a) => a.socioId))];
+        const socios =
+          socioIds.length > 0
+            ? await getPrismaClient().socio.findMany({
+                where: { id: { in: socioIds } },
+                select: { id: true, nombre: true },
+              })
+            : [];
+        const socioMap = new Map(socios.map((s) => [s.id, s.nombre]));
+
         apiResponse.paginated(
           res,
-          result.data.map(mapAporte),
+          result.data.map((a) => ({
+            ...mapAporte(a),
+            nombreSocio: socioMap.get(a.socioId) ?? null,
+          })),
           result.total,
           result.page,
           result.limit,

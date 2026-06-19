@@ -65,7 +65,7 @@ export default function AportesLista() {
     { header: 'Socio ID', key: 'socioId' },
     { header: 'Periodo ID', key: 'periodoId', format: (v) => String(v) },
     { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Fecha Pago', key: 'fechaPago', format: (v) => formatDate(String(v)) },
+    { header: 'Fecha Pago', key: 'fechaPago', format: (v) => (v ? formatDate(String(v)) : '—') },
     { header: 'Estado', key: 'estado' },
     { header: 'Método', key: 'metodo' },
     { header: 'Notas', key: 'notas' },
@@ -176,7 +176,7 @@ export default function AportesLista() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 text-gray-600">
-                    <th className="text-left p-3 font-medium">Socio ID</th>
+                    <th className="text-left p-3 font-medium">Socio</th>
                     <th className="text-left p-3 font-medium">Periodo</th>
                     <th className="text-right p-3 font-medium">Monto</th>
                     <th className="text-left p-3 font-medium">Estado</th>
@@ -188,7 +188,9 @@ export default function AportesLista() {
                 <tbody>
                   {filteredData.map((aporte: AporteDTO) => (
                     <tr key={aporte.id} className="border-t hover:bg-gray-50">
-                      <td className="p-3 font-mono text-xs">{aporte.socioId.slice(0, 8)}...</td>
+                      <td className="p-3 text-sm">
+                        {aporte.nombreSocio ?? aporte.socioId.slice(0, 8)}
+                      </td>
                       <td className="p-3">{aporte.periodoId}</td>
                       <td className="p-3 text-right font-mono text-sm">
                         {formatCurrency(aporte.monto)}

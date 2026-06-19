@@ -9,7 +9,7 @@ interface PeriodoRow {
   anio: number;
   mes: number;
   activo: boolean;
-  created_at: Date;
+  createdAt: Date;
 }
 
 export class PrismaPeriodoRepository implements IPeriodoRepository {
@@ -26,7 +26,7 @@ export class PrismaPeriodoRepository implements IPeriodoRepository {
       anio: row.anio,
       mes: row.mes,
       activo: row.activo,
-      createdAt: row.created_at,
+      createdAt: row.createdAt,
     });
   }
 

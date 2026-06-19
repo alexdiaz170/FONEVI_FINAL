@@ -4,6 +4,7 @@ import { ICreditoRepository } from '../../domain/repositories/ICreditoRepository
 import { IPagoCuotaRepository } from '../../domain/repositories/IPagoCuotaRepository.js';
 import { CalculadorCuota } from '../../domain/services/CalculadorCuota.js';
 import { SolicitarCreditoUseCase } from '../../application/use-cases/creditos/SolicitarCreditoUseCase.js';
+import { AprobarCreditoUseCase } from '../../application/use-cases/creditos/AprobarCreditoUseCase.js';
 import { PagarCuotaUseCase } from '../../application/use-cases/creditos/PagarCuotaUseCase.js';
 import { ListarCreditosUseCase } from '../../application/use-cases/creditos/ListarCreditosUseCase.js';
 import { ObtenerEstadoCuentaUseCase } from '../../application/use-cases/creditos/ObtenerEstadoCuentaUseCase.js';
@@ -14,6 +15,7 @@ import {
   listarCreditosSchema,
 } from '../../application/use-cases/creditos/creditoSchemas.js';
 import { ValidationError } from '../../application/errors.js';
+import { getPrismaClient } from '../../infrastructure/persistence/prismaClient.js';
 
 export function createCreditoController(
   socioRepo: ISocioRepository,
@@ -22,6 +24,7 @@ export function createCreditoController(
 ) {
   const calculador = new CalculadorCuota();
   const solicitarUseCase = new SolicitarCreditoUseCase(socioRepo, creditoRepo);
+  const aprobarUseCase = new AprobarCreditoUseCase(creditoRepo);
   const pagarCuotaUseCase = new PagarCuotaUseCase(creditoRepo, pagoCuotaRepo, calculador);
   const listarUseCase = new ListarCreditosUseCase(creditoRepo);
   const estadoCuentaUseCase = new ObtenerEstadoCuentaUseCase(
@@ -73,9 +76,23 @@ export function createCreditoController(
       try {
         const query = listarCreditosSchema.parse(req.query);
         const result = await listarUseCase.execute(query);
+
+        const socioIds = [...new Set(result.data.map((c) => c.socioId))];
+        const socios =
+          socioIds.length > 0
+            ? await getPrismaClient().socio.findMany({
+                where: { id: { in: socioIds } },
+                select: { id: true, nombre: true },
+              })
+            : [];
+        const socioMap = new Map(socios.map((s) => [s.id, s.nombre]));
+
         apiResponse.paginated(
           res,
-          result.data.map(mapCredito),
+          result.data.map((c) => ({
+            ...mapCredito(c),
+            nombreSocio: socioMap.get(c.socioId) ?? null,
+          })),
           result.total,
           result.page,
           result.limit,
@@ -90,6 +107,17 @@ export function createCreditoController(
         const id = String(req.params.id ?? '');
         const result = await estadoCuentaUseCase.execute(id);
         apiResponse.success(res, result);
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async aprobar(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+        const id = String(req.params.id ?? '');
+        const usuario = req.usuario!;
+        await aprobarUseCase.execute(id, usuario.nombre);
+        apiResponse.success(res, { mensaje: 'Crédito aprobado correctamente' });
       } catch (error) {
         next(error);
       }

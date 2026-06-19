@@ -26,6 +26,7 @@ export class RegistrarAporteUseCase {
     monto: number;
     fechaPago?: string | null;
     estado?: string;
+    tipoOperacion?: string;
     metodo?: string | null;
     notas?: string | null;
   }): Promise<Aporte> {
@@ -48,20 +49,39 @@ export class RegistrarAporteUseCase {
         where: {
           socioId: dto.socioId,
           estado: { not: 'pagado' },
+          saldoCapital: { gt: 0 },
         },
         orderBy: { createdAt: 'asc' as never },
         take: 1,
-      })) as unknown as { id: string; saldoCapital: number; tasaMensual: number }[];
+      })) as unknown as {
+        id: string;
+        saldoCapital: number;
+        tasaMensual: number;
+        fechaDesembolso: Date;
+      }[];
 
       if (creditos.length > 0 && creditos[0]) {
+        const ultimoPago = await prisma.pagoCuota.findFirst({
+          where: { creditoId: creditos[0].id },
+          orderBy: { createdAt: 'desc' as never },
+          select: { createdAt: true },
+        });
+
         creditoActivo = {
           id: creditos[0].id,
           saldoCapital: Monto.create(Number(creditos[0].saldoCapital)),
           tasaMensual: Number(creditos[0].tasaMensual),
+          fechaDesembolso: creditos[0].fechaDesembolso,
+          ultimoPagoFecha: ultimoPago?.createdAt ?? null,
         };
       }
 
-      const distribucion = this.distribucionService.distribuir(montoTotal, creditoActivo);
+      const distribucion = this.distribucionService.distribuir(
+        montoTotal,
+        creditoActivo,
+        dto.tipoOperacion ?? 'cuota_normal',
+        fechaPago,
+      );
 
       const aporte = Aporte.create({
         socioId: dto.socioId,

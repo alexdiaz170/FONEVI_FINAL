@@ -47,7 +47,7 @@ export class Credito {
     this.cuotasPagadas = props.cuotasPagadas ?? 0;
     this.saldoCapital = props.saldoCapital;
     this.fechaDesembolso = props.fechaDesembolso;
-    this.estado = props.estado ?? EstadoCredito.ACTIVO;
+    this.estado = props.estado ?? EstadoCredito.PENDIENTE;
     this.proposito = props.proposito ?? null;
     this.aprobadoPor = props.aprobadoPor ?? null;
     this.notas = props.notas ?? null;
@@ -93,6 +93,10 @@ export class Credito {
     return this.estado.esActivo() && this.deletedAt === null;
   }
 
+  esPendiente(): boolean {
+    return this.estado.esPendiente() && this.deletedAt === null;
+  }
+
   estaEliminado(): boolean {
     return this.deletedAt !== null;
   }
@@ -109,6 +113,17 @@ export class Credito {
       cuotasPagadas: nuevasPagadas,
       saldoCapital: Monto.create(Math.max(0, nuevoSaldo.value)),
       estado: nuevoEstado,
+    });
+  }
+
+  aprobar(aprobadoPor: string): Credito {
+    if (!this.estado.esPendiente()) {
+      throw new DomainError('Solo se pueden aprobar créditos en estado pendiente');
+    }
+    return new Credito({
+      ...this.toProps(),
+      estado: EstadoCredito.ACTIVO,
+      aprobadoPor,
     });
   }
 

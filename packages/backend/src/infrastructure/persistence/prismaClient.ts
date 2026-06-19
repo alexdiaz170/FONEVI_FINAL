@@ -6,6 +6,10 @@ let prisma: PrismaClient | null = null;
 export function getPrismaClient(): PrismaClient {
   if (!prisma) {
     prisma = new PrismaClient({
+      transactionOptions: {
+        maxWait: 10000,
+        timeout: 20000,
+      },
       log: [
         { emit: 'event', level: 'query' },
         { emit: 'event', level: 'error' },

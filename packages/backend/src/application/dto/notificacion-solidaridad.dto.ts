@@ -28,7 +28,7 @@ export const registrarSolidaridadSchema = z.object({
 export const listarSolidaridadSchema = z.object({
   tipo: z.enum(['ingreso', 'egreso']).optional(),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(10),
+  limit: z.coerce.number().int().min(1).max(99999).default(10),
 });
 
 export type RegistrarSolidaridadDTO = z.infer<typeof registrarSolidaridadSchema>;

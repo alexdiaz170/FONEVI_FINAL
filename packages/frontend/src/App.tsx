@@ -25,6 +25,7 @@ const ConfiguracionPage = React.lazy(() => import('./pages/Configuracion'));
 const NotificacionesPage = React.lazy(() => import('./pages/Notificaciones'));
 const MovimientosLista = React.lazy(() => import('./pages/movimientos/MovimientosLista'));
 const MovimientosCrear = React.lazy(() => import('./pages/movimientos/MovimientosCrear'));
+const SolidaridadPage = React.lazy(() => import('./pages/Solidaridad'));
 
 function LazyLoader({ children }: { children: React.ReactNode }) {
   return (
@@ -143,6 +144,16 @@ export default function App() {
                 <ProtectedRoute roles={['admin', 'superadmin']}>
                   <LazyLoader>
                     <ConfiguracionPage />
+                  </LazyLoader>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="solidaridad"
+              element={
+                <ProtectedRoute roles={['admin', 'superadmin']}>
+                  <LazyLoader>
+                    <SolidaridadPage />
                   </LazyLoader>
                 </ProtectedRoute>
               }

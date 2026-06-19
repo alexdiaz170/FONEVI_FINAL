@@ -4,6 +4,8 @@ export interface CreditoActivo {
   id: string;
   saldoCapital: Monto;
   tasaMensual: number;
+  fechaDesembolso: Date;
+  ultimoPagoFecha: Date | null;
 }
 
 export interface DistribucionResult {
@@ -23,11 +25,16 @@ export class DistribucionAporteService {
     private readonly tasaSeguro: number = 0.005,
   ) {}
 
-  distribuir(montoTotal: Monto, creditoActivo: CreditoActivo | null = null): DistribucionResult {
+  distribuir(
+    montoTotal: Monto,
+    creditoActivo: CreditoActivo | null = null,
+    tipoOperacion: string = 'cuota_normal',
+    fechaPago: Date | null = null,
+  ): DistribucionResult {
     const pagoSolidaridadValor = Math.min(montoTotal.value, this.aporteSolidaridad);
     const pagoSolidaridad = Monto.create(pagoSolidaridadValor);
 
-    let restante = montoTotal.sumar(Monto.create(0)).restar(pagoSolidaridad);
+    let restante = Monto.create(montoTotal.value).restar(pagoSolidaridad);
 
     let pagoInteres = Monto.create(0);
     let pagoSeguro = Monto.create(0);
@@ -41,26 +48,44 @@ export class DistribucionAporteService {
       const saldo = creditoActivo.saldoCapital;
       const tasaDecimal = creditoActivo.tasaMensual / 100;
 
-      pagoInteres = Monto.create(Number((saldo.value * tasaDecimal).toFixed(2)));
-      pagoInteres = restante.esMenorQue(pagoInteres) ? restante : pagoInteres;
-      restante = restante.restar(pagoInteres);
-
-      if (restante.value > 0) {
-        pagoSeguro = Monto.create(Number((saldo.value * this.tasaSeguro).toFixed(2)));
-        pagoSeguro = restante.esMenorQue(pagoSeguro) ? restante : pagoSeguro;
-        restante = restante.restar(pagoSeguro);
-
+      if (tipoOperacion === 'abono_credito') {
         pagoCapital = restante;
+        pagoInteres = Monto.create(0);
+        pagoSeguro = Monto.create(0);
         restante = Monto.create(0);
-
-        const nuevoSaldoValor = Math.max(0, saldo.value - pagoCapital.value);
-        nuevoSaldoCapital = Monto.create(nuevoSaldoValor);
-        creditoPagado = nuevoSaldoValor <= 0;
-        totalPagoCredito = pagoInteres.sumar(pagoSeguro).sumar(pagoCapital);
       } else {
-        nuevoSaldoCapital = saldo;
-        totalPagoCredito = pagoInteres;
+        let diasTranscurridos = 30;
+
+        if (fechaPago) {
+          const desde = creditoActivo.ultimoPagoFecha ?? creditoActivo.fechaDesembolso;
+          diasTranscurridos = Math.max(
+            1,
+            Math.min(
+              30,
+              Math.floor((fechaPago.getTime() - desde.getTime()) / (1000 * 60 * 60 * 24)),
+            ),
+          );
+        }
+
+        const factor = diasTranscurridos / 30;
+        pagoInteres = Monto.create(Number((saldo.value * tasaDecimal * factor).toFixed(2)));
+        pagoInteres = restante.esMenorQue(pagoInteres) ? restante : pagoInteres;
+        restante = restante.restar(pagoInteres);
+
+        if (restante.value > 0) {
+          pagoSeguro = Monto.create(Number((saldo.value * this.tasaSeguro * factor).toFixed(2)));
+          pagoSeguro = restante.esMenorQue(pagoSeguro) ? restante : pagoSeguro;
+          restante = restante.restar(pagoSeguro);
+
+          pagoCapital = restante;
+          restante = Monto.create(0);
+        }
       }
+
+      const nuevoSaldoValor = Math.max(0, saldo.value - pagoCapital.value);
+      nuevoSaldoCapital = Monto.create(nuevoSaldoValor);
+      creditoPagado = nuevoSaldoValor <= 0;
+      totalPagoCredito = pagoInteres.sumar(pagoSeguro).sumar(pagoCapital);
     } else {
       ahorro = restante;
       restante = Monto.create(0);

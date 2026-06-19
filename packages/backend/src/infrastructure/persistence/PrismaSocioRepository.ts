@@ -14,18 +14,18 @@ interface SocioRow {
   documento: string;
   email: string | null;
   telefono: string | null;
-  fecha_ingreso: Date;
-  aporte_mensual: number;
-  ahorro_acumulado: number;
+  fechaIngreso: Date;
+  aporteMensual: number;
+  ahorroAcumulado: number;
   estado: string;
   cargo: string | null;
   sede: string | null;
-  deleted_at: Date | null;
-  created_at: Date;
-  updated_at: Date;
+  deletedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
   password: string | null;
-  acceso_activo: boolean;
-  ultimo_login: Date | null;
+  accesoActivo: boolean;
+  ultimoLogin: Date | null;
 }
 
 export class PrismaSocioRepository implements ISocioRepository {
@@ -45,15 +45,15 @@ export class PrismaSocioRepository implements ISocioRepository {
       numeroDocumento: row.documento,
       email: row.email ? Email.create(row.email) : null,
       telefono: row.telefono ? Telefono.create(row.telefono) : null,
-      fechaIngreso: row.fecha_ingreso,
-      aporteMensual: Monto.create(Number(row.aporte_mensual ?? 0) || 0),
-      ahorroAcumulado: Monto.create(Number(row.ahorro_acumulado ?? 0) || 0),
+      fechaIngreso: row.fechaIngreso,
+      aporteMensual: Monto.create(Number(row.aporteMensual ?? 0) || 0),
+      ahorroAcumulado: Monto.create(Number(row.ahorroAcumulado ?? 0) || 0),
       estado: EstadoSocio.create(row.estado),
       cargo: row.cargo,
       sede: row.sede,
-      deletedAt: row.deleted_at,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
+      deletedAt: row.deletedAt,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
     });
   }
 

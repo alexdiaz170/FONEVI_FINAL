@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, DollarSign } from 'lucide-react';
-import { apiObtenerCredito, apiPagarCuota } from '../../lib/api';
+import { ArrowLeft, Check, DollarSign } from 'lucide-react';
+import { apiObtenerCredito, apiAprobarCredito, apiPagarCuota } from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { useState } from 'react';
@@ -19,6 +19,15 @@ export default function CreditosPerfil() {
     queryKey: ['credito', id],
     queryFn: () => apiObtenerCredito(id!),
     enabled: !!id,
+  });
+
+  const aprobarMutation = useMutation({
+    mutationFn: () => apiAprobarCredito(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['credito', id] });
+      queryClient.invalidateQueries({ queryKey: ['creditos'] });
+    },
+    onError: (err) => setError(err instanceof ApiError ? err.message : 'Error al aprobar crédito'),
   });
 
   const pagarMutation = useMutation({
@@ -71,15 +80,27 @@ export default function CreditosPerfil() {
             <div className="flex items-center gap-3">
               <span
                 className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
-                  credito.estado === 'activo'
-                    ? 'bg-blue-100 text-blue-700'
-                    : credito.estado === 'pagado'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
+                  credito.estado === 'pendiente'
+                    ? 'bg-yellow-100 text-yellow-700'
+                    : credito.estado === 'activo'
+                      ? 'bg-blue-100 text-blue-700'
+                      : credito.estado === 'pagado'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
                 }`}
               >
                 {credito.estado}
               </span>
+              {credito.estado === 'pendiente' && (
+                <button
+                  onClick={() => aprobarMutation.mutate()}
+                  disabled={aprobarMutation.isPending}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+                >
+                  <Check size={16} />{' '}
+                  {aprobarMutation.isPending ? 'Aprobando...' : 'Aprobar Crédito'}
+                </button>
+              )}
               {puedePagar && (
                 <button
                   onClick={() => pagarMutation.mutate()}
