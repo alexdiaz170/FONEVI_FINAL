@@ -1,0 +1,141 @@
+import { PrismaClient } from '@prisma/client';
+import { getPrismaClient } from './prismaClient.js';
+import { Credito } from '../../domain/entities/Credito.js';
+import { TasaInteres } from '../../domain/value-objects/TasaInteres.js';
+import { EstadoCredito } from '../../domain/value-objects/EstadoCredito.js';
+import {
+  ICreditoRepository,
+  CreditoFilter,
+  CreditoListResult,
+} from '../../domain/repositories/ICreditoRepository.js';
+import { Monto } from '@fonevi/shared';
+
+interface CreditoRow {
+  id: string;
+  socioId: string;
+  monto: number;
+  tasaMensual: number;
+  cuotas: number;
+  cuotasPagadas: number;
+  saldoCapital: number;
+  fechaDesembolso: Date;
+  estado: string;
+  proposito: string | null;
+  aprobadoPor: string | null;
+  notas: string | null;
+  deletedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class PrismaCreditoRepository implements ICreditoRepository {
+  protected readonly prisma: PrismaClient;
+
+  constructor() {
+    this.prisma = getPrismaClient();
+  }
+
+  private toDomain(row: CreditoRow): Credito {
+    return Credito.fromPersistence({
+      id: row.id,
+      socioId: row.socioId,
+      monto: Monto.create(Number(row.monto)),
+      tasaMensual: TasaInteres.create(Number(row.tasaMensual)),
+      cuotas: row.cuotas,
+      cuotasPagadas: row.cuotasPagadas,
+      saldoCapital: Monto.create(Number(row.saldoCapital)),
+      fechaDesembolso: row.fechaDesembolso,
+      estado: EstadoCredito.create(row.estado),
+      proposito: row.proposito,
+      aprobadoPor: row.aprobadoPor,
+      notas: row.notas,
+      deletedAt: row.deletedAt,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    });
+  }
+
+  async findById(id: string): Promise<Credito | null> {
+    const row = (await this.prisma.credito.findUnique({
+      where: { id },
+    })) as unknown as CreditoRow | null;
+    if (!row) return null;
+    return this.toDomain(row);
+  }
+
+  async findAll(filters: CreditoFilter = {}): Promise<CreditoListResult> {
+    const { socioId, estado, page = 1, limit = 10 } = filters;
+    const where: Record<string, unknown> = { deletedAt: null };
+    if (socioId) where.socioId = socioId;
+    if (estado) where.estado = estado;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.credito.findMany({
+        where: where as never,
+        orderBy: { createdAt: 'desc' } as never,
+        skip,
+        take: limit,
+      }) as unknown as Promise<CreditoRow[]>,
+      this.prisma.credito.count({ where: where as never }),
+    ]);
+
+    return {
+      data: data.map((row) => this.toDomain(row)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async findActivoBySocioId(socioId: string): Promise<Credito | null> {
+    const row = (await this.prisma.credito.findFirst({
+      where: { socioId, estado: 'activo', deletedAt: null } as never,
+      orderBy: { createdAt: 'desc' } as never,
+    })) as unknown as CreditoRow | null;
+    if (!row) return null;
+    return this.toDomain(row);
+  }
+
+  async save(credito: Credito): Promise<Credito> {
+    const row = (await this.prisma.credito.create({
+      data: {
+        id: credito.id,
+        socioId: credito.socioId,
+        monto: credito.monto.value,
+        tasaMensual: credito.tasaMensual.value,
+        cuotas: credito.cuotas,
+        cuotasPagadas: credito.cuotasPagadas,
+        saldoCapital: credito.saldoCapital.value,
+        fechaDesembolso: credito.fechaDesembolso,
+        estado: credito.estado.toString(),
+        proposito: credito.proposito,
+        notas: credito.notas,
+      } as never,
+    })) as unknown as CreditoRow;
+    return this.toDomain(row);
+  }
+
+  async update(credito: Credito): Promise<Credito> {
+    const row = (await this.prisma.credito.update({
+      where: { id: credito.id },
+      data: {
+        cuotasPagadas: credito.cuotasPagadas,
+        saldoCapital: credito.saldoCapital.value,
+        estado: credito.estado.toString(),
+        proposito: credito.proposito,
+        aprobadoPor: credito.aprobadoPor,
+        notas: credito.notas,
+      } as never,
+    })) as unknown as CreditoRow;
+    return this.toDomain(row);
+  }
+
+  async softDelete(id: string): Promise<void> {
+    await this.prisma.credito.update({
+      where: { id },
+      data: { deletedAt: new Date(), estado: 'cancelado' } as never,
+    });
+  }
+}

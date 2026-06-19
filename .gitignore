@@ -117,6 +117,9 @@ whatsapp-session/
 .render/
 Procfile.local
 
+# ── Turborepo cache ──────────────────────────────────────────
+.turbo/
+
 # ── Docker (si se agrega después) ────────────────────────────
 .dockerignore
 docker-compose.override.yml
@@ -129,3 +132,6 @@ docker-compose.local.yml
 *.tar.gz
 *.rar
 .sass-cache/
+
+# Frontend build servido por backend
+packages/backend/public/

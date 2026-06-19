@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id         String      @id @default(uuid())
+  nombre     String
+  email      String      @unique
+  password   String
+  rol        String      @default("socio")
+  estado     String      @default("activo")
+  avatar     String?
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  auditorias Auditoria[]
+
+  @@map("usuarios")
+}
+
+model Socio {
+  id              String         @id
+  codigo          String         @unique
+  nombre          String
+  documento       String         @unique
+  email           String?
+  telefono        String?
+  fechaIngreso    DateTime       @map("fecha_ingreso")
+  aporteMensual   Decimal        @map("aporte_mensual") @db.Decimal(15, 2)
+  ahorroAcumulado Decimal        @default(0) @map("ahorro_acumulado") @db.Decimal(15, 2)
+  estado          String         @default("activo")
+  cargo           String?
+  sede            String?
+  deletedAt       DateTime?      @map("deleted_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  password        String?
+  accesoActivo    Boolean        @default(true) @map("acceso_activo")
+  ultimoLogin     DateTime?      @map("ultimo_login") @db.Timestamp(6)
+  codigo_socio    String?
+  aportes         Aporte[]
+  creditos        Credito[]
+  acuerdosPago    AcuerdoPago[]
+  socioDividendos DividendoSocio[]
+
+  @@index([estado])
+  @@map("socios")
+}
+
+model Periodo {
+  id        Int      @id @default(autoincrement())
+  nombre    String   @unique
+  anio      Int
+  mes       Int
+  activo    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  aportes   Aporte[]
+
+  @@map("periodos")
+}
+
+model Aporte {
+  id              String    @id @default(uuid())
+  socioId         String    @map("socio_id")
+  periodoId       Int       @map("periodo_id")
+  monto           Decimal   @db.Decimal(15, 2)
+  fechaPago       DateTime? @map("fecha_pago")
+  estado          String    @default("pendiente")
+  metodo          String?
+  notas           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  pagoSolidaridad Decimal   @default(0) @map("pago_solidaridad") @db.Decimal(15, 2)
+  pagoCredito     Decimal   @default(0) @map("pago_credito") @db.Decimal(15, 2)
+  periodo         Periodo   @relation(fields: [periodoId], references: [id])
+  socio           Socio     @relation(fields: [socioId], references: [id])
+
+  @@index([socioId])
+  @@index([periodoId])
+  @@index([estado])
+  @@map("aportes")
+}
+
+model Credito {
+  id              String       @id @default(uuid())
+  socioId         String       @map("socio_id")
+  monto           Decimal      @db.Decimal(15, 2)
+  tasaMensual     Decimal      @map("tasa_mensual") @db.Decimal(5, 2)
+  cuotas          Int
+  cuotasPagadas   Int          @default(0) @map("cuotas_pagadas")
+  saldoCapital    Decimal      @map("saldo_capital") @db.Decimal(15, 2)
+  fechaDesembolso DateTime     @map("fecha_desembolso")
+  estado          String       @default("activo")
+  proposito       String?
+  aprobadoPor     String?      @map("aprobado_por")
+  notas           String?
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  deletedAt       DateTime?    @map("deleted_at")
+  socio           Socio        @relation(fields: [socioId], references: [id])
+  pagoCuotas      PagoCuota[]
+
+  @@index([socioId])
+  @@index([estado])
+  @@map("creditos")
+}
+
+model PagoCuota {
+  id           String   @id @default(uuid())
+  creditoId    String   @map("credito_id")
+  numeroCuota  Int      @map("numero_cuota")
+  monto        Decimal  @db.Decimal(15, 2)
+  montoCapital Decimal  @map("monto_capital") @db.Decimal(15, 2)
+  montoInteres Decimal  @map("monto_interes") @db.Decimal(15, 2)
+  fechaPago    DateTime @map("fecha_pago")
+  createdAt    DateTime @default(now()) @map("created_at")
+  credito      Credito  @relation(fields: [creditoId], references: [id])
+
+  @@index([creditoId])
+  @@map("pago_cuotas")
+}
+
+model Notificacion {
+  id        String   @id @default(uuid())
+  tipo      String
+  titulo    String
+  mensaje   String
+  leida     Boolean  @default(false)
+  urgente   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notificaciones")
+}
+
+model Configuracion {
+  clave     String   @id
+  valor     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("configuracion")
+}
+
+model Movimiento {
+  id          String   @id @default(uuid())
+  tipo        String
+  categoria   String
+  descripcion String
+  monto       Decimal  @db.Decimal(15, 2)
+  fecha       DateTime
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([tipo])
+  @@index([fecha])
+  @@map("movimientos")
+}
+
+model SolidaridadMovimiento {
+  id           String   @id @default(uuid())
+  tipo         String
+  descripcion  String
+  monto        Decimal  @db.Decimal(15, 2)
+  fecha        DateTime
+  beneficiario String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([tipo])
+  @@index([fecha])
+  @@map("solidaridad_movimientos")
+}
+
+model Auditoria {
+  id         String   @id @default(uuid())
+  usuarioId  String?  @map("usuario_id")
+  accion     String
+  tabla      String?
+  registroId String?  @map("registro_id")
+  detalle    String?
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  usuario    Usuario? @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId])
+  @@index([createdAt])
+  @@map("auditoria")
+}
+
+model WaLog {
+  id        String   @id @default(uuid())
+  numero    String
+  template  String
+  estado    String
+  messageId String?  @map("message_id")
+  enviadoEn DateTime @map("enviado_en")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([numero])
+  @@index([enviadoEn])
+  @@map("wa_logs")
+}
+
+model AcuerdoPago {
+  id          String   @id @default(uuid())
+  socioId     String   @map("socio_id")
+  montoTotal  Decimal  @map("monto_total") @db.Decimal(15, 2)
+  cuotas      Int
+  montoCuota  Decimal  @map("monto_cuota") @db.Decimal(15, 2)
+  estado      String   @default("activo")
+  fechaInicio DateTime @map("fecha_inicio")
+  fechaFin    DateTime? @map("fecha_fin")
+  notas       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  socio       Socio    @relation(fields: [socioId], references: [id])
+
+  @@index([socioId])
+  @@index([estado])
+  @@map("acuerdos_pago")
+}
+
+model Dividendo {
+  id          String          @id @default(uuid())
+  periodo     String
+  montoTotal  Decimal         @map("monto_total") @db.Decimal(15, 2)
+  distribuido Boolean         @default(false)
+  fechaCalculo DateTime       @map("fecha_calculo")
+  fechaPago   DateTime?       @map("fecha_pago")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  socioDividendos DividendoSocio[]
+
+  @@map("dividendos")
+}
+
+model DividendoSocio {
+  id          String    @id @default(uuid())
+  dividendoId String    @map("dividendo_id")
+  socioId     String    @map("socio_id")
+  monto       Decimal   @db.Decimal(15, 2)
+  pagado      Boolean   @default(false)
+  fechaPago   DateTime? @map("fecha_pago")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  dividendo   Dividendo @relation(fields: [dividendoId], references: [id])
+  socio       Socio     @relation(fields: [socioId], references: [id])
+
+  @@index([dividendoId])
+  @@index([socioId])
+  @@map("dividendos_socios")
+}
