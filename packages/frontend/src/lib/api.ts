@@ -254,6 +254,15 @@ export async function apiListarPeriodos() {
   return api<PeriodoDTO[]>('/api/periodos');
 }
 
+export interface ResumenCreditos {
+  totalMontoPrestado: number;
+  totalSociosConCredito: number;
+  saldoPorCobrar: number;
+  creditosActivos: number;
+  creditosPagados: number;
+  creditosPendientes: number;
+}
+
 // ─── Créditos ──────────────────────────────
 
 export interface CreditoDTO {
@@ -291,6 +300,7 @@ export interface CuotaCalculadaDTO {
   monto: number;
   montoCapital: number;
   montoInteres: number;
+  seguro: number;
   saldoRestante: number;
 }
 
@@ -300,6 +310,10 @@ export interface EstadoCuentaDTO {
   tablaAmortizacion: CuotaCalculadaDTO[];
   totalPagado: number;
   totalPendiente: number;
+}
+
+export async function apiResumenCreditos() {
+  return api<ResumenCreditos>('/api/creditos/resumen');
 }
 
 export async function apiListarCreditos(
@@ -330,6 +344,10 @@ export async function apiCrearCredito(data: {
 
 export async function apiAprobarCredito(creditoId: string) {
   return api<{ mensaje: string }>(`/api/creditos/${creditoId}/aprobar`, { method: 'POST' });
+}
+
+export async function apiRechazarCredito(creditoId: string) {
+  return api<{ mensaje: string }>(`/api/creditos/${creditoId}/rechazar`, { method: 'POST' });
 }
 
 export async function apiPagarCuota(creditoId: string, data: { fechaPago?: string } = {}) {

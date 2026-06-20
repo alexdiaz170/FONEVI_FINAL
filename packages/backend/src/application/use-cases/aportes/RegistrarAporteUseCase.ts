@@ -38,9 +38,21 @@ export class RegistrarAporteUseCase {
 
     const montoTotal = Monto.create(dto.monto);
     const estado = EstadoAporte.create(dto.estado ?? 'pendiente');
-    const fechaPago = dto.fechaPago ? new Date(dto.fechaPago) : null;
+    const fechaPago = dto.fechaPago
+      ? (() => {
+          const parts = dto.fechaPago!.split('-').map(Number);
+          return new Date(parts[0]!, parts[1]! - 1, parts[2]!);
+        })()
+      : null;
 
     const prisma = getPrismaClient();
+
+    const [solidaridadCfg, seguroCfg] = await Promise.all([
+      prisma.configuracion.findUnique({ where: { clave: 'valor_solidaridad' } }),
+      prisma.configuracion.findUnique({ where: { clave: 'porcentaje_seguro' } }),
+    ]);
+    const valorSolidaridad = Number(solidaridadCfg?.valor ?? 5000);
+    const tasaSeguro = Number(seguroCfg?.valor ?? 0.5) / 100;
 
     return await prisma.$transaction(async () => {
       let creditoActivo: CreditoActivo | null = null;
@@ -81,6 +93,8 @@ export class RegistrarAporteUseCase {
         creditoActivo,
         dto.tipoOperacion ?? 'cuota_normal',
         fechaPago,
+        valorSolidaridad,
+        tasaSeguro,
       );
 
       const aporte = Aporte.create({

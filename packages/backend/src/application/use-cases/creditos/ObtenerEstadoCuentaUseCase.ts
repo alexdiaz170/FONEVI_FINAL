@@ -1,8 +1,17 @@
 import { Monto } from '@fonevi/shared';
-import { CalculadorCuota, CuotaCalculada } from '../../../domain/services/CalculadorCuota.js';
+import { CalculadorCuota } from '../../../domain/services/CalculadorCuota.js';
 import { ICreditoRepository } from '../../../domain/repositories/ICreditoRepository.js';
 import { IPagoCuotaRepository } from '../../../domain/repositories/IPagoCuotaRepository.js';
 import { EntityNotFoundError } from '../../../domain/errors.js';
+
+export interface CuotaAmortizacionDTO {
+  numeroCuota: number;
+  monto: number;
+  montoCapital: number;
+  montoInteres: number;
+  seguro: number;
+  saldoRestante: number;
+}
 
 export interface EstadoCuentaResult {
   credito: {
@@ -27,7 +36,7 @@ export interface EstadoCuentaResult {
     montoInteres: number;
     fechaPago: Date;
   }>;
-  tablaAmortizacion: CuotaCalculada[];
+  tablaAmortizacion: CuotaAmortizacionDTO[];
   totalPagado: number;
   totalPendiente: number;
 }
@@ -77,7 +86,14 @@ export class ObtenerEstadoCuentaUseCase {
         montoInteres: p.montoInteres.value,
         fechaPago: p.fechaPago,
       })),
-      tablaAmortizacion,
+      tablaAmortizacion: tablaAmortizacion.map((c) => ({
+        numeroCuota: c.numero,
+        monto: c.monto.value,
+        montoCapital: c.montoCapital.value,
+        montoInteres: c.montoInteres.value,
+        seguro: c.seguro.value,
+        saldoRestante: c.saldoRestante.value,
+      })),
       totalPagado,
       totalPendiente,
     };

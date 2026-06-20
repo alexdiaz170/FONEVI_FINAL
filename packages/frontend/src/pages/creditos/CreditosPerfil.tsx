@@ -52,6 +52,29 @@ export default function CreditosPerfil() {
 
   const { credito, pagos, tablaAmortizacion, totalPagado, totalPendiente } = estadoCuenta;
 
+  const MESES = [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ];
+
+  function getPeriodo(numeroCuota: number): string {
+    if (!credito.fechaDesembolso) return '—';
+    const fechaBase = new Date(credito.fechaDesembolso);
+    if (isNaN(fechaBase.getTime())) return '—';
+    fechaBase.setMonth(fechaBase.getMonth() + numeroCuota);
+    return `${MESES[fechaBase.getMonth()]} ${fechaBase.getFullYear()}`;
+  }
+
   const puedePagar =
     credito.estado === 'activo' && tablaAmortizacion.some((c) => c.saldoRestante > 0);
 
@@ -138,9 +161,11 @@ export default function CreditosPerfil() {
               <thead>
                 <tr className="bg-gray-50 text-gray-600">
                   <th className="text-left p-2 font-medium">N°</th>
+                  <th className="text-left p-2 font-medium">Periodo</th>
                   <th className="text-right p-2 font-medium">Cuota</th>
                   <th className="text-right p-2 font-medium">Capital</th>
                   <th className="text-right p-2 font-medium">Interés</th>
+                  <th className="text-right p-2 font-medium">Seguro</th>
                   <th className="text-right p-2 font-medium">Saldo</th>
                   <th className="text-center p-2 font-medium">Estado</th>
                 </tr>
@@ -154,12 +179,16 @@ export default function CreditosPerfil() {
                       className={`border-t ${pagada ? 'bg-green-50' : ''}`}
                     >
                       <td className="p-2">{cuota.numeroCuota}</td>
+                      <td className="p-2 text-gray-500 text-xs">{getPeriodo(cuota.numeroCuota)}</td>
                       <td className="p-2 text-right font-mono">{formatCurrency(cuota.monto)}</td>
                       <td className="p-2 text-right font-mono">
                         {formatCurrency(cuota.montoCapital)}
                       </td>
                       <td className="p-2 text-right font-mono">
                         {formatCurrency(cuota.montoInteres)}
+                      </td>
+                      <td className="p-2 text-right font-mono text-amber-600">
+                        {formatCurrency(cuota.seguro)}
                       </td>
                       <td className="p-2 text-right font-mono">
                         {formatCurrency(cuota.saldoRestante)}

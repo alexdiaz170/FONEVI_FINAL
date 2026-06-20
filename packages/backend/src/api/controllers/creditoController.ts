@@ -8,6 +8,8 @@ import { AprobarCreditoUseCase } from '../../application/use-cases/creditos/Apro
 import { PagarCuotaUseCase } from '../../application/use-cases/creditos/PagarCuotaUseCase.js';
 import { ListarCreditosUseCase } from '../../application/use-cases/creditos/ListarCreditosUseCase.js';
 import { ObtenerEstadoCuentaUseCase } from '../../application/use-cases/creditos/ObtenerEstadoCuentaUseCase.js';
+import { ObtenerResumenCreditosUseCase } from '../../application/use-cases/creditos/ObtenerResumenCreditosUseCase.js';
+import { RechazarCreditoUseCase } from '../../application/use-cases/creditos/RechazarCreditoUseCase.js';
 import { apiResponse } from '../response.js';
 import {
   solicitarCreditoSchema,
@@ -27,6 +29,8 @@ export function createCreditoController(
   const aprobarUseCase = new AprobarCreditoUseCase(creditoRepo);
   const pagarCuotaUseCase = new PagarCuotaUseCase(creditoRepo, pagoCuotaRepo, calculador);
   const listarUseCase = new ListarCreditosUseCase(creditoRepo);
+  const resumenUseCase = new ObtenerResumenCreditosUseCase();
+  const rechazarUseCase = new RechazarCreditoUseCase(creditoRepo);
   const estadoCuentaUseCase = new ObtenerEstadoCuentaUseCase(
     creditoRepo,
     pagoCuotaRepo,
@@ -72,6 +76,15 @@ export function createCreditoController(
   }
 
   return {
+    async resumen(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+        const data = await resumenUseCase.execute();
+        apiResponse.success(res, data);
+      } catch (error) {
+        next(error);
+      }
+    },
+
     async list(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
         const query = listarCreditosSchema.parse(req.query);
@@ -118,6 +131,16 @@ export function createCreditoController(
         const usuario = req.usuario!;
         await aprobarUseCase.execute(id, usuario.nombre);
         apiResponse.success(res, { mensaje: 'Crédito aprobado correctamente' });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async rechazar(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+        const id = String(req.params.id ?? '');
+        await rechazarUseCase.execute(id);
+        apiResponse.success(res, { mensaje: 'Crédito rechazado correctamente' });
       } catch (error) {
         next(error);
       }

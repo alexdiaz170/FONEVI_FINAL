@@ -30,8 +30,12 @@ export class DistribucionAporteService {
     creditoActivo: CreditoActivo | null = null,
     tipoOperacion: string = 'cuota_normal',
     fechaPago: Date | null = null,
+    aporteSolidaridadOverride?: number,
+    tasaSeguroOverride?: number,
   ): DistribucionResult {
-    const pagoSolidaridadValor = Math.min(montoTotal.value, this.aporteSolidaridad);
+    const aporteSolidaridad = aporteSolidaridadOverride ?? this.aporteSolidaridad;
+    const tasaSeguro = tasaSeguroOverride ?? this.tasaSeguro;
+    const pagoSolidaridadValor = Math.min(montoTotal.value, aporteSolidaridad);
     const pagoSolidaridad = Monto.create(pagoSolidaridadValor);
 
     let restante = Monto.create(montoTotal.value).restar(pagoSolidaridad);
@@ -73,7 +77,7 @@ export class DistribucionAporteService {
         restante = restante.restar(pagoInteres);
 
         if (restante.value > 0) {
-          pagoSeguro = Monto.create(Number((saldo.value * this.tasaSeguro * factor).toFixed(2)));
+          pagoSeguro = Monto.create(Number((saldo.value * tasaSeguro * factor).toFixed(2)));
           pagoSeguro = restante.esMenorQue(pagoSeguro) ? restante : pagoSeguro;
           restante = restante.restar(pagoSeguro);
 

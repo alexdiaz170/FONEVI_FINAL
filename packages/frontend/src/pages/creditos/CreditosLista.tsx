@@ -11,29 +11,58 @@ import {
   FileSpreadsheet,
   FileText,
 } from 'lucide-react';
-import { apiListarCreditos, apiAprobarCredito, type CreditoDTO } from '../../lib/api';
+import {
+  apiListarCreditos,
+  apiAprobarCredito,
+  apiRechazarCredito,
+  apiResumenCreditos,
+  type CreditoDTO,
+  type ResumenCreditos,
+} from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
 
-const ESTADOS = ['', 'pendiente', 'activo', 'pagado', 'cancelado'];
+const ESTADOS = ['activo,pendiente', 'activo', 'pendiente', 'pagado', 'cancelado', ''];
+
+const ESTADO_LABELS: Record<string, string> = {
+  'activo,pendiente': 'Activos y pendientes',
+  activo: 'Activo',
+  pendiente: 'Pendiente',
+  pagado: 'Pagado',
+  cancelado: 'Cancelado',
+  '': 'Todos',
+};
 
 export default function CreditosLista() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState('');
+  const [estadoFilter, setEstadoFilter] = useState('activo,pendiente');
   const queryClient = useQueryClient();
   const location = useLocation();
   const successMsg = (location.state as { success?: string })?.success;
   location.state = {};
 
+  const estadosArray = estadoFilter ? estadoFilter.split(',') : [];
   const { data, isLoading, error } = useQuery({
     queryKey: ['creditos', page, estadoFilter],
     queryFn: () => apiListarCreditos({ page, limit: 10, estado: estadoFilter || undefined }),
+    staleTime: 0,
+  });
+
+  const { data: resumen } = useQuery({
+    queryKey: ['creditos-resumen'],
+    queryFn: () => apiResumenCreditos(),
+    staleTime: 0,
   });
 
   const aprobarMutation = useMutation({
     mutationFn: (id: string) => apiAprobarCredito(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['creditos'] }),
+  });
+
+  const rechazarMutation = useMutation({
+    mutationFn: (id: string) => apiRechazarCredito(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['creditos'] }),
   });
 
@@ -120,10 +149,9 @@ export default function CreditosLista() {
               }}
               className="border rounded px-2 py-1 text-sm"
             >
-              <option value="">Todos los estados</option>
-              {ESTADOS.filter(Boolean).map((e) => (
+              {ESTADOS.map((e) => (
                 <option key={e} value={e}>
-                  {e.charAt(0).toUpperCase() + e.slice(1)}
+                  {ESTADO_LABELS[e] ?? e.charAt(0).toUpperCase() + e.slice(1)}
                 </option>
               ))}
             </select>
@@ -140,6 +168,42 @@ export default function CreditosLista() {
           <div className="p-8 text-center text-red-500">Error: {(error as ApiError).message}</div>
         )}
 
+        {resumen && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 border-b">
+            <div className="bg-navy-50 rounded-lg p-4 border border-navy-200">
+              <p className="text-xs font-medium text-navy-600 uppercase tracking-wide">
+                Valor total créditos
+              </p>
+              <p className="text-2xl font-bold text-navy-800 mt-1">
+                {formatCurrency(resumen.totalMontoPrestado)}
+              </p>
+              <p className="text-xs text-navy-500 mt-1">
+                {resumen.creditosActivos} activos · {resumen.creditosPagados} pagados
+              </p>
+            </div>
+            <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+              <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">
+                Socios con crédito
+              </p>
+              <p className="text-2xl font-bold text-emerald-800 mt-1">
+                {resumen.totalSociosConCredito}
+              </p>
+              <p className="text-xs text-emerald-500 mt-1">
+                {resumen.creditosPendientes} solicitudes pendientes
+              </p>
+            </div>
+            <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+              <p className="text-xs font-medium text-amber-600 uppercase tracking-wide">
+                Saldo por cobrar
+              </p>
+              <p className="text-2xl font-bold text-amber-800 mt-1">
+                {formatCurrency(resumen.saldoPorCobrar)}
+              </p>
+              <p className="text-xs text-amber-500 mt-1">Capital pendiente de créditos activos</p>
+            </div>
+          </div>
+        )}
+
         {filteredData && (
           <>
             <div className="overflow-x-auto">
@@ -152,7 +216,6 @@ export default function CreditosLista() {
                     <th className="text-right p-3 font-medium">Saldo</th>
                     <th className="text-center p-3 font-medium">Cuotas</th>
                     <th className="text-left p-3 font-medium">Estado</th>
-                    <th className="text-left p-3 font-medium">Desembolso</th>
                     <th className="text-center p-3 font-medium">Acción</th>
                   </tr>
                 </thead>
@@ -181,17 +244,25 @@ export default function CreditosLista() {
                           {credito.estado}
                         </span>
                       </td>
-                      <td className="p-3 text-gray-600">{formatDate(credito.fechaDesembolso)}</td>
                       <td className="p-3 text-center">
                         <div className="flex items-center justify-center gap-1">
                           {credito.estado === 'pendiente' && (
-                            <button
-                              onClick={() => aprobarMutation.mutate(credito.id)}
-                              disabled={aprobarMutation.isPending}
-                              className="inline-flex items-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50"
-                            >
-                              <Check size={14} /> Aprobar
-                            </button>
+                            <>
+                              <button
+                                onClick={() => aprobarMutation.mutate(credito.id)}
+                                disabled={aprobarMutation.isPending}
+                                className="inline-flex items-center gap-1 px-2 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                              >
+                                <Check size={14} /> Aprobar
+                              </button>
+                              <button
+                                onClick={() => rechazarMutation.mutate(credito.id)}
+                                disabled={rechazarMutation.isPending}
+                                className="inline-flex items-center gap-1 px-2 py-1.5 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50"
+                              >
+                                <Check size={14} /> No aprobar
+                              </button>
+                            </>
                           )}
                           <Link
                             to={`/creditos/${credito.id}`}
@@ -205,7 +276,7 @@ export default function CreditosLista() {
                   ))}
                   {filteredData.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-gray-400">
+                      <td colSpan={7} className="p-8 text-center text-gray-400">
                         No se encontraron créditos
                       </td>
                     </tr>

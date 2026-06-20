@@ -101,7 +101,11 @@ export function createAporteController(
           apiResponse.error(res, 404, 'Aporte no encontrado', 'NOT_FOUND');
           return;
         }
-        apiResponse.success(res, mapAporte(aporte));
+        const socio = await socioRepo.findById(aporte.socioId);
+        apiResponse.success(res, {
+          ...mapAporte(aporte),
+          nombreSocio: socio?.nombre ?? null,
+        });
       } catch (error) {
         next(error);
       }

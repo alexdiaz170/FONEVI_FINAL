@@ -27,6 +27,16 @@ export class SolicitarCreditoUseCase {
       throw new DomainError('El socio no puede solicitar créditos en su estado actual');
     }
 
+    const MAX_MULTIPLICADOR = 4;
+    const maxMonto = socio.ahorroAcumulado.value * MAX_MULTIPLICADOR;
+    if (dto.monto > maxMonto) {
+      throw new DomainError(
+        `El monto del crédito ($${dto.monto.toLocaleString('es-CO')}) excede el máximo permitido. ` +
+          `Basado en el ahorro acumulado del socio ($${socio.ahorroAcumulado.value.toLocaleString('es-CO')} × ${MAX_MULTIPLICADOR}), ` +
+          `el máximo es $${maxMonto.toLocaleString('es-CO')}.`,
+      );
+    }
+
     const monto = Monto.create(dto.monto);
     const tasaMensual = TasaInteres.create(dto.tasaMensual);
     const fechaDesembolso = dto.fechaDesembolso ? new Date(dto.fechaDesembolso) : new Date();

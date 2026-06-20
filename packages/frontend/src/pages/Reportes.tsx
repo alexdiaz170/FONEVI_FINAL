@@ -5,6 +5,7 @@ import {
   apiGetReporteCartera,
   apiGetReporteFlujoCaja,
   apiGetReporteEstadoCuentaSocio,
+  apiListarPeriodos,
   apiListarSocios,
 } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
@@ -294,6 +295,13 @@ function EstadoCuentaTab() {
     queryFn: () => apiListarSocios(1, 999),
   });
 
+  const { data: periodos } = useQuery({
+    queryKey: ['periodos'],
+    queryFn: () => apiListarPeriodos(),
+  });
+
+  const periodoMap = new Map(periodos?.map((p) => [p.id, p.nombre]) ?? []);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['reporte-estado-cuenta', socioId],
     queryFn: () => apiGetReporteEstadoCuentaSocio(socioId),
@@ -301,7 +309,7 @@ function EstadoCuentaTab() {
   });
 
   const columnsAportes: ExportColumn[] = [
-    { header: 'Período', key: 'periodoId' },
+    { header: 'Período', key: 'periodoId', format: (v) => periodoMap.get(Number(v)) ?? String(v) },
     { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
     { header: 'Fecha Pago', key: 'fechaPago', format: (v) => formatDate(v as string) },
     { header: 'Estado', key: 'estado' },
@@ -347,7 +355,7 @@ function EstadoCuentaTab() {
           <option value="">Seleccione un socio...</option>
           {socios?.data.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.nombre} - {s.documento}
+              {s.nombre} - {s.numeroDocumento}
             </option>
           ))}
         </select>
@@ -423,7 +431,9 @@ function EstadoCuentaTab() {
                 <tbody className="divide-y divide-gray-100">
                   {data.aportes.map((a) => (
                     <tr key={a.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">#{a.periodoId}</td>
+                      <td className="px-4 py-3">
+                        {periodoMap.get(a.periodoId) ?? `#${a.periodoId}`}
+                      </td>
                       <td className="px-4 py-3 text-right">{formatCurrency(a.monto)}</td>
                       <td className="px-4 py-3">{formatDate(a.fechaPago)}</td>
                       <td className="px-4 py-3 text-center">

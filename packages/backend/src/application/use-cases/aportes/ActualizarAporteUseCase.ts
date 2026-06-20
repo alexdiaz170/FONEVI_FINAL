@@ -24,7 +24,12 @@ export class ActualizarAporteUseCase {
     const actualizaciones: Record<string, unknown> = {};
     if (dto.monto !== undefined) actualizaciones.monto = Monto.create(dto.monto);
     if (dto.fechaPago !== undefined)
-      actualizaciones.fechaPago = dto.fechaPago ? new Date(dto.fechaPago) : null;
+      actualizaciones.fechaPago = dto.fechaPago
+        ? (() => {
+            const parts = dto.fechaPago!.split('-').map(Number);
+            return new Date(parts[0]!, parts[1]! - 1, parts[2]!);
+          })()
+        : null;
     if (dto.estado !== undefined) actualizaciones.estado = EstadoAporte.create(dto.estado);
     if (dto.metodo !== undefined) actualizaciones.metodo = dto.metodo ?? null;
     if (dto.notas !== undefined) actualizaciones.notas = dto.notas ?? null;

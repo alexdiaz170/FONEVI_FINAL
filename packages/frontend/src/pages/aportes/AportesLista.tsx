@@ -21,6 +21,7 @@ import {
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 const ESTADOS = ['', 'pendiente', 'pagado', 'mora', 'vencido', 'anulado'];
 
@@ -29,6 +30,7 @@ export default function AportesLista() {
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
   const [periodoFilter, setPeriodoFilter] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['aportes', page, estadoFilter, periodoFilter],
@@ -47,14 +49,17 @@ export default function AportesLista() {
   });
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Está seguro de eliminar este aporte?')) return;
     try {
       await apiEliminarAporte(id);
       refetch();
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Error al eliminar');
+    } finally {
+      setConfirmDelete(null);
     }
   };
+
+  const periodoMap = new Map(periodos?.map((p) => [p.id, p.nombre]) ?? []);
 
   const filteredData =
     data?.data?.filter(
@@ -63,7 +68,7 @@ export default function AportesLista() {
 
   const exportColumns: ExportColumn[] = [
     { header: 'Socio ID', key: 'socioId' },
-    { header: 'Periodo ID', key: 'periodoId', format: (v) => String(v) },
+    { header: 'Periodo', key: 'periodoId', format: (v) => String(periodoMap.get(Number(v)) ?? v) },
     { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
     { header: 'Fecha Pago', key: 'fechaPago', format: (v) => (v ? formatDate(String(v)) : '—') },
     { header: 'Estado', key: 'estado' },
@@ -191,7 +196,9 @@ export default function AportesLista() {
                       <td className="p-3 text-sm">
                         {aporte.nombreSocio ?? aporte.socioId.slice(0, 8)}
                       </td>
-                      <td className="p-3">{aporte.periodoId}</td>
+                      <td className="p-3">
+                        {periodoMap.get(aporte.periodoId) ?? aporte.periodoId}
+                      </td>
                       <td className="p-3 text-right font-mono text-sm">
                         {formatCurrency(aporte.monto)}
                       </td>
@@ -217,7 +224,7 @@ export default function AportesLista() {
                             <Eye size={16} />
                           </Link>
                           <button
-                            onClick={() => handleDelete(aporte.id)}
+                            onClick={() => setConfirmDelete(aporte.id)}
                             className="p-1.5 text-red-500 hover:bg-red-50 rounded"
                           >
                             <Trash2 size={16} />
@@ -263,6 +270,15 @@ export default function AportesLista() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Eliminar Aporte"
+        message="¿Está seguro de eliminar este aporte? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => handleDelete(confirmDelete!)}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

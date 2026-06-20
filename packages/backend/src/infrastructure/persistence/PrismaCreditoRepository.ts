@@ -69,7 +69,17 @@ export class PrismaCreditoRepository implements ICreditoRepository {
     const { socioId, estado, page = 1, limit = 10 } = filters;
     const where: Record<string, unknown> = { deletedAt: null };
     if (socioId) where.socioId = socioId;
-    if (estado) where.estado = estado;
+    if (estado) {
+      const estados = estado
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (estados.length === 1) {
+        where.estado = estados[0];
+      } else {
+        where.estado = { in: estados };
+      }
+    }
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([

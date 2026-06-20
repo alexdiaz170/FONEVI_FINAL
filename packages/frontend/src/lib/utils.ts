@@ -19,11 +19,10 @@ export function formatDate(date: Date | string | null | undefined): string {
     if (!date) return '—';
     const d = new Date(date);
     if (isNaN(d.getTime())) return '—';
-    return new Intl.DateTimeFormat('es-CO', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }).format(d);
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${day}/${month}/${year}`;
   } catch {
     return '—';
   }

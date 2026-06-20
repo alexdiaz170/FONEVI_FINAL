@@ -14,6 +14,7 @@ const SociosPerfil = React.lazy(() => import('./pages/socios/SociosPerfil'));
 const AportesPage = React.lazy(() => import('./pages/Aportes'));
 const AportesLista = React.lazy(() => import('./pages/aportes/AportesLista'));
 const AportesCrear = React.lazy(() => import('./pages/aportes/AportesCrear'));
+const AportesPerfil = React.lazy(() => import('./pages/aportes/AportesPerfil'));
 const CreditosPage = React.lazy(() => import('./pages/Creditos'));
 const CreditosLista = React.lazy(() => import('./pages/creditos/CreditosLista'));
 const CreditosCrear = React.lazy(() => import('./pages/creditos/CreditosCrear'));
@@ -87,6 +88,7 @@ export default function App() {
             >
               <Route index element={<AportesLista />} />
               <Route path="crear" element={<AportesCrear />} />
+              <Route path=":id" element={<AportesPerfil />} />
             </Route>
             <Route
               path="creditos"

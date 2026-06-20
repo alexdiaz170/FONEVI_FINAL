@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { apiCrearCredito, apiListarSocios } from '../../lib/api';
 import { ApiError } from '../../lib/api';
+import { formatCurrency } from '../../lib/utils';
 
 export default function CreditosCrear() {
   const navigate = useNavigate();
@@ -59,6 +60,12 @@ export default function CreditosCrear() {
       setError('Debe haber al menos 1 cuota');
       return;
     }
+    if (monto > maxCredito) {
+      setError(
+        `El monto excede el máximo permitido. El socio tiene ${formatCurrency(socioSeleccionado!.ahorroAcumulado)} de ahorro × ${MAX_MULTIPLICADOR} = ${formatCurrency(maxCredito)}`,
+      );
+      return;
+    }
     if (!form.fechaDesembolso) {
       setError('Seleccione una fecha de desembolso');
       return;
@@ -87,6 +94,10 @@ export default function CreditosCrear() {
       setLoading(false);
     }
   };
+
+  const socioSeleccionado = sociosData?.data.find((s) => s.id === form.socioId);
+  const MAX_MULTIPLICADOR = 4;
+  const maxCredito = socioSeleccionado ? socioSeleccionado.ahorroAcumulado * MAX_MULTIPLICADOR : 0;
 
   const montoNum = Number(form.monto);
   const tasaNum = Number(form.tasaMensual);
@@ -132,6 +143,23 @@ export default function CreditosCrear() {
               ))}
             </select>
           </div>
+          {socioSeleccionado && (
+            <div className="md:col-span-2 bg-gray-50 border border-gray-200 rounded p-3 text-sm">
+              <p className="text-gray-600">
+                <span className="font-medium">Ahorro acumulado:</span>{' '}
+                {formatCurrency(socioSeleccionado.ahorroAcumulado)}
+                <span className="mx-2">·</span>
+                <span className="font-medium">Máximo crédito:</span>{' '}
+                <span
+                  className={montoNum > maxCredito ? 'text-red-600 font-bold' : 'text-gray-900'}
+                >
+                  {formatCurrency(maxCredito)}
+                </span>
+                <span className="ml-1 text-gray-400">(×{MAX_MULTIPLICADOR})</span>
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
             <input
@@ -209,7 +237,7 @@ export default function CreditosCrear() {
             <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded p-3 text-sm">
               <span className="text-blue-800 font-medium">Cuota mensual estimada: </span>
               <span className="text-blue-900 font-mono font-bold">
-                {cuotaEstimada.toFixed(2)} Gs.
+                {formatCurrency(cuotaEstimada)}
               </span>
             </div>
           )}

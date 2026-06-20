@@ -13,6 +13,7 @@ const pagoCuotaRepo = new PrismaPagoCuotaRepository();
 const creditoController = createCreditoController(socioRepo, creditoRepo, pagoCuotaRepo);
 
 router.get('/', authenticate, creditoController.list.bind(creditoController));
+router.get('/resumen', authenticate, creditoController.resumen.bind(creditoController));
 router.get('/:id', authenticate, creditoController.get.bind(creditoController));
 router.post(
   '/',
@@ -25,6 +26,12 @@ router.post(
   authenticate,
   authorize('admin', 'superadmin'),
   creditoController.aprobar.bind(creditoController),
+);
+router.post(
+  '/:id/rechazar',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  creditoController.rechazar.bind(creditoController),
 );
 router.post('/:id/pagar', authenticate, creditoController.pagarCuota.bind(creditoController));
 

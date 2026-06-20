@@ -14,11 +14,13 @@ import { apiListarSocios, apiEliminarSocio, type SocioDTO } from '../../lib/api'
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 export default function SociosLista() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['socios', page],
@@ -26,7 +28,6 @@ export default function SociosLista() {
   });
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Está seguro de eliminar este socio?')) return;
     setDeleting(id);
     try {
       await apiEliminarSocio(id);
@@ -35,6 +36,7 @@ export default function SociosLista() {
       alert(err instanceof ApiError ? err.message : 'Error al eliminar');
     } finally {
       setDeleting(null);
+      setConfirmDelete(null);
     }
   };
 
@@ -58,7 +60,6 @@ export default function SociosLista() {
       key: 'ahorroAcumulado',
       format: (v) => formatCurrency(Number(v)),
     },
-    { header: 'Aporte Mensual', key: 'aporteMensual', format: (v) => formatCurrency(Number(v)) },
     { header: 'Cargo', key: 'cargo' },
     { header: 'Sede', key: 'sede' },
     {
@@ -73,9 +74,7 @@ export default function SociosLista() {
   };
 
   const handleExportPDF = () => {
-    const pdfColumns = exportColumns.filter(
-      (c) => c.key !== 'ahorroAcumulado' && c.key !== 'aporteMensual',
-    );
+    const pdfColumns = exportColumns.filter((c) => c.key !== 'ahorroAcumulado');
     exportToPDF(
       filteredData as unknown as Record<string, unknown>[],
       pdfColumns,
@@ -182,7 +181,7 @@ export default function SociosLista() {
                     <th className="text-left p-3 font-medium">Nombre</th>
                     <th className="text-left p-3 font-medium">Documento</th>
                     <th className="text-left p-3 font-medium">Estado</th>
-                    <th className="text-right p-3 font-medium">Ahorro</th>
+                    <th className="text-right p-3 font-medium">Ahorro Acumulado</th>
                     <th className="text-right p-3 font-medium">Ingreso</th>
                     <th className="text-center p-3 font-medium">Acciones</th>
                   </tr>
@@ -221,7 +220,7 @@ export default function SociosLista() {
                             <Eye size={16} />
                           </Link>
                           <button
-                            onClick={() => handleDelete(socio.id)}
+                            onClick={() => setConfirmDelete(socio.id)}
                             disabled={deleting === socio.id}
                             className="p-1.5 text-red-500 hover:bg-red-50 rounded disabled:opacity-50"
                           >
@@ -268,6 +267,16 @@ export default function SociosLista() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Eliminar Socio"
+        message="¿Está seguro de eliminar este socio? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={() => handleDelete(confirmDelete!)}
+        onCancel={() => setConfirmDelete(null)}
+        loading={!!deleting}
+      />
     </div>
   );
 }
