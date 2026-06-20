@@ -16,18 +16,19 @@ export class CrearSocioUseCase {
   ) {}
 
   async execute(dto: {
-    codigo: string;
     nombre: string;
     tipoDocumento: string;
     numeroDocumento: string;
     email?: string | null;
     telefono?: string | null;
     fechaIngreso?: string;
-    aporteMensual: number;
+    aporteMensual?: number;
     ahorroAcumulado?: number;
     estado?: string;
     cargo?: string | null;
     sede?: string | null;
+    departamento?: string | null;
+    municipio?: string | null;
   }): Promise<{ socio: Socio; passwordInicial: string }> {
     const tipoDoc = TipoDocumento.create(dto.tipoDocumento);
 
@@ -42,7 +43,8 @@ export class CrearSocioUseCase {
     const email = dto.email ? Email.create(dto.email) : null;
     const telefono = dto.telefono ? Telefono.create(dto.telefono) : null;
     const fechaIngreso = dto.fechaIngreso ? new Date(dto.fechaIngreso) : new Date();
-    const aporteMensual = Monto.create(dto.aporteMensual);
+    const aporteMensual =
+      dto.aporteMensual !== undefined ? Monto.create(dto.aporteMensual) : Monto.create(0);
     const ahorroAcumulado =
       dto.ahorroAcumulado !== undefined ? Monto.create(dto.ahorroAcumulado) : Monto.create(0);
     const estado = EstadoSocio.create(dto.estado ?? 'activo');
@@ -51,7 +53,7 @@ export class CrearSocioUseCase {
     const passwordInicial = generarPasswordInicial(dto.numeroDocumento);
 
     const socio = Socio.create({
-      codigo: dto.codigo,
+      codigo: codigoSocio,
       codigoSocio,
       nombre: dto.nombre,
       tipoDocumento: tipoDoc,
@@ -64,6 +66,8 @@ export class CrearSocioUseCase {
       estado,
       cargo: dto.cargo ?? null,
       sede: dto.sede ?? null,
+      departamento: dto.departamento ?? null,
+      municipio: dto.municipio ?? null,
     });
 
     const saved = await this.socioRepo.save(socio);

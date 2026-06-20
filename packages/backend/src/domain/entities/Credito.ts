@@ -12,6 +12,7 @@ export interface CreditoProps {
   cuotasPagadas?: number;
   saldoCapital: Monto;
   fechaDesembolso: Date;
+  fechaUltimoPago?: Date | null;
   estado?: EstadoCredito;
   proposito?: string | null;
   aprobadoPor?: string | null;
@@ -30,6 +31,7 @@ export class Credito {
   readonly cuotasPagadas: number;
   readonly saldoCapital: Monto;
   readonly fechaDesembolso: Date;
+  readonly fechaUltimoPago: Date | null;
   readonly estado: EstadoCredito;
   readonly proposito: string | null;
   readonly aprobadoPor: string | null;
@@ -47,6 +49,7 @@ export class Credito {
     this.cuotasPagadas = props.cuotasPagadas ?? 0;
     this.saldoCapital = props.saldoCapital;
     this.fechaDesembolso = props.fechaDesembolso;
+    this.fechaUltimoPago = props.fechaUltimoPago ?? null;
     this.estado = props.estado ?? EstadoCredito.PENDIENTE;
     this.proposito = props.proposito ?? null;
     this.aprobadoPor = props.aprobadoPor ?? null;
@@ -101,7 +104,7 @@ export class Credito {
     return this.deletedAt !== null;
   }
 
-  registrarPagoCuota(montoCapital: Monto, montoInteres: Monto): Credito {
+  registrarPagoCuota(montoCapital: Monto, montoInteres: Monto, fechaPago?: Date): Credito {
     const nuevasPagadas = this.cuotasPagadas + 1;
     const nuevoSaldo = this.saldoCapital.restar(montoCapital);
     const nuevoEstado =
@@ -113,6 +116,7 @@ export class Credito {
       cuotasPagadas: nuevasPagadas,
       saldoCapital: Monto.create(Math.max(0, nuevoSaldo.value)),
       estado: nuevoEstado,
+      fechaUltimoPago: fechaPago ?? new Date(),
     });
   }
 
@@ -151,6 +155,7 @@ export class Credito {
       cuotasPagadas: this.cuotasPagadas,
       saldoCapital: this.saldoCapital,
       fechaDesembolso: this.fechaDesembolso,
+      fechaUltimoPago: this.fechaUltimoPago,
       estado: this.estado,
       proposito: this.proposito,
       aprobadoPor: this.aprobadoPor,

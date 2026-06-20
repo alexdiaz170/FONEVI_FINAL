@@ -900,7 +900,7 @@ function renderEstado() {
   var resumen = PROFILE.resumen || {};
   var ahorro  = resumen.ahorroAcumulado || SOCIO.ahorroAcumulado || 0;
   var deuda   = resumen.saldoPendiente || 0;
-  var maxCred = ahorro * (DB.config?.max_credito_multiplicador || 3);
+  var maxCred = ahorro * (DB.config?.max_credito_multiplicador || 4);
   var pctUsado = maxCred > 0 ? Math.round((deuda / maxCred) * 100) : 0;
 
   document.getElementById("pEstadoCuenta").innerHTML = [

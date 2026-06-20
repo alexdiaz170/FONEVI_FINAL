@@ -18,6 +18,8 @@ function mapSocio(s) {
     estado: s.estado,
     cargo: s.cargo,
     sede: s.sede,
+    departamento: s.departamento,
+    municipio: s.municipio,
     created_at: s.createdAt,
     updated_at: s.updatedAt,
     socio_nombre: s.nombre,
@@ -27,9 +29,10 @@ function mapSocio(s) {
 function mapAporte(a) {
   if (!a) return null;
   // periodo can be a string (flat JOIN result) or an object with .nombre
-  const periodoNombre = (a.periodo && typeof a.periodo === 'object')
-    ? a.periodo.nombre
-    : (a.periodo || a.periodoNombre || '');
+  const periodoNombre =
+    a.periodo && typeof a.periodo === 'object'
+      ? a.periodo.nombre
+      : a.periodo || a.periodoNombre || '';
   return {
     id: a.id,
     periodo_id: a.periodoId,
@@ -43,8 +46,8 @@ function mapAporte(a) {
     metodo: a.metodo,
     notas: a.notas,
     // Prefer nested object, fallback to flat JOIN column
-    socio_nombre: (a.socio && a.socio.nombre) ? a.socio.nombre : (a.socioNombre || null),
-    codigo_socio: (a.socio && a.socio.codigo_socio) ? a.socio.codigo_socio : (a.socioCodigo || null),
+    socio_nombre: a.socio && a.socio.nombre ? a.socio.nombre : a.socioNombre || null,
+    codigo_socio: a.socio && a.socio.codigo_socio ? a.socio.codigo_socio : a.socioCodigo || null,
     created_at: a.createdAt,
   };
 }
@@ -53,7 +56,7 @@ function mapCredito(c) {
   if (!c) return null;
   return {
     id: c.id,
-    socio_id: (c.socio && c.socio.documento) ? c.socio.documento : c.socioId,
+    socio_id: c.socio && c.socio.documento ? c.socio.documento : c.socioId,
     monto: Number(c.monto),
     tasa_mensual: Number(c.tasaMensual),
     cuotas: c.cuotas,
@@ -63,11 +66,10 @@ function mapCredito(c) {
     estado: c.estado,
     proposito: c.proposito,
     aprobado_por: c.aprobadoPor,
-    socio_nombre: (c.socio && c.socio.nombre) ? c.socio.nombre : (c.socioNombre || null),
-    socio_codigo: (c.socio && c.socio.codigo_socio) ? c.socio.codigo_socio : (c.socioCodigo || null),
+    socio_nombre: c.socio && c.socio.nombre ? c.socio.nombre : c.socioNombre || null,
+    socio_codigo: c.socio && c.socio.codigo_socio ? c.socio.codigo_socio : c.socioCodigo || null,
     created_at: c.createdAt,
   };
 }
 
 module.exports = { mapSocio, mapAporte, mapCredito };
-

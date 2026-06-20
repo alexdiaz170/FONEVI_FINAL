@@ -20,6 +20,8 @@ export class ActualizarSocioUseCase {
       estado?: string;
       cargo?: string | null;
       sede?: string | null;
+      departamento?: string | null;
+      municipio?: string | null;
     },
   ): Promise<Socio> {
     const socio = await this.socioRepo.findById(id);
@@ -37,6 +39,8 @@ export class ActualizarSocioUseCase {
       estado: EstadoSocio;
       cargo: string | null;
       sede: string | null;
+      departamento: string | null;
+      municipio: string | null;
     }> = {};
 
     if (dto.nombre !== undefined) actualizaciones.nombre = dto.nombre;
@@ -51,6 +55,8 @@ export class ActualizarSocioUseCase {
     if (dto.estado !== undefined) actualizaciones.estado = EstadoSocio.create(dto.estado);
     if (dto.cargo !== undefined) actualizaciones.cargo = dto.cargo ?? null;
     if (dto.sede !== undefined) actualizaciones.sede = dto.sede ?? null;
+    if (dto.departamento !== undefined) actualizaciones.departamento = dto.departamento ?? null;
+    if (dto.municipio !== undefined) actualizaciones.municipio = dto.municipio ?? null;
 
     const actualizado = socio.actualizarDatos(actualizaciones);
     return this.socioRepo.update(actualizado);

@@ -1,5 +1,6 @@
 const db = require('../db');
 const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
 const aporteService = require('./aporteService');
 const creditoService = require('./creditoService');
 
@@ -13,7 +14,7 @@ async function generarCodigoSocio(db) {
   // Busca el mayor sufijo numérico en codigo_socio con formato SOC-####
   const q = `SELECT COALESCE(MAX(CAST(SUBSTRING(codigo_socio FROM 5) AS INTEGER)), 0) AS maxn FROM socios WHERE codigo_socio ~ '^SOC-\\d{4}$'`;
   const r = await db.query(q);
-  const maxn = (r.rows && r.rows[0] && r.rows[0].maxn) ? Number(r.rows[0].maxn) : 0;
+  const maxn = r.rows && r.rows[0] && r.rows[0].maxn ? Number(r.rows[0].maxn) : 0;
   const next = (maxn + 1).toString().padStart(4, '0');
   return 'SOC-' + next;
 }
@@ -44,6 +45,8 @@ class SocioService {
              END as estado,
              s.cargo,
              s.sede,
+             s.departamento,
+             s.municipio,
              s.created_at as "createdAt"
       FROM socios s
       ORDER BY s.nombre ASC
@@ -52,15 +55,18 @@ class SocioService {
   }
 
   async findByIdOrCodigo(idOrCodigo) {
-    const res = await db.query(`
+    const res = await db.query(
+      `
       SELECT id, codigo, codigo_socio, nombre, documento, email, telefono, 
              fecha_ingreso as "fechaIngreso", 
              aporte_mensual as "aporteMensual", 
              ahorro_acumulado as "ahorroAcumulado", 
-             estado, cargo, sede, created_at as "createdAt"
+             estado, cargo, sede, departamento, municipio, created_at as "createdAt"
       FROM socios
       WHERE id = $1 OR codigo = $1 OR codigo_socio = $1
-    `, [idOrCodigo]);
+    `,
+      [idOrCodigo],
+    );
     return res.rows[0] || null;
   }
 
@@ -71,17 +77,20 @@ class SocioService {
 
   async findByEmailOrDocumento(identifier) {
     const valor = String(identifier || '').trim();
-    const res = await db.query(`
+    const res = await db.query(
+      `
       SELECT id, codigo, nombre, documento, email, telefono, 
              fecha_ingreso as "fechaIngreso", 
              aporte_mensual as "aporteMensual", 
              ahorro_acumulado as "ahorroAcumulado", 
-             estado, cargo, sede, password, acceso_activo as "accesoActivo", ultimo_login as "ultimoLogin"
+             estado, cargo, sede, departamento, municipio, password, acceso_activo as "accesoActivo", ultimo_login as "ultimoLogin"
       FROM socios
       WHERE LOWER(email) = LOWER($1)
          OR documento = $2
       LIMIT 1
-    `, [valor, valor]);
+    `,
+      [valor, valor],
+    );
     return res.rows[0] || null;
   }
 
@@ -96,14 +105,14 @@ class SocioService {
        FROM aportes a
        WHERE a.socio_id = $1 AND a.pago_credito > 0
        ORDER BY a.fecha_pago DESC NULLS LAST, a.created_at DESC`,
-      [socio.id]
+      [socio.id],
     );
     const solidaridadRes = await db.query(
       `SELECT id, tipo, descripcion, monto, fecha, beneficiario, created_at AS "createdAt"
        FROM solidaridad_movimientos
        WHERE beneficiario = $1
        ORDER BY fecha DESC NULLS LAST, created_at DESC`,
-      [socio.id]
+      [socio.id],
     );
     const totalsRes = await db.query(
       `SELECT
@@ -113,7 +122,7 @@ class SocioService {
          COALESCE((SELECT SUM(saldo_capital) FROM creditos WHERE socio_id = $1 AND estado <> 'pagado'), 0) AS saldo_pendiente
        FROM aportes
        WHERE socio_id = $1`,
-      [socio.id]
+      [socio.id],
     );
     const totals = totalsRes.rows[0] || {};
 
@@ -128,34 +137,48 @@ class SocioService {
       },
       aportes,
       creditos,
-      pagosCredito: pagosCreditoRes.rows.map(function(r){ return r; }),
-      solidaridad: solidaridadRes.rows.map(function(r){ return r; }),
+      pagosCredito: pagosCreditoRes.rows.map(function (r) {
+        return r;
+      }),
+      solidaridad: solidaridadRes.rows.map(function (r) {
+        return r;
+      }),
     };
   }
 
-  async create({ id, codigo, nombre, documento, email = null, telefono = null, fechaIngreso = new Date(), aporteMensual = 0, ahorroAcumulado = 0, estado = 'activo', cargo = null, sede = null, codigo_socio = null }) {
+  async create({
+    nombre,
+    documento,
+    email = null,
+    telefono = null,
+    fechaIngreso = new Date(),
+    aporteMensual = 0,
+    ahorroAcumulado = 0,
+    estado = 'activo',
+    cargo = null,
+    sede = null,
+    departamento = null,
+    municipio = null,
+  }) {
     const rawPassword = generarPasswordInicial(documento);
     const rounds = parseInt(process.env.BCRYPT_ROUNDS, 10) || 12;
     const passwordHash = await bcrypt.hash(rawPassword, rounds);
 
-    // Generar codigo_socio si no fue provisto
-    let codigoSocioFinal = codigo_socio;
-    if (!codigoSocioFinal) {
-      codigoSocioFinal = await generarCodigoSocio(db);
-    }
+    const id = uuidv4();
+    const codigoSocioFinal = await generarCodigoSocio(db);
 
     const query = `
-      INSERT INTO socios (id, codigo, codigo_socio, nombre, documento, email, telefono, fecha_ingreso, aporte_mensual, ahorro_acumulado, estado, password, acceso_activo, ultimo_login, cargo, sede, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
+      INSERT INTO socios (id, codigo, codigo_socio, nombre, documento, email, telefono, fecha_ingreso, aporte_mensual, ahorro_acumulado, estado, password, acceso_activo, ultimo_login, cargo, sede, departamento, municipio, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW(), NOW())
       RETURNING id, codigo, codigo_socio, nombre, documento, email, telefono, 
                 fecha_ingreso as "fechaIngreso", 
                 aporte_mensual as "aporteMensual", 
                 ahorro_acumulado as "ahorroAcumulado", 
-                estado, cargo, sede, created_at as "createdAt"
+                estado, cargo, sede, departamento, municipio, created_at as "createdAt"
     `;
     const res = await db.query(query, [
       id,
-      codigo,
+      codigoSocioFinal,
       codigoSocioFinal,
       nombre,
       documento,
@@ -169,12 +192,29 @@ class SocioService {
       true,
       null,
       cargo,
-      sede
+      sede,
+      departamento,
+      municipio,
     ]);
     return res.rows[0];
   }
 
-  async update(id, { nombre, email, telefono, fechaIngreso, aporteMensual, ahorroAcumulado, estado, cargo, sede }) {
+  async update(
+    id,
+    {
+      nombre,
+      email,
+      telefono,
+      fechaIngreso,
+      aporteMensual,
+      ahorroAcumulado,
+      estado,
+      cargo,
+      sede,
+      departamento,
+      municipio,
+    },
+  ) {
     const query = `
       UPDATE socios
       SET nombre = COALESCE($1, nombre),
@@ -186,16 +226,29 @@ class SocioService {
           estado = COALESCE($7, estado),
           cargo = COALESCE($8, cargo),
           sede = COALESCE($9, sede),
+          departamento = COALESCE($10, departamento),
+          municipio = COALESCE($11, municipio),
           updated_at = NOW()
-      WHERE id = $10
+      WHERE id = $12
       RETURNING id, codigo, nombre, documento, email, telefono, 
                 fecha_ingreso as "fechaIngreso", 
                 aporte_mensual as "aporteMensual", 
                 ahorro_acumulado as "ahorroAcumulado", 
-                estado, cargo, sede, created_at as "createdAt"
+                estado, cargo, sede, departamento, municipio, created_at as "createdAt"
     `;
     const res = await db.query(query, [
-      nombre, email, telefono, fechaIngreso, aporteMensual, ahorroAcumulado, estado, cargo, sede, id
+      nombre,
+      email,
+      telefono,
+      fechaIngreso,
+      aporteMensual,
+      ahorroAcumulado,
+      estado,
+      cargo,
+      sede,
+      departamento,
+      municipio,
+      id,
     ]);
     return res.rows[0] || null;
   }

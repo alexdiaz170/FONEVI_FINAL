@@ -3,6 +3,7 @@ import { DomainError } from '../errors.js';
 
 export interface MovimientoProps {
   id?: string;
+  socioId?: string | null;
   tipo: string;
   categoria: string;
   descripcion: string;
@@ -13,6 +14,7 @@ export interface MovimientoProps {
 
 export class Movimiento {
   readonly id: string;
+  readonly socioId?: string;
   readonly tipo: string;
   readonly categoria: string;
   readonly descripcion: string;
@@ -22,6 +24,7 @@ export class Movimiento {
 
   private constructor(props: MovimientoProps) {
     this.id = props.id ?? crypto.randomUUID();
+    if (props.socioId) this.socioId = props.socioId;
     this.tipo = props.tipo;
     this.categoria = props.categoria;
     this.descripcion = props.descripcion;

@@ -84,8 +84,59 @@ export default function SociosLista() {
     );
   };
 
+  const total = data?.total ?? 0;
+  const activos = filteredData.filter((s) => s.estado === 'activo').length;
+  const enMora = filteredData.filter((s) => s.estado === 'mora').length;
+  const pendientes = filteredData.filter(
+    (s) => s.estado !== 'activo' && s.estado !== 'mora',
+  ).length;
+
+  const kpiCards = [
+    {
+      label: 'Total Socios',
+      value: total,
+      sub: 'Socios registrados',
+      icon: '👥',
+      cls: 'from-blue-500 to-blue-600',
+    },
+    {
+      label: 'Socios Activos',
+      value: activos,
+      sub: 'Al día con aportes',
+      icon: '✅',
+      cls: 'from-green-500 to-green-600',
+    },
+    {
+      label: 'En Mora',
+      value: enMora,
+      sub: 'Con obligaciones vencidas',
+      icon: '⚠',
+      cls: 'from-red-500 to-red-600',
+    },
+    {
+      label: 'Pendientes',
+      value: pendientes,
+      sub: 'Sin aportes registrados',
+      icon: '⏳',
+      cls: 'from-amber-500 to-amber-600',
+    },
+  ];
+
   return (
     <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {kpiCards.map((k) => (
+          <div
+            key={k.label}
+            className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${k.cls} p-4 text-white shadow`}
+          >
+            <div className="text-3xl opacity-20 absolute right-3 top-2">{k.icon}</div>
+            <div className="text-xs font-medium uppercase tracking-wide opacity-80">{k.label}</div>
+            <div className="text-2xl font-bold mt-1">{k.value}</div>
+            <div className="text-xs mt-1 opacity-70">{k.sub}</div>
+          </div>
+        ))}
+      </div>
       <div className="bg-white rounded-lg shadow">
         <div className="p-4 border-b flex items-center gap-2">
           <Search size={18} className="text-gray-400" />

@@ -97,6 +97,17 @@ export class RegistrarAporteUseCase {
 
       const saved = await this.aporteRepo.save(aporte);
 
+      await prisma.movimiento.create({
+        data: {
+          socioId: socio.id,
+          tipo: 'ingreso',
+          categoria: 'aporte',
+          descripcion: `${periodo.nombre}`,
+          monto: montoTotal.value,
+          fecha: new Date(),
+        },
+      });
+
       if (creditoActivo && distribucion.totalPagoCredito.value > 0) {
         await prisma.credito.update({
           where: { id: creditoActivo.id },

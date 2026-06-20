@@ -12,7 +12,7 @@ describe('Socio', () => {
     numeroDocumento: '1234567890',
     email: Email.create('juan@example.com'),
     fechaIngreso: new Date('2024-01-01'),
-    aporteMensual: Monto.create(50000),
+    aporteMensual: Monto.create(125000),
     estado: EstadoSocio.ACTIVO,
   };
 

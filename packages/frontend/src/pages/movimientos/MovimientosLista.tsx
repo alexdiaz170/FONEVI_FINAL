@@ -33,7 +33,8 @@ export default function MovimientosLista() {
       (m) =>
         (!search ||
           m.descripcion.toLowerCase().includes(search.toLowerCase()) ||
-          m.categoria.toLowerCase().includes(search.toLowerCase())) &&
+          m.categoria.toLowerCase().includes(search.toLowerCase()) ||
+          (m.socioNombre ?? '').toLowerCase().includes(search.toLowerCase())) &&
         (!categoriaFilter || m.categoria === categoriaFilter),
     ) ?? [];
 
@@ -41,6 +42,7 @@ export default function MovimientosLista() {
     { header: 'Fecha', key: 'fecha', format: (v) => (v ? formatDate(String(v)) : '—') },
     { header: 'Tipo', key: 'tipo' },
     { header: 'Categoría', key: 'categoria' },
+    { header: 'Socio', key: 'socioNombre' },
     { header: 'Descripción', key: 'descripcion' },
     { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
   ];
@@ -72,7 +74,7 @@ export default function MovimientosLista() {
             <Search size={18} className="text-gray-400 shrink-0" />
             <input
               type="text"
-              placeholder="Buscar por descripción o categoría..."
+              placeholder="Buscar por socio, descripción o categoría..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 border-none outline-none text-sm"
@@ -142,6 +144,7 @@ export default function MovimientosLista() {
                     <th className="text-left p-3 font-medium">Fecha</th>
                     <th className="text-left p-3 font-medium">Tipo</th>
                     <th className="text-left p-3 font-medium">Categoría</th>
+                    <th className="text-left p-3 font-medium">Socio</th>
                     <th className="text-left p-3 font-medium">Descripción</th>
                     <th className="text-right p-3 font-medium">Monto</th>
                   </tr>
@@ -149,7 +152,9 @@ export default function MovimientosLista() {
                 <tbody>
                   {filteredData.map((mov: MovimientoDTO) => (
                     <tr key={mov.id} className="border-t hover:bg-gray-50">
-                      <td className="p-3 text-gray-600 text-xs">{formatDate(mov.fecha)}</td>
+                      <td className="p-3 text-gray-600 text-xs whitespace-nowrap">
+                        {formatDate(mov.fecha)}
+                      </td>
                       <td className="p-3">
                         <span
                           className={`inline-flex items-center gap-1 text-xs font-medium ${mov.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}
@@ -159,15 +164,20 @@ export default function MovimientosLista() {
                           ) : (
                             <ArrowDownCircle size={14} />
                           )}
-                          {mov.tipo}
+                          {mov.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'}
                         </span>
                       </td>
-                      <td className="p-3 text-gray-700">{mov.categoria}</td>
-                      <td className="p-3 text-gray-600 max-w-[200px] truncate">
-                        {mov.descripcion}
+                      <td className="p-3">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                          {mov.categoria}
+                        </span>
                       </td>
+                      <td className="p-3 text-gray-800 font-medium text-sm">
+                        {mov.socioNombre ?? '—'}
+                      </td>
+                      <td className="p-3 text-gray-600 text-sm max-w-[250px]">{mov.descripcion}</td>
                       <td
-                        className={`p-3 text-right font-mono text-sm font-medium ${mov.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}
+                        className={`p-3 text-right font-mono text-sm font-medium whitespace-nowrap ${mov.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}
                       >
                         {mov.tipo === 'ingreso' ? '+' : '-'}
                         {formatCurrency(mov.monto)}
@@ -176,7 +186,7 @@ export default function MovimientosLista() {
                   ))}
                   {filteredData.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-gray-400">
+                      <td colSpan={6} className="p-8 text-center text-gray-400">
                         No se encontraron movimientos
                       </td>
                     </tr>

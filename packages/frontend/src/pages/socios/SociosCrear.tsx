@@ -4,19 +4,63 @@ import { ArrowLeft } from 'lucide-react';
 import { apiCrearSocio } from '../../lib/api';
 import { ApiError } from '../../lib/api';
 
+const DEPARTAMENTOS: Record<string, string[]> = {
+  Amazonas: ['Leticia', 'Puerto Nariño'],
+  Antioquia: ['Medellín', 'Bello', 'Itagüí', 'Envigado', 'Rionegro', 'Apartadó'],
+  Arauca: ['Arauca', 'Tame', 'Saravena'],
+  Atlántico: ['Barranquilla', 'Soledad', 'Malambo', 'Puerto Colombia'],
+  Bolívar: ['Cartagena', 'Magangué', 'Turbaco', 'El Carmen de Bolívar'],
+  Boyacá: ['Tunja', 'Duitama', 'Sogamoso', 'Chiquinquirá', 'Paipa'],
+  Caldas: ['Manizales', 'Villamaría', 'Chinchiná', 'La Dorada'],
+  Caquetá: ['Florencia', 'Cartagena del Chairá', 'San Vicente del Caguán'],
+  Casanare: ['Yopal', 'Aguazul', 'Paz de Ariporo'],
+  Cauca: ['Popayán', 'Santander de Quilichao', 'Puerto Tejada'],
+  Cesar: ['Valledupar', 'Aguachica', 'Codazzi', 'La Paz'],
+  Chocó: ['Quibdó', 'Istmina', 'Turbo'],
+  Córdoba: ['Montería', 'Lorica', 'Sahagún', 'Cereté'],
+  Cundinamarca: [
+    'Bogotá',
+    'Soacha',
+    'Chía',
+    'Cajicá',
+    'Zipaquirá',
+    'Facatativá',
+    'Girardot',
+    'Fusagasugá',
+  ],
+  Guainía: ['Inírida'],
+  Guaviare: ['San José del Guaviare'],
+  Huila: ['Neiva', 'Pitalito', 'La Plata', 'Garzón'],
+  'La Guajira': ['Riohacha', 'Maicao', 'Uribia', 'San Juan del Cesar'],
+  Magdalena: ['Santa Marta', 'Ciénaga', 'Fundación', 'El Banco'],
+  Meta: ['Villavicencio', 'Acacías', 'Granada', 'Puerto Gaitán'],
+  Nariño: ['Pasto', 'Tumaco', 'Ipiales', 'Túquerres', 'La Unión', 'San Pablo', 'La Cruz'],
+  'Norte de Santander': ['Cúcuta', 'Ocaña', 'Pamplona', 'Los Patios'],
+  Putumayo: ['Mocoa', 'Puerto Asís', 'Orito'],
+  Quindío: ['Armenia', 'Calarcá', 'Montenegro'],
+  Risaralda: ['Pereira', 'Dosquebradas', 'Santa Rosa de Cabal'],
+  'San Andrés y Providencia': ['San Andrés', 'Providencia'],
+  Santander: ['Bucaramanga', 'Floridablanca', 'Girón', 'Barrancabermeja', 'San Gil'],
+  Sucre: ['Sincelejo', 'Corozal', 'Tolú', 'San Marcos'],
+  Tolima: ['Ibagué', 'Espinal', 'Honda', 'Líbano'],
+  'Valle del Cauca': ['Cali', 'Buenaventura', 'Palmira', 'Tuluá', 'Cartago', 'Buga', 'Yumbo'],
+  Vaupés: ['Mitú'],
+  Vichada: ['Puerto Carreño', 'La Primavera'],
+};
+
 export default function SociosCrear() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    codigo: '',
     nombre: '',
-    tipoDocumento: 'ci',
+    tipoDocumento: 'CC',
     numeroDocumento: '',
     email: '',
     telefono: '',
-    fechaIngreso: '',
-    aporteMensual: 0,
+    fechaIngreso: new Date().toISOString().split('T')[0],
     cargo: '',
     sede: '',
+    departamento: '',
+    municipio: '',
   });
   const [error, setError] = useState('');
   const [resultado, setResultado] = useState<{
@@ -28,6 +72,14 @@ export default function SociosCrear() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
+
+  const handleDepartamentoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const dept = e.target.value;
+    setForm((prev) => ({ ...prev, departamento: dept, municipio: '' }));
+  };
+
+  const depts = Object.keys(DEPARTAMENTOS).sort();
+  const municipios = form.departamento ? (DEPARTAMENTOS[form.departamento] ?? []) : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,20 +93,22 @@ export default function SociosCrear() {
       setError('El número de documento es requerido');
       return;
     }
-    if (form.aporteMensual <= 0) {
-      setError('El aporte mensual debe ser mayor a 0');
-      return;
-    }
 
     setLoading(true);
     try {
       const result = await apiCrearSocio({
-        ...form,
+        nombre: form.nombre,
+        tipoDocumento: form.tipoDocumento,
+        numeroDocumento: form.numeroDocumento,
         email: form.email || null,
         telefono: form.telefono || null,
-        fechaIngreso: form.fechaIngreso || null,
+        fechaIngreso: form.fechaIngreso
+          ? new Date(form.fechaIngreso).toISOString()
+          : new Date().toISOString(),
         cargo: form.cargo || null,
         sede: form.sede || null,
+        departamento: form.departamento || null,
+        municipio: form.municipio || null,
       });
       setResultado(result);
     } catch (err) {
@@ -82,16 +136,16 @@ export default function SociosCrear() {
             onClick={() => {
               setResultado(null);
               setForm({
-                codigo: '',
                 nombre: '',
-                tipoDocumento: 'ci',
+                tipoDocumento: 'CC',
                 numeroDocumento: '',
                 email: '',
                 telefono: '',
-                fechaIngreso: '',
-                aporteMensual: 0,
+                fechaIngreso: new Date().toISOString().split('T')[0],
                 cargo: '',
                 sede: '',
+                departamento: '',
+                municipio: '',
               });
             }}
             className="px-4 py-2 border rounded-md text-sm"
@@ -134,15 +188,6 @@ export default function SociosCrear() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Código</label>
-            <input
-              name="codigo"
-              value={form.codigo}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Documento</label>
             <select
               name="tipoDocumento"
@@ -150,9 +195,10 @@ export default function SociosCrear() {
               onChange={handleChange}
               className="w-full px-3 py-2 border rounded-md text-sm"
             >
-              <option value="ci">Cédula</option>
-              <option value="ruc">RUC</option>
-              <option value="pasaporte">Pasaporte</option>
+              <option value="CC">Cédula</option>
+              <option value="CE">Cédula Extranjería</option>
+              <option value="NIT">NIT</option>
+              <option value="PASAPORTE">Pasaporte</option>
             </select>
           </div>
           <div>
@@ -184,15 +230,17 @@ export default function SociosCrear() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Aporte Mensual *</label>
-            <input
-              name="aporteMensual"
-              type="number"
-              step="0.01"
-              value={form.aporteMensual}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cargo *</label>
+            <select
+              name="cargo"
+              value={form.cargo}
               onChange={handleChange}
               className="w-full px-3 py-2 border rounded-md text-sm"
-            />
+            >
+              <option value="">Seleccionar cargo...</option>
+              <option value="Docente">Docente</option>
+              <option value="Administrativo">Administrativo</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Ingreso</label>
@@ -201,26 +249,54 @@ export default function SociosCrear() {
               type="date"
               value={form.fechaIngreso}
               onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
+              className="w-full px-3 py-2 border rounded-md text-sm bg-gray-50"
+              readOnly
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cargo</label>
-            <input
-              name="cargo"
-              value={form.cargo}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sede</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Institución Educativa
+            </label>
             <input
               name="sede"
               value={form.sede}
               onChange={handleChange}
+              placeholder="Nombre de la institución..."
               className="w-full px-3 py-2 border rounded-md text-sm"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
+            <select
+              name="departamento"
+              value={form.departamento}
+              onChange={handleDepartamentoChange}
+              className="w-full px-3 py-2 border rounded-md text-sm"
+            >
+              <option value="">Seleccionar departamento...</option>
+              {depts.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Municipio</label>
+            <select
+              name="municipio"
+              value={form.municipio}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border rounded-md text-sm"
+              disabled={!form.departamento}
+            >
+              <option value="">Seleccionar municipio...</option>
+              {municipios.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="md:col-span-2 flex gap-3 pt-2">
             <button

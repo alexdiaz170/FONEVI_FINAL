@@ -22,6 +22,8 @@ import moraRouter from './api/routes/mora.js';
 import dividendosRouter from './api/routes/dividendos.js';
 import configuracionRouter from './api/routes/configuracion.js';
 import auditoriaRouter from './api/routes/auditoria.js';
+import reportesRouter from './api/routes/reportes.js';
+import periodosRouter from './api/routes/periodos.js';
 
 const app = express();
 
@@ -46,6 +48,8 @@ app.use('/api/mora', moraRouter);
 app.use('/api/dividendos', dividendosRouter);
 app.use('/api/configuracion', configuracionRouter);
 app.use('/api/auditoria', auditoriaRouter);
+app.use('/api/reportes', reportesRouter);
+app.use('/api/periodos', periodosRouter);
 
 // ─── Frontend build (SPA) ──────────────────────────────────
 const publicDir = resolve(__dirname, '..', 'public');

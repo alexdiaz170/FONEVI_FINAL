@@ -35,6 +35,8 @@ model Socio {
   estado          String         @default("activo")
   cargo           String?
   sede            String?
+  departamento    String?
+  municipio       String?
   deletedAt       DateTime?      @map("deleted_at")
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
@@ -46,6 +48,7 @@ model Socio {
   creditos        Credito[]
   acuerdosPago    AcuerdoPago[]
   socioDividendos DividendoSocio[]
+
 
   @@index([estado])
   @@map("socios")
@@ -94,6 +97,7 @@ model Credito {
   cuotasPagadas   Int          @default(0) @map("cuotas_pagadas")
   saldoCapital    Decimal      @map("saldo_capital") @db.Decimal(15, 2)
   fechaDesembolso DateTime     @map("fecha_desembolso")
+  fechaUltimoPago DateTime?    @map("fecha_ultimo_pago")
   estado          String       @default("activo")
   proposito       String?
   aprobadoPor     String?      @map("aprobado_por")
@@ -146,6 +150,7 @@ model Configuracion {
 
 model Movimiento {
   id          String   @id @default(uuid())
+  socioId     String?  @map("socio_id")
   tipo        String
   categoria   String
   descripcion String

@@ -18,7 +18,7 @@ describe('ObtenerSocioUseCase', () => {
     tipoDocumento: TipoDocumento.CC,
     numeroDocumento: '1234567890',
     fechaIngreso: new Date(),
-    aporteMensual: Monto.create(50000),
+    aporteMensual: Monto.create(125000),
     estado: EstadoSocio.ACTIVO,
   });
 

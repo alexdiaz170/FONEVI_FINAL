@@ -8,22 +8,31 @@ import {
   listarMovimientosSchema,
 } from '../../application/dto/movimiento.dto.js';
 import { ValidationError } from '../../application/errors.js';
+import { PrismaMovimientoRepository } from '../../infrastructure/persistence/PrismaMovimientoRepository.js';
 
-export function createMovimientoController(movimientoRepo: IMovimientoRepository) {
+type RepoWithSocio = IMovimientoRepository & {
+  findSocioNombres(ids: string[]): Promise<Map<string, string>>;
+};
+
+export function createMovimientoController(movimientoRepo: RepoWithSocio) {
   const registrarUseCase = new RegistrarMovimientoUseCase(movimientoRepo);
   const listarUseCase = new ListarMovimientosUseCase(movimientoRepo);
 
   function mapMovimiento(movimiento: {
     id: string;
+    socioId?: string;
     tipo: string;
     categoria: string;
     descripcion: string;
     monto: { value: number };
     fecha: Date;
     createdAt: Date;
+    socioNombre?: string;
   }) {
     return {
       id: movimiento.id,
+      socioId: movimiento.socioId ?? null,
+      socioNombre: movimiento.socioNombre ?? null,
       tipo: movimiento.tipo,
       categoria: movimiento.categoria,
       descripcion: movimiento.descripcion,
@@ -38,13 +47,15 @@ export function createMovimientoController(movimientoRepo: IMovimientoRepository
       try {
         const query = listarMovimientosSchema.parse(req.query);
         const result = await listarUseCase.execute(query);
-        apiResponse.paginated(
-          res,
-          result.data.map(mapMovimiento),
-          result.total,
-          result.page,
-          result.limit,
+        const ids = result.data.map((m) => m.socioId).filter(Boolean) as string[];
+        const socioNombres = await movimientoRepo.findSocioNombres(ids);
+        const mapped = result.data.map((m) =>
+          mapMovimiento({
+            ...m,
+            socioNombre: m.socioId ? (socioNombres.get(m.socioId) ?? '—') : '—',
+          }),
         );
+        apiResponse.paginated(res, mapped, result.total, result.page, result.limit);
       } catch (error) {
         next(error);
       }

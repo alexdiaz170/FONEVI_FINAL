@@ -20,6 +20,8 @@ interface SocioRow {
   estado: string;
   cargo: string | null;
   sede: string | null;
+  departamento: string | null;
+  municipio: string | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -35,14 +37,23 @@ export class PrismaSocioRepository implements ISocioRepository {
     this.prisma = getPrismaClient();
   }
 
+  private parseDocumento(doc: string): { tipo: string; numero: string } {
+    const idx = doc.indexOf('-');
+    if (idx > 0) {
+      return { tipo: doc.substring(0, idx), numero: doc.substring(idx + 1) };
+    }
+    return { tipo: 'CC', numero: doc };
+  }
+
   private toDomain(row: SocioRow): Socio {
+    const { tipo, numero } = this.parseDocumento(row.documento);
     return Socio.fromPersistence({
       id: row.id,
       codigo: row.codigo,
       codigoSocio: row.codigo_socio ?? undefined,
       nombre: row.nombre,
-      tipoDocumento: TipoDocumento.create('CC'),
-      numeroDocumento: row.documento,
+      tipoDocumento: TipoDocumento.create(tipo),
+      numeroDocumento: numero,
       email: row.email ? Email.create(row.email) : null,
       telefono: row.telefono ? Telefono.create(row.telefono) : null,
       fechaIngreso: row.fechaIngreso,
@@ -51,6 +62,8 @@ export class PrismaSocioRepository implements ISocioRepository {
       estado: EstadoSocio.create(row.estado),
       cargo: row.cargo,
       sede: row.sede,
+      departamento: row.departamento,
+      municipio: row.municipio,
       deletedAt: row.deletedAt,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -61,7 +74,7 @@ export class PrismaSocioRepository implements ISocioRepository {
     return {
       id: socio.id,
       codigo: socio.codigo,
-      codigoSocio: socio.codigoSocio,
+      codigo_socio: socio.codigoSocio,
       nombre: socio.nombre,
       documento: `${socio.tipoDocumento}-${socio.numeroDocumento}`,
       email: socio.email?.value ?? null,
@@ -72,6 +85,8 @@ export class PrismaSocioRepository implements ISocioRepository {
       estado: socio.estado.toString(),
       cargo: socio.cargo,
       sede: socio.sede,
+      departamento: socio.departamento,
+      municipio: socio.municipio,
       deletedAt: socio.deletedAt,
     };
   }

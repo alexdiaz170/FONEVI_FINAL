@@ -439,7 +439,7 @@ function renderCredito(s) {
   var creditos = DataHelper.getCreditosSocio(s.id).filter(function(cr){
     return cr.estado==="activo" || cr.estado==="mora";
   });
-  var maxCred = s.ahorro_acumulado * (DB.config.max_credito_multiplicador||3);
+  var maxCred = s.ahorro_acumulado * (DB.config.max_credito_multiplicador||4);
   var deuda   = creditos.reduce(function(t,cr){return t+cr.saldo_capital;},0);
   var disp    = Math.max(0, maxCred - deuda);
   var panel   = document.getElementById("creditoPanel");
@@ -690,7 +690,7 @@ function _actualizarDonut(monto, interes) {
 function simulSolicitar() {
   var monto=parseInt(document.getElementById("sc-monto").value);
   var cuotas=parseInt(document.getElementById("sc-cuotas").value);
-  var tasa=DB.config.tasa_credito_mensual||1.5;
+  var tasa=DB.config.tasa_credito_mensual||1;
   var r=tasa/100;
   var cuota=Math.round(monto*(r*Math.pow(1+r,cuotas))/(Math.pow(1+r,cuotas)-1));
   simulCerrar();
@@ -699,7 +699,7 @@ function simulSolicitar() {
 function simulTablaCompleta() {
   var monto=parseInt(document.getElementById("sc-monto").value)||0;
   var cuotas=parseInt(document.getElementById("sc-cuotas").value)||12;
-  var tasa=DB.config.tasa_credito_mensual||1.5;
+  var tasa=DB.config.tasa_credito_mensual||1;
   var r=tasa/100;
   var cuota=Math.round(monto*(r*Math.pow(1+r,cuotas))/(Math.pow(1+r,cuotas)-1));
   var saldo=monto,totInt=0,totCap=0,filas="";

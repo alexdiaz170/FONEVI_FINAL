@@ -48,6 +48,7 @@ export class PagarCuotaUseCase {
     const creditoActualizado = credito.registrarPagoCuota(
       cuotaCalculada.montoCapital,
       cuotaCalculada.montoInteres,
+      fechaPago,
     );
 
     await this.creditoRepo.update(creditoActualizado);

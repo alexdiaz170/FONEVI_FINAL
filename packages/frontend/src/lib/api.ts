@@ -148,6 +148,8 @@ export interface SocioDTO {
   estado: string;
   cargo: string | null;
   sede: string | null;
+  departamento: string | null;
+  municipio: string | null;
   eliminado: boolean;
   createdAt: string;
   updatedAt: string;
@@ -249,7 +251,7 @@ export async function apiEliminarAporte(id: string) {
 }
 
 export async function apiListarPeriodos() {
-  return api<PeriodoDTO[]>('/api/aportes/periodos');
+  return api<PeriodoDTO[]>('/api/periodos');
 }
 
 // ─── Créditos ──────────────────────────────
@@ -423,6 +425,8 @@ export async function apiCrearAcuerdo(data: {
 
 export interface MovimientoDTO {
   id: string;
+  socioId: string | null;
+  socioNombre: string | null;
   tipo: string;
   categoria: string;
   descripcion: string;
@@ -548,4 +552,113 @@ export async function apiUpdateConfiguracion(clave: string, valor: string) {
     method: 'PUT',
     body: JSON.stringify({ valor }),
   });
+}
+
+// ─── Reportes ─────────────────────────────
+
+export interface CarteraItem {
+  socioId: string;
+  socioNombre: string;
+  creditoId: string;
+  monto: number;
+  saldoCapital: number;
+  cuotas: number;
+  cuotasPagadas: number;
+  cuotasRestantes: number;
+  cuotaMensual: number;
+  tasaMensual: number;
+  fechaDesembolso: string;
+  estado: string;
+  totalPagado: number;
+}
+
+export interface FlujoCajaItem {
+  fecha: string;
+  tipo: string;
+  categoria: string;
+  descripcion: string;
+  monto: number;
+}
+
+export interface FlujoCajaResumen {
+  ingresos: number;
+  egresos: number;
+  saldo: number;
+  movimientos: FlujoCajaItem[];
+}
+
+export interface EstadoCuentaSocioResult {
+  socio: {
+    id: string;
+    nombre: string;
+    documento: string;
+    email: string | null;
+    telefono: string | null;
+    fechaIngreso: string;
+    estado: string;
+    ahorroAcumulado: number;
+  };
+  creditos: Array<{
+    id: string;
+    monto: number;
+    saldoCapital: number;
+    cuotas: number;
+    cuotasPagadas: number;
+    cuotaMensual: number;
+    tasaMensual: number;
+    fechaDesembolso: string;
+    estado: string;
+    proposito: string | null;
+    totalPagado: number;
+    pagos: Array<{
+      numeroCuota: number;
+      monto: number;
+      montoCapital: number;
+      montoInteres: number;
+      fechaPago: string;
+    }>;
+  }>;
+  aportes: Array<{
+    id: string;
+    periodoId: number;
+    monto: number;
+    fechaPago: string | null;
+    estado: string;
+    pagoSolidaridad: number;
+    pagoCredito: number;
+  }>;
+  totalAportado: number;
+}
+
+export async function apiGetReporteBalance() {
+  return api<BalanceGeneral>('/api/reportes/balance-general');
+}
+
+export async function apiGetReporteCartera() {
+  return api<CarteraItem[]>('/api/reportes/cartera');
+}
+
+export async function apiGetReporteFlujoCaja(desde?: string, hasta?: string) {
+  const qs = new URLSearchParams();
+  if (desde) qs.set('desde', desde);
+  if (hasta) qs.set('hasta', hasta);
+  return api<FlujoCajaResumen>(`/api/reportes/flujo-caja?${qs.toString()}`);
+}
+
+export async function apiGetReporteEstadoCuentaSocio(socioId: string) {
+  return api<EstadoCuentaSocioResult>(`/api/reportes/estado-cuenta/${socioId}`);
+}
+
+// ─── Períodos ─────────────────────────────
+
+export async function apiGetPeriodoActivo() {
+  return api<PeriodoDTO | null>('/api/periodos/activo');
+}
+
+export async function apiCrearPeriodo(data: { nombre: string; anio: number; mes: number }) {
+  return api<PeriodoDTO>('/api/periodos', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function apiActivarPeriodo(id: number) {
+  return api<{ mensaje: string }>(`/api/periodos/${id}/activar`, { method: 'POST' });
 }

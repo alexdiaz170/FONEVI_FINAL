@@ -18,6 +18,8 @@ export interface SocioProps {
   estado: EstadoSocio;
   cargo?: string | null;
   sede?: string | null;
+  departamento?: string | null;
+  municipio?: string | null;
   deletedAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
@@ -38,6 +40,8 @@ export class Socio {
   readonly estado: EstadoSocio;
   readonly cargo: string | null;
   readonly sede: string | null;
+  readonly departamento: string | null;
+  readonly municipio: string | null;
   readonly deletedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -57,6 +61,8 @@ export class Socio {
     this.estado = props.estado;
     this.cargo = props.cargo ?? null;
     this.sede = props.sede ?? null;
+    this.departamento = props.departamento ?? null;
+    this.municipio = props.municipio ?? null;
     this.deletedAt = props.deletedAt ?? null;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
@@ -119,6 +125,8 @@ export class Socio {
       estado: this.estado,
       cargo: this.cargo,
       sede: this.sede,
+      departamento: this.departamento,
+      municipio: this.municipio,
       deletedAt: this.deletedAt,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,

@@ -1,5 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+config({ path: resolve(import.meta.dirname, '..', '..', '..', '.env') });
 
 const prisma = new PrismaClient();
 
@@ -35,6 +39,27 @@ async function main() {
 
   const creditosCount = await prisma.credito.count();
   console.log(`ℹ Créditos en DB: ${creditosCount}`);
+
+  const configDefaults = [
+    { clave: 'reservas', valor: '2500000' },
+    { clave: 'tasa_interes_mensual', valor: '1' },
+    { clave: 'tasa_mora_mensual', valor: '0' },
+    { clave: 'porcentaje_seguro', valor: '0.5' },
+    { clave: 'valor_solidaridad', valor: '5000' },
+    { clave: 'valor_minimo_aporte', valor: '125000' },
+    { clave: 'multiplicador_maximo_credito', valor: '4' },
+    { clave: 'nombre_institucion', valor: 'Fondo de Empleados Docentes FONEVI' },
+    { clave: 'nit_institucion', valor: '800.123.456-7' },
+  ];
+
+  for (const cfg of configDefaults) {
+    await prisma.configuracion.upsert({
+      where: { clave: cfg.clave },
+      create: { clave: cfg.clave, valor: cfg.valor },
+      update: { valor: cfg.valor },
+    });
+  }
+  console.log(`✓ ${configDefaults.length} configuraciones por defecto insertadas`);
 
   console.log('✅ Seed completado');
 }

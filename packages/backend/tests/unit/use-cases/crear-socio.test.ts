@@ -19,7 +19,7 @@ describe('CrearSocioUseCase', () => {
     numeroDocumento: '1234567890',
     email: 'juan@example.com',
     telefono: '3001234567',
-    aporteMensual: 50000,
+    aporteMensual: 125000,
     ahorroAcumulado: 100000,
     estado: 'activo',
     cargo: 'Presidente',
@@ -63,7 +63,7 @@ describe('CrearSocioUseCase', () => {
       tipoDocumento: TipoDocumento.CC,
       numeroDocumento: '1234567890',
       fechaIngreso: new Date(),
-      aporteMensual: Monto.create(50000),
+      aporteMensual: Monto.create(125000),
       estado: EstadoSocio.ACTIVO,
     });
 

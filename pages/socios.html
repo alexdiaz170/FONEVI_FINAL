@@ -140,6 +140,9 @@
   <div class="main-content">
     <div class="page-content">
 
+      <!-- KPI Cards -->
+      <div class="kpi-grid stagger" id="sociosKpiGrid" style="margin-bottom:20px;"></div>
+
       <!-- Filtros y búsqueda -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
         <div class="tab-bar" id="filtroEstado">
@@ -231,25 +234,32 @@
           <input type="tel" class="form-control" id="ns-tel" placeholder="3001234567"/>
         </div>
         <div class="form-group">
-          <label class="form-label">Cargo</label>
-          <input type="text" class="form-control" id="ns-cargo" placeholder="Docente de Matemáticas"/>
+          <label class="form-label">Cargo <span class="map-req">*</span></label>
+          <select class="form-control" id="ns-cargo">
+            <option value="">Seleccionar cargo...</option>
+            <option value="Docente">Docente</option>
+            <option value="Administrativo">Administrativo</option>
+          </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Sede</label>
-          <select class="form-control" id="ns-sede">
-            <option>Sede Central</option>
-            <option>Sede Norte</option>
-            <option>Sede Sur</option>
+          <label class="form-label">Institución Educativa</label>
+          <input type="text" class="form-control" id="ns-sede" placeholder="Nombre de la institución..."/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Departamento</label>
+          <select class="form-control" id="ns-departamento" onchange="actualizarMunicipios()">
+            <option value="">Seleccionar departamento...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Municipio</label>
+          <select class="form-control" id="ns-municipio">
+            <option value="">Seleccionar municipio...</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Fecha de ingreso</label>
-          <input type="date" class="form-control" id="ns-fecha"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Aporte mensual ($)</label>
-          <input type="number" class="form-control" id="ns-aporte" value="130000" min="130000" step="10000"/>
-          <span class="form-hint">Mínimo $130.000</span>
+          <input type="date" class="form-control" id="ns-fecha" readonly style="background:var(--bg-muted)"/>
         </div>
       </div>
     </div>
@@ -309,14 +319,104 @@ async function cargarDatos() {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   DEPARTAMENTOS Y MUNICIPIOS DE COLOMBIA
+═══════════════════════════════════════════════════════════ */
+var DEPARTAMENTOS = {
+  "Amazonas": ["Leticia", "Puerto Nariño"],
+  "Antioquia": ["Medellín", "Bello", "Itagüí", "Envigado", "Rionegro", "Apartadó"],
+  "Arauca": ["Arauca", "Tame", "Saravena"],
+  "Atlántico": ["Barranquilla", "Soledad", "Malambo", "Puerto Colombia"],
+  "Bolívar": ["Cartagena", "Magangué", "Turbaco", "El Carmen de Bolívar"],
+  "Boyacá": ["Tunja", "Duitama", "Sogamoso", "Chiquinquirá", "Paipa"],
+  "Caldas": ["Manizales", "Villamaría", "Chinchiná", "La Dorada"],
+  "Caquetá": ["Florencia", "Cartagena del Chairá", "San Vicente del Caguán"],
+  "Casanare": ["Yopal", "Aguazul", "Paz de Ariporo"],
+  "Cauca": ["Popayán", "Santander de Quilichao", "Puerto Tejada"],
+  "Cesar": ["Valledupar", "Aguachica", "Codazzi", "La Paz"],
+  "Chocó": ["Quibdó", "Istmina", "Turbo"],
+  "Córdoba": ["Montería", "Lorica", "Sahagún", "Cereté"],
+  "Cundinamarca": ["Bogotá", "Soacha", "Chía", "Cajicá", "Zipaquirá", "Facatativá", "Girardot", "Fusagasugá"],
+  "Guainía": ["Inírida"],
+  "Guaviare": ["San José del Guaviare"],
+  "Huila": ["Neiva", "Pitalito", "La Plata", "Garzón"],
+  "La Guajira": ["Riohacha", "Maicao", "Uribia", "San Juan del Cesar"],
+  "Magdalena": ["Santa Marta", "Ciénaga", "Fundación", "El Banco"],
+  "Meta": ["Villavicencio", "Acacías", "Granada", "Puerto Gaitán"],
+  "Nariño": ["Pasto", "Tumaco", "Ipiales", "Túquerres", "La Unión", "San Pablo", "La Cruz"],
+  "Norte de Santander": ["Cúcuta", "Ocaña", "Pamplona", "Los Patios"],
+  "Putumayo": ["Mocoa", "Puerto Asís", "Orito"],
+  "Quindío": ["Armenia", "Calarcá", "Montenegro"],
+  "Risaralda": ["Pereira", "Dosquebradas", "Santa Rosa de Cabal"],
+  "San Andrés y Providencia": ["San Andrés", "Providencia"],
+  "Santander": ["Bucaramanga", "Floridablanca", "Girón", "Barrancabermeja", "San Gil"],
+  "Sucre": ["Sincelejo", "Corozal", "Tolú", "San Marcos"],
+  "Tolima": ["Ibagué", "Espinal", "Honda", "Líbano"],
+  "Valle del Cauca": ["Cali", "Buenaventura", "Palmira", "Tuluá", "Cartago", "Buga", "Yumbo"],
+  "Vaupés": ["Mitú"],
+  "Vichada": ["Puerto Carreño", "La Primavera"],
+};
+
+function cargarDepartamentos() {
+  var sel = document.getElementById("ns-departamento");
+  var html = '<option value="">Seleccionar departamento...</option>';
+  var depts = Object.keys(DEPARTAMENTOS).sort();
+  depts.forEach(function(d) {
+    html += '<option value="' + d + '">' + d + '</option>';
+  });
+  sel.innerHTML = html;
+}
+
+function actualizarMunicipios() {
+  var dept = document.getElementById("ns-departamento").value;
+  var sel = document.getElementById("ns-municipio");
+  if (!dept || !DEPARTAMENTOS[dept]) {
+    sel.innerHTML = '<option value="">Seleccionar municipio...</option>';
+    return;
+  }
+  var html = '<option value="">Seleccionar municipio...</option>';
+  DEPARTAMENTOS[dept].forEach(function(m) {
+    html += '<option value="' + m + '">' + m + '</option>';
+  });
+  sel.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KPI CARDS
+═══════════════════════════════════════════════════════════ */
+function renderSociosKpi() {
+  var socios = window.pageSocios || [];
+  var total = socios.length;
+  var activos = socios.filter(function(s) { return s.estado === "activo"; }).length;
+  var enMora = socios.filter(function(s) { return s.estado === "mora"; }).length;
+  var pendientes = socios.filter(function(s) { return s.estado === "pendiente"; }).length;
+
+  var cards = [
+    { label: "Total Socios", value: total, sub: "Socios registrados", icon: "👥", cls: "blue" },
+    { label: "Socios Activos", value: activos, sub: "Al día con aportes", icon: "✅", cls: "green" },
+    { label: "En Mora", value: enMora, sub: "Con obligaciones vencidas", icon: "⚠", cls: "red" },
+    { label: "Pendientes", value: pendientes, sub: "Sin aportes registrados", icon: "⏳", cls: "gold" },
+  ];
+
+  document.getElementById("sociosKpiGrid").innerHTML = cards.map(function(k) {
+    return '<div class="kpi-card ' + k.cls + '">' +
+      '<div class="kpi-label">' + k.label + '</div>' +
+      '<div class="kpi-value">' + k.value + '</div>' +
+      '<div class="kpi-footer">' + k.sub + '</div>' +
+      '<div class="kpi-bg-icon">' + k.icon + '</div></div>';
+  }).join("");
+}
+
 document.addEventListener("DOMContentLoaded", async function() {
   if (!Roles.proteger("socios")) return;
 
   buildLayout("Socios", "Gestión de miembros del fondo", "");
   await cargarDatos();
+  renderSociosKpi();
   renderTabla();
   filterTable("searchSocio", "tablaSocios");
   initTabs("filtroEstado", function(tab) { filtroActual = tab; renderTabla(); });
+  cargarDepartamentos();
   document.getElementById("ns-fecha").value = new Date().toISOString().split("T")[0];
 });
 
@@ -371,16 +471,15 @@ async function guardarNuevoSocio() {
   btn.disabled = true;
 
   var nuevo = {
-    id: doc,
-    codigo: "S" + String(doc).slice(-4),
     nombre: nombre,
     documento: doc,
     email:    document.getElementById("ns-email").value.trim(),
     telefono: document.getElementById("ns-tel").value.trim(),
-    fechaIngreso: document.getElementById("ns-fecha").value || new Date().toISOString().split("T")[0],
-    aporteMensual: parseInt(document.getElementById("ns-aporte").value) || 130000,
-    cargo: document.getElementById("ns-cargo").value.trim(),
+    fechaIngreso: new Date().toISOString().split("T")[0],
+    cargo: document.getElementById("ns-cargo").value,
     sede:  document.getElementById("ns-sede").value,
+    departamento: document.getElementById("ns-departamento").value,
+    municipio: document.getElementById("ns-municipio").value,
   };
 
   try {
@@ -388,6 +487,7 @@ async function guardarNuevoSocio() {
     if (res && res.ok) {
       await cargarDatos();
       Modal.close("modalNuevoSocio");
+      renderSociosKpi();
       renderTabla();
       Toast.success("✓ Socio " + nombre + " registrado.");
       
@@ -397,6 +497,10 @@ async function guardarNuevoSocio() {
       document.getElementById("ns-email").value = "";
       document.getElementById("ns-tel").value = "";
       document.getElementById("ns-cargo").value = "";
+      document.getElementById("ns-sede").value = "";
+      document.getElementById("ns-departamento").value = "";
+      document.getElementById("ns-municipio").innerHTML = '<option value="">Seleccionar municipio...</option>';
+      document.getElementById("ns-municipio").value = "";
     } else {
       Toast.error(res?.mensaje || "Error al crear socio");
     }

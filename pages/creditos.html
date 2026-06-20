@@ -589,7 +589,7 @@ function buildCreditoCard(c) {
   var nombre    = socio.nombre || c.socio_nombre || "Socio desconocido";
   var iniciales = nombre.split(" ").map(function(p){return p[0];}).slice(0,2).join("");
   
-  var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
+  var tasa = c.tasa_mensual || c.tasaMensual || 1;
   var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
   var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
   var fechaDesembolso = c.fecha_desembolso || c.fechaDesembolso;
@@ -684,7 +684,7 @@ function abrirPago(creditoId) {
   if (!c) return;
   creditoPagoActual = creditoId;
 
-  var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
+  var tasa = c.tasa_mensual || c.tasaMensual || 1;
   var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
   var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
   var fechaDesembolso = c.fecha_desembolso || c.fechaDesembolso;
@@ -755,7 +755,7 @@ async function confirmarPago() {
       await cargarDatos();
 
       // Registrar en movimientos contables
-      var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
+      var tasa = c.tasa_mensual || c.tasaMensual || 1;
       var cuota = Math.round(DataHelper.calcularCuota(c.monto, tasa, c.cuotas));
       await API.movimientos.crear({
         tipo:         "ingreso",
@@ -809,7 +809,7 @@ function verDetalle(creditoId) {
   var sObj = (window.pageSocios || []).find(function(s){ return s.id === c.socio_id || s.id === c.socioId; });
   var socio = sObj ? sObj.nombre : (c.socio_nombre || c.socio_codigo || c.socioCodigo || "Socio #" + (c.socio_id || c.socioId));
 
-  var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
+  var tasa = c.tasa_mensual || c.tasaMensual || 1;
   var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
   var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
   var totalCuotas = Number(c.cuotas) || 1;
@@ -1098,7 +1098,7 @@ function exportarCreditos() {
     var socio = sObj ? sObj.nombre : (c.socio_nombre || c.socio_codigo || c.socioCodigo || "Socio #" + (c.socio_id || c.socioId));
     var cuotasPagadas = c.cuotas_pagadas !== undefined ? c.cuotas_pagadas : (c.cuotasPagadas || 0);
     var saldoCapital = c.saldo_capital !== undefined ? c.saldo_capital : (c.saldoCapital || 0);
-    var tasa = c.tasa_mensual || c.tasaMensual || 1.5;
+    var tasa = c.tasa_mensual || c.tasaMensual || 1;
     var fecha = c.fecha_desembolso || c.fechaDesembolso;
     datos.push([
       c.id,

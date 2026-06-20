@@ -37,6 +37,8 @@ export function createSocioController(socioRepo: ISocioRepository) {
     estado: { toString(): string };
     cargo: string | null;
     sede: string | null;
+    departamento: string | null;
+    municipio: string | null;
     deletedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
@@ -56,6 +58,8 @@ export function createSocioController(socioRepo: ISocioRepository) {
       estado: socio.estado.toString(),
       cargo: socio.cargo,
       sede: socio.sede,
+      departamento: socio.departamento,
+      municipio: socio.municipio,
       eliminado: socio.deletedAt !== null,
       createdAt: socio.createdAt,
       updatedAt: socio.updatedAt,

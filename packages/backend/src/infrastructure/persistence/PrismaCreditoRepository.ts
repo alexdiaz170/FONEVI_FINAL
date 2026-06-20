@@ -19,6 +19,7 @@ interface CreditoRow {
   cuotasPagadas: number;
   saldoCapital: number;
   fechaDesembolso: Date;
+  fechaUltimoPago: Date | null;
   estado: string;
   proposito: string | null;
   aprobadoPor: string | null;
@@ -45,6 +46,7 @@ export class PrismaCreditoRepository implements ICreditoRepository {
       cuotasPagadas: row.cuotasPagadas,
       saldoCapital: Monto.create(Number(row.saldoCapital)),
       fechaDesembolso: row.fechaDesembolso,
+      fechaUltimoPago: row.fechaUltimoPago,
       estado: EstadoCredito.create(row.estado),
       proposito: row.proposito,
       aprobadoPor: row.aprobadoPor,
@@ -109,6 +111,7 @@ export class PrismaCreditoRepository implements ICreditoRepository {
         cuotasPagadas: credito.cuotasPagadas,
         saldoCapital: credito.saldoCapital.value,
         fechaDesembolso: credito.fechaDesembolso,
+        fechaUltimoPago: credito.fechaUltimoPago,
         estado: credito.estado.toString(),
         proposito: credito.proposito,
         notas: credito.notas,

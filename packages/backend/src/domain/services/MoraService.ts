@@ -40,9 +40,8 @@ export class MoraService {
         )
       : 0;
 
-    const tasaMensualMora = 5;
-    const interesMora =
-      Math.round(((totalAdeudado * (tasaMensualMora / 100)) / 30) * diasMora * 100) / 100;
+    const tasaMensualMora = 0;
+    const interesMora = 0;
 
     return {
       socioId: socio.id,

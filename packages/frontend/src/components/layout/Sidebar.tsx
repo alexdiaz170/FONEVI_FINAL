@@ -13,6 +13,7 @@ import {
   X,
   Bell,
   HandHeart,
+  FileText,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { cn } from '../../lib/utils';
@@ -52,6 +53,7 @@ const navItems = [
     icon: UserCircle,
     roles: ['socio', 'admin', 'superadmin'],
   },
+  { to: '/reportes', label: 'Reportes', icon: FileText, roles: ['admin', 'superadmin'] },
   { to: '/configuracion', label: 'Configuración', icon: Settings, roles: ['admin', 'superadmin'] },
 ];
 

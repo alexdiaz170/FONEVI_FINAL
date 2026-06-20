@@ -11,11 +11,13 @@ export class RegistrarMovimientoUseCase {
     descripcion: string;
     monto: number;
     fecha?: string | null;
+    socioId?: string | null;
   }): Promise<Movimiento> {
     const monto = Monto.create(dto.monto);
     const fecha = dto.fecha ? new Date(dto.fecha) : new Date();
 
     const movimiento = Movimiento.create({
+      socioId: dto.socioId ?? undefined,
       tipo: dto.tipo,
       categoria: dto.categoria,
       descripcion: dto.descripcion,

@@ -10,6 +10,7 @@ import { Monto } from '@fonevi/shared';
 
 interface MovimientoRow {
   id: string;
+  socioId: string | null;
   tipo: string;
   categoria: string;
   descripcion: string;
@@ -28,6 +29,7 @@ export class PrismaMovimientoRepository implements IMovimientoRepository {
   private toDomain(row: MovimientoRow): Movimiento {
     return Movimiento.fromPersistence({
       id: row.id,
+      socioId: row.socioId,
       tipo: row.tipo,
       categoria: row.categoria,
       descripcion: row.descripcion,
@@ -77,10 +79,20 @@ export class PrismaMovimientoRepository implements IMovimientoRepository {
     };
   }
 
+  async findSocioNombres(socioIds: string[]): Promise<Map<string, string>> {
+    if (socioIds.length === 0) return new Map();
+    const rows = (await this.prisma.socio.findMany({
+      where: { id: { in: socioIds } },
+      select: { id: true, nombre: true },
+    })) as { id: string; nombre: string }[];
+    return new Map(rows.map((r) => [r.id, r.nombre]));
+  }
+
   async save(movimiento: Movimiento): Promise<Movimiento> {
     const row = (await this.prisma.movimiento.create({
       data: {
         id: movimiento.id,
+        socioId: movimiento.socioId ?? null,
         tipo: movimiento.tipo,
         categoria: movimiento.categoria,
         descripcion: movimiento.descripcion,
@@ -95,6 +107,7 @@ export class PrismaMovimientoRepository implements IMovimientoRepository {
     const row = (await this.prisma.movimiento.update({
       where: { id: movimiento.id },
       data: {
+        socioId: movimiento.socioId ?? null,
         tipo: movimiento.tipo,
         categoria: movimiento.categoria,
         descripcion: movimiento.descripcion,

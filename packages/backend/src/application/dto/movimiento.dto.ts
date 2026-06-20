@@ -6,6 +6,7 @@ export const registrarMovimientoSchema = z.object({
   descripcion: z.string().min(3, 'La descripción debe tener al menos 3 caracteres'),
   monto: z.number().positive('El monto debe ser mayor a 0'),
   fecha: z.string().optional(),
+  socioId: z.string().optional(),
 });
 
 export const listarMovimientosSchema = z.object({
