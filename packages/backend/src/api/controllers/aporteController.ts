@@ -43,6 +43,14 @@ export function createAporteController(
     notas: string | null;
     pagoSolidaridad: { value: number };
     pagoCredito: { value: number };
+    detalle: {
+      id: string;
+      solidaridad: { value: number };
+      interes: { value: number };
+      seguro: { value: number };
+      capital: { value: number };
+      ahorro: { value: number };
+    } | null;
     createdAt: Date;
     updatedAt: Date;
   }) {
@@ -57,6 +65,16 @@ export function createAporteController(
       notas: aporte.notas,
       pagoSolidaridad: aporte.pagoSolidaridad.value,
       pagoCredito: aporte.pagoCredito.value,
+      detalle: aporte.detalle
+        ? {
+            id: aporte.detalle.id,
+            solidaridad: aporte.detalle.solidaridad.value,
+            interes: aporte.detalle.interes.value,
+            seguro: aporte.detalle.seguro.value,
+            capital: aporte.detalle.capital.value,
+            ahorro: aporte.detalle.ahorro.value,
+          }
+        : null,
       createdAt: aporte.createdAt,
       updatedAt: aporte.updatedAt,
     };

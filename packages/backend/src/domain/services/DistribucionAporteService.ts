@@ -22,7 +22,8 @@ export interface DistribucionResult {
 export class DistribucionAporteService {
   constructor(
     private readonly aporteSolidaridad: number = 5000,
-    private readonly tasaSeguro: number = 0.005,
+    private readonly tasaSeguro: number = 0.0005,
+    private readonly aporteAhorroMensual: number = 125000,
   ) {}
 
   distribuir(
@@ -32,9 +33,28 @@ export class DistribucionAporteService {
     fechaPago: Date | null = null,
     aporteSolidaridadOverride?: number,
     tasaSeguroOverride?: number,
+    aporteAhorroMensualOverride?: number,
   ): DistribucionResult {
     const aporteSolidaridad = aporteSolidaridadOverride ?? this.aporteSolidaridad;
     const tasaSeguro = tasaSeguroOverride ?? this.tasaSeguro;
+    const ahorroMensual = aporteAhorroMensualOverride ?? this.aporteAhorroMensual;
+
+    if (tipoOperacion === 'adelanto_cuotas' && !creditoActivo) {
+      const costoPorPeriodo = aporteSolidaridad + ahorroMensual;
+      const numPeriodos = Math.floor(montoTotal.value / costoPorPeriodo) || 1;
+      const solidaridadTotal = numPeriodos * aporteSolidaridad;
+      return {
+        pagoSolidaridad: Monto.create(solidaridadTotal),
+        pagoInteres: Monto.create(0),
+        pagoSeguro: Monto.create(0),
+        pagoCapital: Monto.create(0),
+        totalPagoCredito: Monto.create(0),
+        ahorro: Monto.create(montoTotal.value - solidaridadTotal),
+        nuevoSaldoCapital: Monto.create(0),
+        creditoPagado: false,
+      };
+    }
+
     const pagoSolidaridadValor = Math.min(montoTotal.value, aporteSolidaridad);
     const pagoSolidaridad = Monto.create(pagoSolidaridadValor);
 
@@ -80,7 +100,15 @@ export class DistribucionAporteService {
           pagoSeguro = Monto.create(Number((saldo.value * tasaSeguro * factor).toFixed(2)));
           pagoSeguro = restante.esMenorQue(pagoSeguro) ? restante : pagoSeguro;
           restante = restante.restar(pagoSeguro);
+        }
 
+        if (restante.value > 0) {
+          const ahorroEsperado = Monto.create(ahorroMensual);
+          ahorro = restante.esMenorQue(ahorroEsperado) ? restante : ahorroEsperado;
+          restante = restante.restar(ahorro);
+        }
+
+        if (restante.value > 0) {
           pagoCapital = restante;
           restante = Monto.create(0);
         }

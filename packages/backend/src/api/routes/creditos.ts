@@ -14,6 +14,7 @@ const creditoController = createCreditoController(socioRepo, creditoRepo, pagoCu
 
 router.get('/', authenticate, creditoController.list.bind(creditoController));
 router.get('/resumen', authenticate, creditoController.resumen.bind(creditoController));
+router.get('/calcular', authenticate, creditoController.calcular.bind(creditoController));
 router.get('/:id', authenticate, creditoController.get.bind(creditoController));
 router.post(
   '/',

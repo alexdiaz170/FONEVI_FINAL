@@ -1,5 +1,6 @@
 import { Monto } from '@fonevi/shared';
 import { Aporte } from '../../../domain/entities/Aporte.js';
+import { AporteDetalle } from '../../../domain/entities/AporteDetalle.js';
 import { Periodo } from '../../../domain/entities/Periodo.js';
 import { EstadoAporte } from '../../../domain/value-objects/EstadoAporte.js';
 import { IAporteRepository } from '../../../domain/repositories/IAporteRepository.js';
@@ -47,12 +48,14 @@ export class RegistrarAporteUseCase {
 
     const prisma = getPrismaClient();
 
-    const [solidaridadCfg, seguroCfg] = await Promise.all([
+    const [solidaridadCfg, seguroCfg, ahorroCfg] = await Promise.all([
       prisma.configuracion.findUnique({ where: { clave: 'valor_solidaridad' } }),
       prisma.configuracion.findUnique({ where: { clave: 'porcentaje_seguro' } }),
+      prisma.configuracion.findUnique({ where: { clave: 'valor_ahorro_mensual' } }),
     ]);
     const valorSolidaridad = Number(solidaridadCfg?.valor ?? 5000);
-    const tasaSeguro = Number(seguroCfg?.valor ?? 0.5) / 100;
+    const tasaSeguro = Number(seguroCfg?.valor ?? 0.5) / 1000;
+    const valorAhorroMensual = Number(ahorroCfg?.valor ?? 125000);
 
     return await prisma.$transaction(async () => {
       let creditoActivo: CreditoActivo | null = null;
@@ -60,7 +63,7 @@ export class RegistrarAporteUseCase {
       const creditos = (await prisma.credito.findMany({
         where: {
           socioId: dto.socioId,
-          estado: { not: 'pagado' },
+          estado: 'activo',
           saldoCapital: { gt: 0 },
         },
         orderBy: { createdAt: 'asc' as never },
@@ -95,7 +98,17 @@ export class RegistrarAporteUseCase {
         fechaPago,
         valorSolidaridad,
         tasaSeguro,
+        valorAhorroMensual,
       );
+
+      const detalle = AporteDetalle.create({
+        aporteId: '', // will be set after saving
+        solidaridad: distribucion.pagoSolidaridad,
+        interes: distribucion.pagoInteres,
+        seguro: distribucion.pagoSeguro,
+        capital: distribucion.pagoCapital,
+        ahorro: distribucion.ahorro,
+      });
 
       const aporte = Aporte.create({
         socioId: dto.socioId,
@@ -107,16 +120,24 @@ export class RegistrarAporteUseCase {
         notas: dto.notas ?? null,
         pagoSolidaridad: distribucion.pagoSolidaridad,
         pagoCredito: distribucion.totalPagoCredito,
+        detalle,
       });
 
       const saved = await this.aporteRepo.save(aporte);
+
+      const tipoOpLabel =
+        dto.tipoOperacion === 'adelanto_cuotas'
+          ? 'Adelanto Cuotas'
+          : dto.tipoOperacion === 'abono_credito'
+            ? 'Abono Crédito'
+            : 'Cuota Normal';
 
       await prisma.movimiento.create({
         data: {
           socioId: socio.id,
           tipo: 'ingreso',
-          categoria: 'aporte',
-          descripcion: `${periodo.nombre}`,
+          categoria: tipoOpLabel,
+          descripcion: periodo.nombre,
           monto: montoTotal.value,
           fecha: new Date(),
         },

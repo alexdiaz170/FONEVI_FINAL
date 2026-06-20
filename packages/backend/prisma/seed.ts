@@ -48,6 +48,7 @@ async function main() {
     { clave: 'valor_solidaridad', valor: '5000' },
     { clave: 'valor_minimo_aporte', valor: '125000' },
     { clave: 'multiplicador_maximo_credito', valor: '4' },
+    { clave: 'valor_ahorro_mensual', valor: '125000' },
     { clave: 'nombre_institucion', valor: 'Fondo de Empleados Docentes FONEVI' },
     { clave: 'nit_institucion', valor: '800.123.456-7' },
   ];

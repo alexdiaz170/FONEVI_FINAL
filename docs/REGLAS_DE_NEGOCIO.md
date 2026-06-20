@@ -20,9 +20,9 @@ Todo socio deberá contar con una identificación única dentro del sistema.
 
 Un socio podrá encontrarse, entre otros, en estados como:
 
-* Activo.
-* Inactivo.
-* Suspendido.
+- Activo.
+- Inactivo.
+- Suspendido.
 
 ## 1.3 Acceso
 
@@ -77,8 +77,8 @@ Se aplicará en el siguiente orden:
 
 Si existe un excedente insuficiente para cubrir completamente el capital correspondiente:
 
-* No se abonará parcialmente al capital.
-* El excedente incrementará el ahorro acumulado del socio.
+- No se abonará parcialmente al capital.
+- El excedente incrementará el ahorro acumulado del socio.
 
 ---
 
@@ -94,10 +94,10 @@ No debe asumirse que el capital correspondiente a cada cuota es constante.
 
 Características:
 
-* Incrementa el ahorro acumulado.
-* No adelanta períodos.
-* No modifica el calendario normal de aportes.
-* Puede aumentar la capacidad crediticia del socio.
+- Incrementa el ahorro acumulado.
+- No adelanta períodos.
+- No modifica el calendario normal de aportes.
+- Puede aumentar la capacidad crediticia del socio.
 
 ---
 
@@ -105,11 +105,11 @@ Características:
 
 Características:
 
-* Reduce exclusivamente el saldo del crédito.
-* Disminuye los intereses futuros.
-* No adelanta períodos.
-* No incrementa el ahorro acumulado.
-* No elimina la obligación de continuar realizando aportes mensuales.
+- Reduce exclusivamente el saldo del crédito.
+- Disminuye los intereses futuros.
+- No adelanta períodos.
+- No incrementa el ahorro acumulado.
+- No elimina la obligación de continuar realizando aportes mensuales.
 
 ---
 
@@ -121,16 +121,44 @@ El monto máximo disponible dependerá del ahorro acumulado y del multiplicador 
 
 ## 3.2 Tabla de amortización
 
-Todo crédito deberá contar con una tabla de amortización que defina para cada cuota:
+Todo crédito deberá contar con una tabla de amortización que defina para cada período:
 
-* Capital.
-* Intereses.
-* Seguro.
-* Valor total.
+- **Capital**.
+- **Intereses** (calculado como `saldo × tasaMensual`).
+- **Seguro** (calculado como `saldo × 0.5 / 1000`).
+- **Cuota fija total**: `Cuota = Capital + Interés + Seguro`.
+
+El método de cálculo es **amortización francesa con tasa combinada**:
+
+```
+r_combinada = (tasaMensual / 100) + tasaSeguro
+Cuota fija = REDONDEO(Monto × r_combinada × (1 + r_combinada)^n / ((1 + r_combinada)^n - 1))
+```
+
+Donde `tasaSeguro = 0.5 / 1000 = 0.0005` y `tasaMensual` está expresada en porcentaje (ej: 1% = 1).
+
+**Redondeo:** Todos los valores de la tabla de amortización se redondean a enteros (sin decimales).
+
+**Distribución interna por período:**
+
+```
+Interés = REDONDEO(Saldo × tasaMensual / 100)
+Seguro  = REDONDEO(Saldo × 0.5 / 1000)
+Capital = Cuota fija - Interés - Seguro
+Saldo   = Saldo anterior - Capital
+```
+
+En la última cuota, el capital se ajusta para llevar el saldo a cero exacto.
+
+La cuota total (capital + interés + seguro) es **completamente fija** durante toda la vigencia del crédito. Lo que varía mes a mes es la distribución interna: el interés y el seguro disminuyen porque el saldo baja, mientras que el abono a capital aumenta.
 
 Esta tabla será la referencia oficial para cálculos posteriores.
 
-## 3.3 Cancelación
+## 3.3 Pago de cuota (PagarCuotaUseCase)
+
+El pago de una cuota individual también utiliza la cuota fija combinada (capital + interés + seguro) calculada al momento de originación del crédito. El seguro se descuenta del total antes de aplicar al capital.
+
+## 3.4 Cancelación
 
 Cuando el saldo llegue a cero, el crédito cambiará automáticamente al estado **Pagado**.
 
@@ -144,9 +172,9 @@ La refinanciación conservará el historial del crédito original y generará un
 
 El aporte de solidaridad:
 
-* Se configura desde el Panel SuperAdmin.
-* Se recauda según las reglas vigentes.
-* Debe registrarse como movimiento independiente para efectos contables y de auditoría.
+- Se configura desde el Panel SuperAdmin.
+- Se recauda según las reglas vigentes.
+- Debe registrarse como movimiento independiente para efectos contables y de auditoría.
 
 ---
 
@@ -154,9 +182,9 @@ El aporte de solidaridad:
 
 El ahorro acumulado podrá incrementarse mediante:
 
-* Pagos normales.
-* Abonos extraordinarios al ahorro.
-* Excedentes provenientes de pagos parciales conforme a estas reglas.
+- Pagos normales.
+- Abonos extraordinarios al ahorro.
+- Excedentes provenientes de pagos parciales conforme a estas reglas.
 
 El ahorro acumulado es uno de los factores utilizados para determinar la capacidad crediticia del socio.
 
@@ -166,13 +194,13 @@ El ahorro acumulado es uno de los factores utilizados para determinar la capacid
 
 Los siguientes parámetros deberán administrarse desde la base de datos y el Panel SuperAdmin:
 
-* Tasas de interés.
-* Tasas de mora.
-* Valor del seguro.
-* Valor de solidaridad.
-* Multiplicador de crédito.
-* Período activo.
-* Demás parámetros institucionales.
+- Tasas de interés.
+- Tasas de mora.
+- Valor del seguro.
+- Valor de solidaridad.
+- Multiplicador de crédito.
+- Período activo.
+- Demás parámetros institucionales.
 
 ---
 
@@ -182,10 +210,10 @@ El sistema opera por períodos mensuales.
 
 El cierre:
 
-* Debe ejecutarse mediante una acción explícita de un usuario autorizado.
-* Debe validar previamente la consistencia de la información.
-* Debe actualizar los estados correspondientes.
-* Debe preparar el siguiente período operativo.
+- Debe ejecutarse mediante una acción explícita de un usuario autorizado.
+- Debe validar previamente la consistencia de la información.
+- Debe actualizar los estados correspondientes.
+- Debe preparar el siguiente período operativo.
 
 ---
 
@@ -203,13 +231,13 @@ Las operaciones relevantes deberán registrar información suficiente para recon
 
 Entre ellas:
 
-* Configuración.
-* Créditos.
-* Aportes.
-* Cierres.
-* Respaldos.
-* Restauraciones.
-* Acciones administrativas.
+- Configuración.
+- Créditos.
+- Aportes.
+- Cierres.
+- Respaldos.
+- Restauraciones.
+- Acciones administrativas.
 
 ---
 
@@ -223,11 +251,11 @@ El sistema deberá contar con mecanismos que permitan proteger la información m
 
 Se prevé incorporar una estructura de detalle de aportes (`aporte_detalle` o equivalente) que registre explícitamente la distribución de cada aporte en conceptos como:
 
-* Solidaridad.
-* Intereses.
-* Seguro.
-* Capital del crédito.
-* Ahorro acumulado.
+- Solidaridad.
+- Intereses.
+- Seguro.
+- Capital del crédito.
+- Ahorro acumulado.
 
 Esta mejora busca fortalecer la trazabilidad y facilitar auditorías y reportes.
 
@@ -235,11 +263,11 @@ Esta mejora busca fortalecer la trazabilidad y facilitar auditorías y reportes.
 
 # 12. Principios generales
 
-* Ninguna regla financiera deberá implementarse únicamente en el frontend.
-* Las reglas de negocio deberán centralizarse en el backend.
-* La configuración variable no debe codificarse directamente en el software.
-* Toda operación crítica deberá ser trazable.
-* La documentación deberá mantenerse sincronizada con la evolución funcional del sistema.
+- Ninguna regla financiera deberá implementarse únicamente en el frontend.
+- Las reglas de negocio deberán centralizarse en el backend.
+- La configuración variable no debe codificarse directamente en el software.
+- Toda operación crítica deberá ser trazable.
+- La documentación deberá mantenerse sincronizada con la evolución funcional del sistema.
 
 ---
 

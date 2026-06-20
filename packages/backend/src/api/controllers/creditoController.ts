@@ -76,6 +76,47 @@ export function createCreditoController(
   }
 
   return {
+    async calcular(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+        const monto = Number(req.query.monto);
+        const tasaMensual = Number(req.query.tasaMensual);
+        const cuotas = Number(req.query.cuotas);
+        if (!monto || monto <= 0 || !tasaMensual || tasaMensual <= 0 || !cuotas || cuotas < 1) {
+          apiResponse.error(
+            res,
+            400,
+            'Parámetros inválidos: monto, tasaMensual, cuotas',
+            'VALIDATION',
+          );
+          return;
+        }
+        const { Monto } = await import('@fonevi/shared');
+        const TASA_SEGURO = 0.5 / 1000;
+        const tabla = calculador.generarTablaAmortizacion(
+          Monto.create(monto),
+          tasaMensual,
+          cuotas,
+          TASA_SEGURO,
+        );
+        apiResponse.success(res, {
+          cuotaFija: tabla.length > 0 ? tabla[0]!.monto.value : 0,
+          totalIntereses: tabla.reduce((s, r) => s + r.montoInteres.value, 0),
+          totalSeguro: tabla.reduce((s, r) => s + r.seguro.value, 0),
+          totalPagar: tabla.reduce((s, r) => s + r.monto.value, 0),
+          tabla: tabla.map((r) => ({
+            numero: r.numero,
+            cuota: r.monto.value,
+            capital: r.montoCapital.value,
+            interes: r.montoInteres.value,
+            seguro: r.seguro.value,
+            saldo: r.saldoRestante.value,
+          })),
+        });
+      } catch (error) {
+        next(error);
+      }
+    },
+
     async resumen(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
         const data = await resumenUseCase.execute();

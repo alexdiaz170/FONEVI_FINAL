@@ -54,10 +54,12 @@ export class ObtenerEstadoCuentaUseCase {
 
     const pagos = await this.pagoCuotaRepo.findByCreditoId(creditoId);
 
+    const TASA_SEGURO = 0.5 / 1000;
     const tablaAmortizacion = this.calculador.generarTablaAmortizacion(
       Monto.create(credito.monto.value),
       credito.tasaMensual.value,
       credito.cuotas,
+      TASA_SEGURO,
     );
 
     const totalPagado = pagos.reduce((sum, p) => sum + p.monto.value, 0);

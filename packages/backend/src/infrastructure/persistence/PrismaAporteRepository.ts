@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { getPrismaClient } from './prismaClient.js';
 import { Aporte } from '../../domain/entities/Aporte.js';
+import { AporteDetalle } from '../../domain/entities/AporteDetalle.js';
 import { EstadoAporte } from '../../domain/value-objects/EstadoAporte.js';
 import {
   IAporteRepository,
@@ -24,6 +25,18 @@ interface AporteRow {
   updatedAt: Date;
 }
 
+interface DetalleRow {
+  id: string;
+  aporteId: string;
+  solidaridad: number;
+  interes: number;
+  seguro: number;
+  capital: number;
+  ahorro: number;
+}
+
+const detalleInclude = { detalle: true };
+
 export class PrismaAporteRepository implements IAporteRepository {
   protected readonly prisma: PrismaClient;
 
@@ -31,7 +44,19 @@ export class PrismaAporteRepository implements IAporteRepository {
     this.prisma = getPrismaClient();
   }
 
-  private toDomain(row: AporteRow): Aporte {
+  private toDomain(row: AporteRow & { detalle?: DetalleRow | null }): Aporte {
+    const detalle = row.detalle
+      ? AporteDetalle.fromPersistence({
+          id: (row.detalle as DetalleRow).id,
+          aporteId: (row.detalle as DetalleRow).aporteId,
+          solidaridad: Monto.create(Number((row.detalle as DetalleRow).solidaridad)),
+          interes: Monto.create(Number((row.detalle as DetalleRow).interes)),
+          seguro: Monto.create(Number((row.detalle as DetalleRow).seguro)),
+          capital: Monto.create(Number((row.detalle as DetalleRow).capital)),
+          ahorro: Monto.create(Number((row.detalle as DetalleRow).ahorro)),
+        })
+      : null;
+
     return Aporte.fromPersistence({
       id: row.id,
       socioId: row.socioId,
@@ -43,6 +68,7 @@ export class PrismaAporteRepository implements IAporteRepository {
       notas: row.notas,
       pagoSolidaridad: Monto.create(Number(row.pagoSolidaridad)),
       pagoCredito: Monto.create(Number(row.pagoCredito)),
+      detalle,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     });
@@ -51,7 +77,8 @@ export class PrismaAporteRepository implements IAporteRepository {
   async findById(id: string): Promise<Aporte | null> {
     const row = (await this.prisma.aporte.findUnique({
       where: { id },
-    })) as unknown as AporteRow | null;
+      include: detalleInclude,
+    })) as unknown as (AporteRow & { detalle: DetalleRow | null }) | null;
     if (!row) return null;
     return this.toDomain(row);
   }
@@ -70,7 +97,8 @@ export class PrismaAporteRepository implements IAporteRepository {
         orderBy: { fechaPago: 'desc' } as never,
         skip,
         take: limit,
-      }) as unknown as Promise<AporteRow[]>,
+        include: detalleInclude,
+      }) as unknown as Promise<(AporteRow & { detalle: DetalleRow | null })[]>,
       this.prisma.aporte.count({ where: where as never }),
     ]);
 
@@ -84,6 +112,19 @@ export class PrismaAporteRepository implements IAporteRepository {
   }
 
   async save(aporte: Aporte): Promise<Aporte> {
+    const detalleData = aporte.detalle
+      ? {
+          create: {
+            id: aporte.detalle.id,
+            solidaridad: aporte.detalle.solidaridad.value,
+            interes: aporte.detalle.interes.value,
+            seguro: aporte.detalle.seguro.value,
+            capital: aporte.detalle.capital.value,
+            ahorro: aporte.detalle.ahorro.value,
+          },
+        }
+      : undefined;
+
     const row = (await this.prisma.aporte.create({
       data: {
         id: aporte.id,
@@ -96,8 +137,10 @@ export class PrismaAporteRepository implements IAporteRepository {
         notas: aporte.notas,
         pagoSolidaridad: aporte.pagoSolidaridad.value,
         pagoCredito: aporte.pagoCredito.value,
+        detalle: detalleData,
       } as never,
-    })) as unknown as AporteRow;
+      include: detalleInclude,
+    })) as unknown as AporteRow & { detalle: DetalleRow | null };
     return this.toDomain(row);
   }
 

@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
-import { apiCrearCredito, apiListarSocios } from '../../lib/api';
+import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  apiCrearCredito,
+  apiCalcularCredito,
+  apiListarSocios,
+  type AmortizacionPreviewDTO,
+} from '../../lib/api';
 import { ApiError } from '../../lib/api';
 import { formatCurrency } from '../../lib/utils';
 
@@ -19,6 +24,9 @@ export default function CreditosCrear() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [amortizacion, setAmortizacion] = useState<AmortizacionPreviewDTO | null>(null);
+  const [showTabla, setShowTabla] = useState(false);
+  const [calculando, setCalculando] = useState(false);
 
   const { data: sociosData } = useQuery({
     queryKey: ['socios-select', 1],
@@ -107,6 +115,25 @@ export default function CreditosCrear() {
       ? (montoNum * (tasaNum / 100) * Math.pow(1 + tasaNum / 100, cuotasNum)) /
         (Math.pow(1 + tasaNum / 100, cuotasNum) - 1)
       : 0;
+
+  useEffect(() => {
+    if (montoNum > 0 && tasaNum > 0 && cuotasNum > 0) {
+      const timer = setTimeout(async () => {
+        setCalculando(true);
+        try {
+          const data = await apiCalcularCredito(montoNum, tasaNum, cuotasNum);
+          setAmortizacion(data);
+        } catch {
+          setAmortizacion(null);
+        } finally {
+          setCalculando(false);
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setAmortizacion(null);
+    }
+  }, [form.monto, form.tasaMensual, form.cuotas]);
 
   return (
     <div>
@@ -233,12 +260,84 @@ export default function CreditosCrear() {
             />
           </div>
 
-          {cuotaEstimada > 0 && (
-            <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded p-3 text-sm">
-              <span className="text-blue-800 font-medium">Cuota mensual estimada: </span>
-              <span className="text-blue-900 font-mono font-bold">
-                {formatCurrency(cuotaEstimada)}
-              </span>
+          {amortizacion && (
+            <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded p-3 text-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-blue-800 font-medium">Resumen del crédito</span>
+                {calculando && <span className="text-blue-400 text-xs">Calculando...</span>}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div>
+                  <span className="text-blue-600">Cuota fija:</span>
+                  <p className="text-blue-900 font-mono font-bold">
+                    {formatCurrency(amortizacion.cuotaFija)}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-blue-600">Total intereses:</span>
+                  <p className="text-blue-900 font-mono font-bold">
+                    {formatCurrency(amortizacion.totalIntereses)}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-blue-600">Total seguro:</span>
+                  <p className="text-blue-900 font-mono font-bold">
+                    {formatCurrency(amortizacion.totalSeguro)}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-blue-600">Total a pagar:</span>
+                  <p className="text-blue-900 font-mono font-bold">
+                    {formatCurrency(amortizacion.totalPagar)}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTabla(!showTabla)}
+                className="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900 font-medium"
+              >
+                {showTabla ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                {showTabla ? 'Ocultar' : 'Ver'} tabla de amortización
+              </button>
+              {showTabla && (
+                <div className="overflow-x-auto mt-2">
+                  <table className="w-full text-xs text-gray-700">
+                    <thead>
+                      <tr className="border-b border-blue-200">
+                        <th className="text-left py-1 pr-2">#</th>
+                        <th className="text-right py-1 px-2">Cuota</th>
+                        <th className="text-right py-1 px-2">Capital</th>
+                        <th className="text-right py-1 px-2">Interés</th>
+                        <th className="text-right py-1 px-2">Seguro</th>
+                        <th className="text-right py-1 pl-2">Saldo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {amortizacion.tabla.map((row) => (
+                        <tr key={row.numero} className="border-b border-blue-100">
+                          <td className="py-1 pr-2">{row.numero}</td>
+                          <td className="text-right py-1 px-2 font-mono">
+                            {formatCurrency(row.cuota)}
+                          </td>
+                          <td className="text-right py-1 px-2 font-mono">
+                            {formatCurrency(row.capital)}
+                          </td>
+                          <td className="text-right py-1 px-2 font-mono">
+                            {formatCurrency(row.interes)}
+                          </td>
+                          <td className="text-right py-1 px-2 font-mono">
+                            {formatCurrency(row.seguro)}
+                          </td>
+                          <td className="text-right py-1 pl-2 font-mono">
+                            {formatCurrency(row.saldo)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 

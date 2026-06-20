@@ -185,6 +185,15 @@ export async function apiEliminarSocio(id: string) {
 
 // ─── Aportes ────────────────────────────────
 
+export interface AporteDetalleDTO {
+  id: string;
+  solidaridad: number;
+  interes: number;
+  seguro: number;
+  capital: number;
+  ahorro: number;
+}
+
 export interface AporteDTO {
   id: string;
   socioId: string;
@@ -196,6 +205,7 @@ export interface AporteDTO {
   notas: string | null;
   pagoSolidaridad: number;
   pagoCredito: number;
+  detalle: AporteDetalleDTO | null;
   createdAt: string;
   updatedAt: string;
   nombreSocio?: string | null;
@@ -328,6 +338,30 @@ export async function apiListarCreditos(
 
 export async function apiObtenerCredito(id: string) {
   return api<EstadoCuentaDTO>(`/api/creditos/${id}`);
+}
+
+export interface AmortizacionPreviewDTO {
+  cuotaFija: number;
+  totalIntereses: number;
+  totalSeguro: number;
+  totalPagar: number;
+  tabla: Array<{
+    numero: number;
+    cuota: number;
+    capital: number;
+    interes: number;
+    seguro: number;
+    saldo: number;
+  }>;
+}
+
+export async function apiCalcularCredito(monto: number, tasaMensual: number, cuotas: number) {
+  const qs = new URLSearchParams({
+    monto: String(monto),
+    tasaMensual: String(tasaMensual),
+    cuotas: String(cuotas),
+  });
+  return api<AmortizacionPreviewDTO>(`/api/creditos/calcular?${qs.toString()}`);
 }
 
 export async function apiCrearCredito(data: {

@@ -1,6 +1,7 @@
 import { Monto } from '@fonevi/shared';
 import { EstadoAporte } from '../value-objects/EstadoAporte.js';
 import { DomainError } from '../errors.js';
+import { AporteDetalle } from './AporteDetalle.js';
 
 export interface AporteProps {
   id?: string;
@@ -13,6 +14,7 @@ export interface AporteProps {
   notas?: string | null;
   pagoSolidaridad?: Monto;
   pagoCredito?: Monto;
+  detalle?: AporteDetalle | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -28,6 +30,7 @@ export class Aporte {
   readonly notas: string | null;
   readonly pagoSolidaridad: Monto;
   readonly pagoCredito: Monto;
+  readonly detalle: AporteDetalle | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 
@@ -42,6 +45,7 @@ export class Aporte {
     this.notas = props.notas ?? null;
     this.pagoSolidaridad = props.pagoSolidaridad ?? Monto.create(0);
     this.pagoCredito = props.pagoCredito ?? Monto.create(0);
+    this.detalle = props.detalle ?? null;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? new Date();
   }

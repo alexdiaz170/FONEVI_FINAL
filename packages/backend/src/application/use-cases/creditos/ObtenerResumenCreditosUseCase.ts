@@ -13,13 +13,15 @@ export class ObtenerResumenCreditosUseCase {
   async execute(): Promise<ResumenCreditos> {
     const prisma = getPrismaClient();
 
+    const estadosOtorgados = ['activo', 'pagado'];
+
     const [montoAgg, socioAgg, activosCount, pagadosCount, pendientesCount] = await Promise.all([
       prisma.credito.aggregate({
         _sum: { monto: true },
-        where: { deletedAt: null },
+        where: { estado: { in: estadosOtorgados }, deletedAt: null },
       }),
       prisma.credito.findMany({
-        where: { deletedAt: null, estado: { in: ['activo', 'pendiente'] } },
+        where: { estado: { in: estadosOtorgados }, deletedAt: null },
         select: { socioId: true },
         distinct: ['socioId'],
       }),

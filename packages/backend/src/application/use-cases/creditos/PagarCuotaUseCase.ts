@@ -5,6 +5,8 @@ import { ICreditoRepository } from '../../../domain/repositories/ICreditoReposit
 import { IPagoCuotaRepository } from '../../../domain/repositories/IPagoCuotaRepository.js';
 import { EntityNotFoundError, DomainError } from '../../../domain/errors.js';
 
+const TASA_SEGURO = 0.5 / 1000;
+
 export class PagarCuotaUseCase {
   constructor(
     private readonly creditoRepo: ICreditoRepository,
@@ -24,12 +26,18 @@ export class PagarCuotaUseCase {
       throw new DomainError('El crédito ya está completamente pagado');
     }
 
-    const cuotaFija = credito.cuotaMensual;
+    const cuotaFija = this.calculador.calcularCuotaFijaConSeguro(
+      credito.monto,
+      credito.tasaMensual.value,
+      credito.cuotas,
+      TASA_SEGURO,
+    );
     const cuotaCalculada = this.calculador.calcularCuotaActual(
       credito.saldoCapital,
       credito.tasaMensual.value,
       credito.cuotasRestantes,
       cuotaFija,
+      TASA_SEGURO,
     );
 
     const fechaPago = dto.fechaPago ? new Date(dto.fechaPago) : new Date();

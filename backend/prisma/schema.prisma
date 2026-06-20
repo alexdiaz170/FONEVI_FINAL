@@ -76,13 +76,27 @@ model Aporte {
   updatedAt       DateTime  @updatedAt @map("updated_at")
   pagoSolidaridad Decimal   @default(0) @map("pago_solidaridad") @db.Decimal(15, 2)
   pagoCredito     Decimal   @default(0) @map("pago_credito") @db.Decimal(15, 2)
-  periodo         Periodo   @relation(fields: [periodoId], references: [id])
-  socio           Socio     @relation(fields: [socioId], references: [id])
+  periodo         Periodo        @relation(fields: [periodoId], references: [id])
+  socio           Socio          @relation(fields: [socioId], references: [id])
+  detalle         AporteDetalle?
 
   @@index([socioId])
   @@index([periodoId])
   @@index([estado])
   @@map("aportes")
+}
+
+model AporteDetalle {
+  id          String  @id @default(uuid())
+  aporteId    String  @unique @map("aporte_id")
+  solidaridad Decimal @default(0) @db.Decimal(15, 2)
+  interes     Decimal @default(0) @db.Decimal(15, 2)
+  seguro      Decimal @default(0) @db.Decimal(15, 2)
+  capital     Decimal @default(0) @db.Decimal(15, 2)
+  ahorro      Decimal @default(0) @db.Decimal(15, 2)
+  aporte      Aporte  @relation(fields: [aporteId], references: [id], onDelete: Cascade)
+
+  @@map("aporte_detalles")
 }
 
 model Credito {
