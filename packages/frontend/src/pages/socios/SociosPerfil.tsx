@@ -10,12 +10,11 @@ import {
   Award,
   PiggyBank,
   CreditCard,
-  Receipt,
   TrendingUp,
   DollarSign,
 } from 'lucide-react';
-import { apiObtenerSocio, apiGetReporteEstadoCuentaSocio, apiListarCreditos } from '../../lib/api';
-import { formatDate, formatCurrency, cn } from '../../lib/utils';
+import { apiObtenerSocio, apiGetReporteEstadoCuentaSocio } from '../../lib/api';
+import { formatDate, formatCurrency } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { useState } from 'react';
 import { apiActualizarSocio } from '../../lib/api';
@@ -237,44 +236,87 @@ export default function SociosPerfil() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex flex-col gap-6">
         <div className="bg-white rounded-lg shadow">
           <div className="p-4 border-b">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-              Últimos Aportes
+              Aportes
             </h3>
           </div>
-          <div className="p-4">
-            {reporteLoading ? (
-              <div className="text-center text-gray-400 py-4 text-sm">Cargando...</div>
-            ) : !reporte?.aportes?.length ? (
-              <div className="text-center text-gray-400 py-4 text-sm">Sin aportes registrados</div>
-            ) : (
-              <div className="space-y-2">
-                {reporte.aportes.slice(0, 5).map((a) => (
-                  <div key={a.id} className="flex items-center justify-between py-1.5 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`inline-block w-2 h-2 rounded-full ${
-                          a.estado === 'pagado'
-                            ? 'bg-green-500'
-                            : a.estado === 'mora' || a.estado === 'vencido'
-                              ? 'bg-red-500'
-                              : 'bg-yellow-500'
-                        }`}
-                      />
-                      <span className="text-gray-700">{a.periodoId}</span>
-                      <span className="text-gray-400 text-xs">{formatDate(a.fechaPago)}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-medium">{formatCurrency(a.monto)}</span>
-                      <span className="text-xs text-gray-400">{a.estado}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {reporteLoading ? (
+            <div className="text-center text-gray-400 py-8 text-sm">Cargando...</div>
+          ) : !reporte?.aportes?.length ? (
+            <div className="text-center text-gray-400 py-8 text-sm">Sin aportes registrados</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
+                    <th className="text-left p-3 font-medium">Periodo</th>
+                    <th className="text-left p-3 font-medium">Tipo</th>
+                    <th className="text-right p-3 font-medium">Monto</th>
+                    <th className="text-right p-3 font-medium">Solidaridad</th>
+                    <th className="text-right p-3 font-medium">A Crédito</th>
+                    <th className="text-right p-3 font-medium">Ahorro</th>
+                    <th className="text-left p-3 font-medium">Fecha</th>
+                    <th className="text-center p-3 font-medium">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reporte.aportes.map((a) => {
+                    const tipoLabel =
+                      a.tipoOperacion === 'cuota_normal'
+                        ? 'Cuota'
+                        : a.tipoOperacion === 'abono_credito'
+                          ? 'Abono'
+                          : 'Adelanto';
+                    const tipoColor =
+                      a.tipoOperacion === 'cuota_normal'
+                        ? 'bg-blue-100 text-blue-700'
+                        : a.tipoOperacion === 'abono_credito'
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'bg-teal-100 text-teal-700';
+                    const estColor =
+                      a.estado === 'pagado'
+                        ? 'bg-green-100 text-green-700'
+                        : a.estado === 'mora' || a.estado === 'vencido'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-yellow-100 text-yellow-700';
+                    return (
+                      <tr key={a.id} className="border-t hover:bg-gray-50">
+                        <td className="p-3 font-medium text-gray-900">{a.periodoNombre}</td>
+                        <td className="p-3">
+                          <span
+                            className={`inline-flex px-1.5 py-0.5 rounded text-xs font-medium ${tipoColor}`}
+                          >
+                            {tipoLabel}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-mono">{formatCurrency(a.monto)}</td>
+                        <td className="p-3 text-right font-mono text-amber-600">
+                          {formatCurrency(a.pagoSolidaridad)}
+                        </td>
+                        <td className="p-3 text-right font-mono text-blue-600">
+                          {formatCurrency(a.pagoCredito)}
+                        </td>
+                        <td className="p-3 text-right font-mono text-green-600">
+                          {formatCurrency(a.ahorro)}
+                        </td>
+                        <td className="p-3 text-gray-500 text-xs">{formatDate(a.fechaPago)}</td>
+                        <td className="p-3 text-center">
+                          <span
+                            className={`inline-flex px-1.5 py-0.5 rounded text-xs font-medium ${estColor}`}
+                          >
+                            {a.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-lg shadow">

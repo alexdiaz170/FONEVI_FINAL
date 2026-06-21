@@ -94,7 +94,7 @@ export class PrismaAporteRepository implements IAporteRepository {
     const [data, total] = await Promise.all([
       this.prisma.aporte.findMany({
         where: where as never,
-        orderBy: { fechaPago: 'desc' } as never,
+        orderBy: { createdAt: 'desc' } as never,
         skip,
         take: limit,
         include: detalleInclude,
@@ -159,7 +159,8 @@ export class PrismaAporteRepository implements IAporteRepository {
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.aporte.delete({ where: { id } });
+    await this.prisma.aporteDetalle.deleteMany({ where: { aporteId: id } });
+    await this.prisma.aporte.deleteMany({ where: { id } });
   }
 
   async recalcularAhorroAcumulado(socioId: string): Promise<Monto> {

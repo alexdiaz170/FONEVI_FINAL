@@ -391,6 +391,10 @@ export async function apiPagarCuota(creditoId: string, data: { fechaPago?: strin
   });
 }
 
+export async function apiEliminarPagoCuota(creditoId: string, pagoId: string) {
+  return api(`/api/creditos/${creditoId}/pagos/${pagoId}`, { method: 'DELETE' });
+}
+
 // ─── Dashboard ─────────────────────────────
 
 export interface ResumenDashboard {
@@ -673,11 +677,14 @@ export interface EstadoCuentaSocioResult {
   aportes: Array<{
     id: string;
     periodoId: number;
+    periodoNombre: string;
     monto: number;
     fechaPago: string | null;
     estado: string;
+    tipoOperacion: string;
     pagoSolidaridad: number;
     pagoCredito: number;
+    ahorro: number;
   }>;
   totalAportado: number;
 }

@@ -35,5 +35,11 @@ router.post(
   creditoController.rechazar.bind(creditoController),
 );
 router.post('/:id/pagar', authenticate, creditoController.pagarCuota.bind(creditoController));
+router.delete(
+  '/:id/pagos/:pagoId',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  creditoController.eliminarPagoCuota.bind(creditoController),
+);
 
 export default router;

@@ -68,7 +68,10 @@ export default function CreditosLista() {
 
   const filteredData =
     data?.data?.filter(
-      (c) => !search || (c.socioId ?? '').toLowerCase().includes(search.toLowerCase()),
+      (c) =>
+        !search ||
+        (c.nombreSocio ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.socioId ?? '').toLowerCase().includes(search.toLowerCase()),
     ) ?? [];
 
   const exportColumns: ExportColumn[] = [
@@ -222,9 +225,7 @@ export default function CreditosLista() {
                 <tbody>
                   {filteredData.map((credito: CreditoDTO) => (
                     <tr key={credito.id} className="border-t hover:bg-gray-50">
-                      <td className="p-3 text-sm">
-                        {credito.nombreSocio ?? credito.socioId.slice(0, 8)}
-                      </td>
+                      <td className="p-3 text-sm">{credito.nombreSocio ?? '—'}</td>
                       <td className="p-3 text-right font-mono text-sm">
                         {formatCurrency(credito.monto)}
                       </td>

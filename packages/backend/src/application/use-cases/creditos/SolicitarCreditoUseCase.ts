@@ -4,11 +4,13 @@ import { TasaInteres } from '../../../domain/value-objects/TasaInteres.js';
 import { ISocioRepository } from '../../../domain/repositories/ISocioRepository.js';
 import { ICreditoRepository } from '../../../domain/repositories/ICreditoRepository.js';
 import { DomainError, EntityNotFoundError } from '../../../domain/errors.js';
+import { ConfiguracionService } from '../../services/ConfiguracionService.js';
 
 export class SolicitarCreditoUseCase {
   constructor(
     private readonly socioRepo: ISocioRepository,
     private readonly creditoRepo: ICreditoRepository,
+    private readonly configService: ConfiguracionService,
   ) {}
 
   async execute(dto: {
@@ -27,12 +29,12 @@ export class SolicitarCreditoUseCase {
       throw new DomainError('El socio no puede solicitar créditos en su estado actual');
     }
 
-    const MAX_MULTIPLICADOR = 4;
-    const maxMonto = socio.ahorroAcumulado.value * MAX_MULTIPLICADOR;
+    const multiplicador = await this.configService.getMultiplicadorMaximoCredito();
+    const maxMonto = socio.ahorroAcumulado.value * multiplicador;
     if (dto.monto > maxMonto) {
       throw new DomainError(
         `El monto del crédito ($${dto.monto.toLocaleString('es-CO')}) excede el máximo permitido. ` +
-          `Basado en el ahorro acumulado del socio ($${socio.ahorroAcumulado.value.toLocaleString('es-CO')} × ${MAX_MULTIPLICADOR}), ` +
+          `Basado en el ahorro acumulado del socio ($${socio.ahorroAcumulado.value.toLocaleString('es-CO')} × ${multiplicador}), ` +
           `el máximo es $${maxMonto.toLocaleString('es-CO')}.`,
       );
     }

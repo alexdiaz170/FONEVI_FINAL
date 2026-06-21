@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, DollarSign } from 'lucide-react';
-import { apiObtenerCredito, apiAprobarCredito, apiPagarCuota } from '../../lib/api';
+import { ArrowLeft, Check, Trash2 } from 'lucide-react';
+import { apiObtenerCredito, apiAprobarCredito, apiEliminarPagoCuota } from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { useState } from 'react';
@@ -30,13 +30,10 @@ export default function CreditosPerfil() {
     onError: (err) => setError(err instanceof ApiError ? err.message : 'Error al aprobar crédito'),
   });
 
-  const pagarMutation = useMutation({
-    mutationFn: () => apiPagarCuota(id!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['credito', id] });
-      queryClient.invalidateQueries({ queryKey: ['creditos'] });
-    },
-    onError: (err) => setError(err instanceof ApiError ? err.message : 'Error al pagar cuota'),
+  const eliminarPagoMutation = useMutation({
+    mutationFn: (pagoId: string) => apiEliminarPagoCuota(id!, pagoId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['credito', id] }),
+    onError: (err) => setError(err instanceof ApiError ? err.message : 'Error al eliminar pago'),
   });
 
   if (isLoading)
@@ -75,9 +72,6 @@ export default function CreditosPerfil() {
     return `${MESES[fechaBase.getMonth()]} ${fechaBase.getFullYear()}`;
   }
 
-  const puedePagar =
-    credito.estado === 'activo' && tablaAmortizacion.some((c) => c.saldoRestante > 0);
-
   return (
     <div>
       <Link
@@ -98,7 +92,7 @@ export default function CreditosPerfil() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-900">Estado de Cuenta</h2>
-              <p className="text-sm text-gray-500">Socio: {credito.socioId}</p>
+              <p className="text-sm text-gray-500">Socio: {credito.nombreSocio || '—'}</p>
             </div>
             <div className="flex items-center gap-3">
               <span
@@ -122,15 +116,6 @@ export default function CreditosPerfil() {
                 >
                   <Check size={16} />{' '}
                   {aprobarMutation.isPending ? 'Aprobando...' : 'Aprobar Crédito'}
-                </button>
-              )}
-              {puedePagar && (
-                <button
-                  onClick={() => pagarMutation.mutate()}
-                  disabled={pagarMutation.isPending}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50"
-                >
-                  <DollarSign size={16} /> {pagarMutation.isPending ? 'Pagando...' : 'Pagar Cuota'}
                 </button>
               )}
             </div>
@@ -222,6 +207,7 @@ export default function CreditosPerfil() {
                     <th className="text-right p-2 font-medium">Capital</th>
                     <th className="text-right p-2 font-medium">Interés</th>
                     <th className="text-left p-2 font-medium">Fecha</th>
+                    <th className="p-2"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -236,6 +222,16 @@ export default function CreditosPerfil() {
                         {formatCurrency(pago.montoInteres)}
                       </td>
                       <td className="p-2">{formatDate(pago.fechaPago)}</td>
+                      <td className="p-2">
+                        <button
+                          onClick={() => eliminarPagoMutation.mutate(pago.id)}
+                          className="text-red-500 hover:text-red-700 disabled:opacity-50"
+                          disabled={eliminarPagoMutation.isPending}
+                          title="Eliminar pago"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

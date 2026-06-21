@@ -40,8 +40,12 @@ export class MoraService {
         )
       : 0;
 
-    const tasaMensualMora = 0;
-    const interesMora = 0;
+    const prisma2 = getPrismaClient();
+    const moraCfg = await prisma2.configuracion.findUnique({
+      where: { clave: 'tasa_mora_mensual' },
+    });
+    const tasaMensualMora = Number(moraCfg?.valor ?? 0);
+    const interesMora = 0; // TODO: implementar cálculo con CalculadorInteresesMora
 
     return {
       socioId: socio.id,

@@ -4,14 +4,14 @@ import { CalculadorCuota } from '../../../domain/services/CalculadorCuota.js';
 import { ICreditoRepository } from '../../../domain/repositories/ICreditoRepository.js';
 import { IPagoCuotaRepository } from '../../../domain/repositories/IPagoCuotaRepository.js';
 import { EntityNotFoundError, DomainError } from '../../../domain/errors.js';
-
-const TASA_SEGURO = 0.5 / 1000;
+import { ConfiguracionService } from '../../services/ConfiguracionService.js';
 
 export class PagarCuotaUseCase {
   constructor(
     private readonly creditoRepo: ICreditoRepository,
     private readonly pagoCuotaRepo: IPagoCuotaRepository,
     private readonly calculador: CalculadorCuota,
+    private readonly configService: ConfiguracionService,
   ) {}
 
   async execute(creditoId: string, dto: { fechaPago?: string | null }): Promise<PagoCuota> {
@@ -26,18 +26,20 @@ export class PagarCuotaUseCase {
       throw new DomainError('El crédito ya está completamente pagado');
     }
 
+    const tasaSeguro = await this.configService.getTasaSeguro();
+
     const cuotaFija = this.calculador.calcularCuotaFijaConSeguro(
       credito.monto,
       credito.tasaMensual.value,
       credito.cuotas,
-      TASA_SEGURO,
+      tasaSeguro,
     );
     const cuotaCalculada = this.calculador.calcularCuotaActual(
       credito.saldoCapital,
       credito.tasaMensual.value,
       credito.cuotasRestantes,
       cuotaFija,
-      TASA_SEGURO,
+      tasaSeguro,
     );
 
     const fechaPago = dto.fechaPago ? new Date(dto.fechaPago) : new Date();

@@ -69,10 +69,16 @@ export class ObtenerResumenDashboardUseCase {
       }),
     ]);
 
-    const creditosActivosData = await prisma.credito.aggregate({
-      _sum: { saldoCapital: true },
-      where: { estado: 'activo', deletedAt: null },
-    });
+    const [creditosMontoData, creditosSaldoData] = await Promise.all([
+      prisma.credito.aggregate({
+        _sum: { monto: true },
+        where: { estado: { in: ['activo', 'pagado'] }, deletedAt: null },
+      }),
+      prisma.credito.aggregate({
+        _sum: { saldoCapital: true },
+        where: { estado: 'activo', deletedAt: null },
+      }),
+    ]);
 
     return {
       socios: {
@@ -85,8 +91,8 @@ export class ObtenerResumenDashboardUseCase {
       },
       creditos: {
         activos: creditosActivos,
-        montoPrestado: Number(creditosActivosData._sum.saldoCapital ?? 0),
-        saldoPorCobrar: Number(creditosActivosData._sum.saldoCapital ?? 0),
+        montoPrestado: Number(creditosMontoData._sum.monto ?? 0),
+        saldoPorCobrar: Number(creditosSaldoData._sum.saldoCapital ?? 0),
         pagados: creditosPagados,
       },
       aportes: {

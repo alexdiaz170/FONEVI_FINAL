@@ -51,6 +51,10 @@ export class PrismaPagoCuotaRepository implements IPagoCuotaRepository {
     return rows.map((row) => this.toDomain(row));
   }
 
+  async delete(id: string): Promise<void> {
+    await this.prisma.pagoCuota.deleteMany({ where: { id } });
+  }
+
   async save(pagoCuota: PagoCuota): Promise<PagoCuota> {
     const row = (await this.prisma.pagoCuota.create({
       data: {

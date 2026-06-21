@@ -1,7 +1,5 @@
 import { Monto } from '@fonevi/shared';
 
-const TASA_SEGURO = 0.5 / 1000;
-
 export interface CuotaCalculada {
   numero: number;
   monto: Monto;
@@ -26,7 +24,7 @@ export class CalculadorCuota {
     monto: Monto,
     tasaMensual: number,
     cuotas: number,
-    tasaSeguro: number = TASA_SEGURO,
+    tasaSeguro: number,
   ): Monto {
     const r = tasaMensual / 100 + tasaSeguro;
     if (cuotas === 0) return Monto.create(0);
@@ -41,7 +39,7 @@ export class CalculadorCuota {
     monto: Monto,
     tasaMensual: number,
     cuotas: number,
-    tasaSeguro: number = TASA_SEGURO,
+    tasaSeguro: number,
   ): CuotaCalculada[] {
     const ri = Math.round((tasaMensual / 100) * 1e6) / 1e6;
     const ts = tasaSeguro;
@@ -86,7 +84,7 @@ export class CalculadorCuota {
     tasaMensual: number,
     cuotasRestantes: number,
     cuotaFija: Monto,
-    tasaSeguro: number = TASA_SEGURO,
+    tasaSeguro: number,
   ): CuotaCalculada {
     const ri = Math.round((tasaMensual / 100) * 1e6) / 1e6;
     const ts = tasaSeguro;

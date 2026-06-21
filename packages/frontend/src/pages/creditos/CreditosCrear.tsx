@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
@@ -6,6 +6,7 @@ import {
   apiCrearCredito,
   apiCalcularCredito,
   apiListarSocios,
+  apiGetConfiguraciones,
   type AmortizacionPreviewDTO,
 } from '../../lib/api';
 import { ApiError } from '../../lib/api';
@@ -70,7 +71,7 @@ export default function CreditosCrear() {
     }
     if (monto > maxCredito) {
       setError(
-        `El monto excede el máximo permitido. El socio tiene ${formatCurrency(socioSeleccionado!.ahorroAcumulado)} de ahorro × ${MAX_MULTIPLICADOR} = ${formatCurrency(maxCredito)}`,
+        `El monto excede el máximo permitido. El socio tiene ${formatCurrency(socioSeleccionado!.ahorroAcumulado)} de ahorro × ${multiplicador} = ${formatCurrency(maxCredito)}`,
       );
       return;
     }
@@ -103,9 +104,16 @@ export default function CreditosCrear() {
     }
   };
 
+  const { data: configs } = useQuery({
+    queryKey: ['configuraciones'],
+    queryFn: () => apiGetConfiguraciones(),
+  });
+  const multiplicador = Number(
+    configs?.find((c) => c.clave === 'multiplicador_maximo_credito')?.valor ?? 4,
+  );
+
   const socioSeleccionado = sociosData?.data.find((s) => s.id === form.socioId);
-  const MAX_MULTIPLICADOR = 4;
-  const maxCredito = socioSeleccionado ? socioSeleccionado.ahorroAcumulado * MAX_MULTIPLICADOR : 0;
+  const maxCredito = socioSeleccionado ? socioSeleccionado.ahorroAcumulado * multiplicador : 0;
 
   const montoNum = Number(form.monto);
   const tasaNum = Number(form.tasaMensual);
@@ -182,7 +190,7 @@ export default function CreditosCrear() {
                 >
                   {formatCurrency(maxCredito)}
                 </span>
-                <span className="ml-1 text-gray-400">(×{MAX_MULTIPLICADOR})</span>
+                <span className="ml-1 text-gray-400">(×{multiplicador})</span>
               </p>
             </div>
           )}

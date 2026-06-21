@@ -6,6 +6,7 @@ export interface CreditoActivo {
   tasaMensual: number;
   fechaDesembolso: Date;
   ultimoPagoFecha: Date | null;
+  cuotaMensual?: Monto;
 }
 
 export interface DistribucionResult {
@@ -21,9 +22,9 @@ export interface DistribucionResult {
 
 export class DistribucionAporteService {
   constructor(
-    private readonly aporteSolidaridad: number = 5000,
-    private readonly tasaSeguro: number = 0.0005,
-    private readonly aporteAhorroMensual: number = 125000,
+    private readonly aporteSolidaridad: number = 0,
+    private readonly tasaSeguro: number = 0,
+    private readonly aporteAhorroMensual: number = 0,
   ) {}
 
   distribuir(
@@ -55,8 +56,10 @@ export class DistribucionAporteService {
       };
     }
 
-    const pagoSolidaridadValor = Math.min(montoTotal.value, aporteSolidaridad);
-    const pagoSolidaridad = Monto.create(pagoSolidaridadValor);
+    const pagoSolidaridad =
+      tipoOperacion === 'abono_credito'
+        ? Monto.create(0)
+        : Monto.create(Math.min(montoTotal.value, aporteSolidaridad));
 
     let restante = Monto.create(montoTotal.value).restar(pagoSolidaridad);
 
@@ -78,38 +81,26 @@ export class DistribucionAporteService {
         pagoSeguro = Monto.create(0);
         restante = Monto.create(0);
       } else {
-        let diasTranscurridos = 30;
-
-        if (fechaPago) {
-          const desde = creditoActivo.ultimoPagoFecha ?? creditoActivo.fechaDesembolso;
-          diasTranscurridos = Math.max(
-            1,
-            Math.min(
-              30,
-              Math.floor((fechaPago.getTime() - desde.getTime()) / (1000 * 60 * 60 * 24)),
-            ),
-          );
-        }
-
-        const factor = diasTranscurridos / 30;
-        pagoInteres = Monto.create(Number((saldo.value * tasaDecimal * factor).toFixed(2)));
+        // Cuota normal: periodo fijo de 30 días (coincide con la tabla de amortización)
+        pagoInteres = Monto.create(Number((saldo.value * tasaDecimal).toFixed(2)));
         pagoInteres = restante.esMenorQue(pagoInteres) ? restante : pagoInteres;
         restante = restante.restar(pagoInteres);
 
         if (restante.value > 0) {
-          pagoSeguro = Monto.create(Number((saldo.value * tasaSeguro * factor).toFixed(2)));
+          pagoSeguro = Monto.create(Number((saldo.value * tasaSeguro).toFixed(2)));
           pagoSeguro = restante.esMenorQue(pagoSeguro) ? restante : pagoSeguro;
           restante = restante.restar(pagoSeguro);
         }
 
         if (restante.value > 0) {
-          const ahorroEsperado = Monto.create(ahorroMensual);
-          ahorro = restante.esMenorQue(ahorroEsperado) ? restante : ahorroEsperado;
-          restante = restante.restar(ahorro);
-        }
-
-        if (restante.value > 0) {
-          pagoCapital = restante;
+          // Scheduled capital from amortization table (cuotaMensual - interes - seguro)
+          const scheduledCapital = creditoActivo.cuotaMensual
+            ? Math.max(0, creditoActivo.cuotaMensual.value - pagoInteres.value - pagoSeguro.value)
+            : restante.value;
+          pagoCapital = Monto.create(Math.min(restante.value, scheduledCapital));
+          restante = restante.restar(pagoCapital);
+          // ALL remaining (including any excess over scheduled) goes to ahorro
+          ahorro = restante;
           restante = Monto.create(0);
         }
       }

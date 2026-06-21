@@ -3,6 +3,7 @@ import { ISocioRepository } from '../../domain/repositories/ISocioRepository.js'
 import { ICreditoRepository } from '../../domain/repositories/ICreditoRepository.js';
 import { IPagoCuotaRepository } from '../../domain/repositories/IPagoCuotaRepository.js';
 import { CalculadorCuota } from '../../domain/services/CalculadorCuota.js';
+import { ConfiguracionService } from '../../application/services/ConfiguracionService.js';
 import { SolicitarCreditoUseCase } from '../../application/use-cases/creditos/SolicitarCreditoUseCase.js';
 import { AprobarCreditoUseCase } from '../../application/use-cases/creditos/AprobarCreditoUseCase.js';
 import { PagarCuotaUseCase } from '../../application/use-cases/creditos/PagarCuotaUseCase.js';
@@ -10,6 +11,7 @@ import { ListarCreditosUseCase } from '../../application/use-cases/creditos/List
 import { ObtenerEstadoCuentaUseCase } from '../../application/use-cases/creditos/ObtenerEstadoCuentaUseCase.js';
 import { ObtenerResumenCreditosUseCase } from '../../application/use-cases/creditos/ObtenerResumenCreditosUseCase.js';
 import { RechazarCreditoUseCase } from '../../application/use-cases/creditos/RechazarCreditoUseCase.js';
+import { EliminarPagoCuotaUseCase } from '../../application/use-cases/creditos/EliminarPagoCuotaUseCase.js';
 import { apiResponse } from '../response.js';
 import {
   solicitarCreditoSchema,
@@ -25,16 +27,24 @@ export function createCreditoController(
   pagoCuotaRepo: IPagoCuotaRepository,
 ) {
   const calculador = new CalculadorCuota();
-  const solicitarUseCase = new SolicitarCreditoUseCase(socioRepo, creditoRepo);
+  const configService = new ConfiguracionService();
+  const solicitarUseCase = new SolicitarCreditoUseCase(socioRepo, creditoRepo, configService);
   const aprobarUseCase = new AprobarCreditoUseCase(creditoRepo);
-  const pagarCuotaUseCase = new PagarCuotaUseCase(creditoRepo, pagoCuotaRepo, calculador);
+  const pagarCuotaUseCase = new PagarCuotaUseCase(
+    creditoRepo,
+    pagoCuotaRepo,
+    calculador,
+    configService,
+  );
   const listarUseCase = new ListarCreditosUseCase(creditoRepo);
   const resumenUseCase = new ObtenerResumenCreditosUseCase();
   const rechazarUseCase = new RechazarCreditoUseCase(creditoRepo);
   const estadoCuentaUseCase = new ObtenerEstadoCuentaUseCase(
     creditoRepo,
     pagoCuotaRepo,
+    socioRepo,
     calculador,
+    configService,
   );
 
   function mapCredito(credito: {
@@ -91,12 +101,12 @@ export function createCreditoController(
           return;
         }
         const { Monto } = await import('@fonevi/shared');
-        const TASA_SEGURO = 0.5 / 1000;
+        const tasaSeguro = await configService.getTasaSeguro();
         const tabla = calculador.generarTablaAmortizacion(
           Monto.create(monto),
           tasaMensual,
           cuotas,
-          TASA_SEGURO,
+          tasaSeguro,
         );
         apiResponse.success(res, {
           cuotaFija: tabla.length > 0 ? tabla[0]!.monto.value : 0,
@@ -136,10 +146,10 @@ export function createCreditoController(
           socioIds.length > 0
             ? await getPrismaClient().socio.findMany({
                 where: { id: { in: socioIds } },
-                select: { id: true, nombre: true },
+                select: { id: true, nombre: true, codigo_socio: true },
               })
             : [];
-        const socioMap = new Map(socios.map((s) => [s.id, s.nombre]));
+        const socioMap = new Map(socios.map((s) => [s.id, s.nombre ?? s.codigo_socio ?? null]));
 
         apiResponse.paginated(
           res,
@@ -217,6 +227,17 @@ export function createCreditoController(
           montoInteres: pago.montoInteres.value,
           fechaPago: pago.fechaPago,
         });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async eliminarPagoCuota(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+        const pagoId = String(req.params.pagoId ?? '');
+        const useCase = new EliminarPagoCuotaUseCase(pagoCuotaRepo, creditoRepo);
+        await useCase.execute(pagoId);
+        apiResponse.success(res, { mensaje: 'Pago eliminado correctamente' });
       } catch (error) {
         next(error);
       }

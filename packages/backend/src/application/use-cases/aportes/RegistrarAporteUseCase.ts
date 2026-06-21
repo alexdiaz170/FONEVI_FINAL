@@ -12,6 +12,7 @@ import {
 } from '../../../domain/services/DistribucionAporteService.js';
 import { DomainError, EntityNotFoundError } from '../../../domain/errors.js';
 import { getPrismaClient } from '../../../infrastructure/persistence/prismaClient.js';
+import { CalculadorCuota } from '../../../domain/services/CalculadorCuota.js';
 
 export class RegistrarAporteUseCase {
   constructor(
@@ -70,8 +71,10 @@ export class RegistrarAporteUseCase {
         take: 1,
       })) as unknown as {
         id: string;
+        monto: number;
         saldoCapital: number;
         tasaMensual: number;
+        cuotas: number;
         fechaDesembolso: Date;
       }[];
 
@@ -82,12 +85,21 @@ export class RegistrarAporteUseCase {
           select: { createdAt: true },
         });
 
+        const calculador = new CalculadorCuota();
+        const cuotaMensual = calculador.calcularCuotaFijaConSeguro(
+          Monto.create(Number(creditos[0].monto)),
+          Number(creditos[0].tasaMensual),
+          creditos[0].cuotas,
+          tasaSeguro,
+        );
+
         creditoActivo = {
           id: creditos[0].id,
           saldoCapital: Monto.create(Number(creditos[0].saldoCapital)),
           tasaMensual: Number(creditos[0].tasaMensual),
           fechaDesembolso: creditos[0].fechaDesembolso,
           ultimoPagoFecha: ultimoPago?.createdAt ?? null,
+          cuotaMensual,
         };
       }
 
@@ -144,10 +156,29 @@ export class RegistrarAporteUseCase {
       });
 
       if (creditoActivo && distribucion.totalPagoCredito.value > 0) {
+        const creditoActual = await prisma.credito.findUnique({
+          where: { id: creditoActivo.id },
+          select: { cuotasPagadas: true, cuotas: true },
+        });
+        const nuevasPagadas = (creditoActual?.cuotasPagadas ?? 0) + 1;
+
+        await prisma.pagoCuota.create({
+          data: {
+            id: crypto.randomUUID(),
+            creditoId: creditoActivo.id,
+            numeroCuota: nuevasPagadas,
+            monto: distribucion.totalPagoCredito.value,
+            montoCapital: distribucion.pagoCapital.value,
+            montoInteres: distribucion.pagoInteres.value,
+            fechaPago: fechaPago ?? new Date(),
+          },
+        });
+
         await prisma.credito.update({
           where: { id: creditoActivo.id },
           data: {
             saldoCapital: distribucion.nuevoSaldoCapital.value,
+            cuotasPagadas: nuevasPagadas,
             estado: distribucion.creditoPagado ? 'pagado' : 'activo',
           },
         });

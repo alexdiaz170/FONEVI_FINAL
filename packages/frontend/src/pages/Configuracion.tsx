@@ -27,6 +27,7 @@ const FINANCIERO_KEYS = [
   'porcentaje_seguro',
   'valor_solidaridad',
   'valor_minimo_aporte',
+  'valor_ahorro_mensual',
   'multiplicador_maximo_credito',
   'reservas',
 ];
@@ -61,6 +62,11 @@ const KEY_LABELS: Record<
     label: 'Valor Mínimo de Aporte',
     type: 'currency',
     desc: 'Aporte mensual mínimo requerido',
+  },
+  valor_ahorro_mensual: {
+    label: 'Valor de Ahorro Mensual',
+    type: 'currency',
+    desc: 'Monto fijo destinado al ahorro en cada aporte',
   },
   multiplicador_maximo_credito: {
     label: 'Multiplicador Máx. Crédito',

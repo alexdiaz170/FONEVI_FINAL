@@ -120,6 +120,17 @@ export class Credito {
     });
   }
 
+  revertirPagoCuota(montoCapital: Monto): Credito {
+    const nuevasPagadas = Math.max(0, this.cuotasPagadas - 1);
+    const nuevoSaldo = this.saldoCapital.sumar(montoCapital);
+    return new Credito({
+      ...this.toProps(),
+      cuotasPagadas: nuevasPagadas,
+      saldoCapital: Monto.create(nuevoSaldo.value),
+      estado: EstadoCredito.ACTIVO,
+    });
+  }
+
   aprobar(aprobadoPor: string): Credito {
     if (!this.estado.esPendiente()) {
       throw new DomainError('Solo se pueden aprobar créditos en estado pendiente');

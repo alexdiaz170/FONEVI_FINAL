@@ -106,6 +106,7 @@ export default function AportesCrear() {
       });
       queryClient.invalidateQueries({ queryKey: ['aportes'] });
       queryClient.invalidateQueries({ queryKey: ['socio', form.socioId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-resumen'] });
       navigate('/aportes');
     } catch (err) {
       if (err instanceof ApiError) {
