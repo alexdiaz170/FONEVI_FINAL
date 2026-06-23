@@ -1,11 +1,11 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Trash2, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Check, Trash2, FileSpreadsheet, FileText } from 'lucide-react';
 import { apiObtenerCredito, apiAprobarCredito, apiEliminarPagoCuota } from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { useState } from 'react';
-import { exportToExcel, type ExportColumn } from '../../lib/export';
+import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
 
 export default function CreditosPerfil() {
   const { id } = useParams<{ id: string }>();
@@ -62,8 +62,26 @@ export default function CreditosPerfil() {
     );
   }
 
+  async function handleExportAmortizacionPDF() {
+    await exportToPDF(
+      tablaAmortizacion as unknown as Record<string, unknown>[],
+      amortizacionColumns,
+      `Tabla de Amortización - Crédito #${id}`,
+      `amortizacion-${id}`,
+    );
+  }
+
   function handleExportPagos() {
     exportToExcel(pagos as unknown as Record<string, unknown>[], pagosColumns, `pagos-${id}`);
+  }
+
+  async function handleExportPagosPDF() {
+    await exportToPDF(
+      pagos as unknown as Record<string, unknown>[],
+      pagosColumns,
+      `Pagos Realizados - Crédito #${id}`,
+      `pagos-${id}`,
+    );
   }
 
   if (isLoading)
@@ -172,12 +190,20 @@ export default function CreditosPerfil() {
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
               Tabla de Amortización
             </h3>
-            <button
-              onClick={handleExportAmortizacion}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
-            >
-              <FileSpreadsheet size={14} /> Excel
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportAmortizacion}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+              >
+                <FileSpreadsheet size={14} /> Excel
+              </button>
+              <button
+                onClick={handleExportAmortizacionPDF}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100"
+              >
+                <FileText size={14} /> PDF
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -237,12 +263,20 @@ export default function CreditosPerfil() {
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
                 Pagos Realizados
               </h3>
-              <button
-                onClick={handleExportPagos}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
-              >
-                <FileSpreadsheet size={14} /> Excel
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportPagos}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+                >
+                  <FileSpreadsheet size={14} /> Excel
+                </button>
+                <button
+                  onClick={handleExportPagosPDF}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100"
+                >
+                  <FileText size={14} /> PDF
+                </button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

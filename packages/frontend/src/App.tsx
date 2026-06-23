@@ -27,7 +27,11 @@ const NotificacionesPage = React.lazy(() => import('./pages/Notificaciones'));
 const MovimientosLista = React.lazy(() => import('./pages/movimientos/MovimientosLista'));
 const MovimientosCrear = React.lazy(() => import('./pages/movimientos/MovimientosCrear'));
 const SolidaridadPage = React.lazy(() => import('./pages/Solidaridad'));
+const AuditoriaPage = React.lazy(() => import('./pages/Auditoria'));
+const CierrePeriodoPage = React.lazy(() => import('./pages/CierrePeriodo'));
 const ReportesPage = React.lazy(() => import('./pages/Reportes'));
+const WhatsAppPage = React.lazy(() => import('./pages/WhatsApp'));
+const BackupPage = React.lazy(() => import('./pages/Backup'));
 
 function LazyLoader({ children }: { children: React.ReactNode }) {
   return (
@@ -167,6 +171,46 @@ export default function App() {
                 <ProtectedRoute roles={['admin', 'superadmin']}>
                   <LazyLoader>
                     <ReportesPage />
+                  </LazyLoader>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="auditoria"
+              element={
+                <ProtectedRoute roles={['admin', 'superadmin']}>
+                  <LazyLoader>
+                    <AuditoriaPage />
+                  </LazyLoader>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="cierre-periodo"
+              element={
+                <ProtectedRoute roles={['admin', 'superadmin']}>
+                  <LazyLoader>
+                    <CierrePeriodoPage />
+                  </LazyLoader>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="whatsapp"
+              element={
+                <ProtectedRoute roles={['admin', 'superadmin']}>
+                  <LazyLoader>
+                    <WhatsAppPage />
+                  </LazyLoader>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="backup"
+              element={
+                <ProtectedRoute roles={['admin', 'superadmin']}>
+                  <LazyLoader>
+                    <BackupPage />
                   </LazyLoader>
                 </ProtectedRoute>
               }

@@ -632,6 +632,30 @@ export async function apiEliminarNotificacion(id: string) {
   return api<{ mensaje: string }>(`/api/notificaciones/${id}`, { method: 'DELETE' });
 }
 
+// ─── Auditoría ───────────────────────────
+
+export interface AuditoriaDTO {
+  id: string;
+  usuarioId: string | null;
+  usuarioNombre: string | null;
+  accion: string;
+  tabla: string | null;
+  registroId: string | null;
+  detalle: string | null;
+  ip: string | null;
+  createdAt: string;
+}
+
+export async function apiListarAuditoria(
+  params: { usuarioId?: string; tabla?: string; page?: number; limit?: number } = {},
+) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined) qs.set(k, String(v));
+  });
+  return apiPaginated<AuditoriaDTO>(`/api/auditoria?${qs.toString()}`);
+}
+
 // ─── Solidaridad ──────────────────────────
 
 export interface SolidaridadMovimientoDTO {
@@ -838,6 +862,52 @@ export async function apiEliminarPeriodo(id: number) {
   return api<{ mensaje: string }>(`/api/periodos/${id}`, { method: 'DELETE' });
 }
 
+// ─── Cierre de Período ─────────────────────
+
+export interface ValidacionCierre {
+  valido: boolean;
+  periodo: { id: number; nombre: string; anio: number; mes: number } | null;
+  errores: string[];
+  advertencias: string[];
+}
+
+export interface SimulacionCierre {
+  periodo: { id: number; nombre: string; anio: number; mes: number };
+  totalSociosActivos: number;
+  totalAportes: number;
+  totalRecaudado: number;
+  totalSolidaridad: number;
+  totalAhorro: number;
+  totalAplicadoCreditos: number;
+  sociosEnMora: number;
+  sociosAlDia: number;
+  creditosActivos: number;
+  saldoPorCobrar: number;
+}
+
+export interface ResultadoCierre {
+  exitoso: boolean;
+  periodo: { id: number; nombre: string; anio: number; mes: number };
+  totalRecaudado: number;
+  totalSolidaridad: number;
+  totalAhorro: number;
+  totalAplicadoCreditos: number;
+  movimientosCreados: number;
+  mensaje: string;
+}
+
+export async function apiValidarCierre() {
+  return api<ValidacionCierre>('/api/cierre-periodo/validar', { method: 'POST' });
+}
+
+export async function apiSimularCierre() {
+  return api<SimulacionCierre>('/api/cierre-periodo/simular', { method: 'POST' });
+}
+
+export async function apiEjecutarCierre() {
+  return api<ResultadoCierre>('/api/cierre-periodo/ejecutar', { method: 'POST' });
+}
+
 // ─── Dividendos ─────────────────────────────
 
 export interface DividendoDTO {
@@ -863,4 +933,75 @@ export async function apiDistribuirDividendo(id: string, socioIds: string[]) {
     method: 'POST',
     body: JSON.stringify({ socioIds }),
   });
+}
+
+// ─── WhatsApp ─────────────────────────────
+
+export interface WhatsAppEstado {
+  configurado: boolean;
+  apiUrl: string | null;
+  estado: string;
+}
+
+export interface WhatsAppEnviarResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}
+
+export interface WaLogEntry {
+  id: string;
+  numero: string;
+  template: string;
+  estado: string;
+  messageId: string | null;
+  enviadoEn: string;
+  createdAt: string;
+}
+
+export async function apiGenerarBackup(): Promise<void> {
+  const token = useAuthStore.getState().token;
+  const res = await fetch('/api/backup/generar', {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(res.status, body?.mensaje ?? 'Error al generar respaldo');
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download =
+    res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ??
+    `fonevi-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export async function apiWhatsAppEstado() {
+  return api<WhatsAppEstado>('/api/whatsapp/estado');
+}
+
+export async function apiWhatsAppEnviar(data: {
+  numero: string;
+  template: string;
+  variables?: Record<string, string>;
+}) {
+  return api<WhatsAppEnviarResult>('/api/whatsapp/enviar', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function apiWhatsAppLogs(
+  params: { estado?: string; numero?: string; page?: number; limit?: number } = {},
+) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined) qs.set(k, String(v));
+  });
+  return apiPaginated<WaLogEntry>(`/api/whatsapp/logs?${qs.toString()}`);
 }

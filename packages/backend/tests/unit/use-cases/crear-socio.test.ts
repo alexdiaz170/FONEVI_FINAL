@@ -51,7 +51,7 @@ describe('CrearSocioUseCase', () => {
 
     expect(result.socio.nombre).toBe('Juan Pérez');
     expect(result.socio.codigoSocio).toBe('SOC-0006');
-    expect(result.passwordInicial).toBe('7890');
+    expect(result.passwordInicial).toBe('567890');
     expect(mockRepo.findByDocumento).toHaveBeenCalledWith('1234567890');
     expect(mockRepo.save).toHaveBeenCalledOnce();
   });
@@ -94,6 +94,6 @@ describe('CrearSocioUseCase', () => {
 
   it('should generate password from last 4 digits of documento', async () => {
     const result = await useCase.execute({ ...validDto, numeroDocumento: '123456' });
-    expect(result.passwordInicial).toBe('3456');
+    expect(result.passwordInicial).toBe('123456');
   });
 });

@@ -18,6 +18,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@fonevi/external": "*",
     "@fonevi/shared": "*",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",

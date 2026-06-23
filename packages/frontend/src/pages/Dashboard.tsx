@@ -19,6 +19,8 @@ import {
   Table as TableIcon,
   Printer,
   Bell,
+  FileSpreadsheet,
+  FileText,
 } from 'lucide-react';
 import {
   apiGetDashboardResumen,
@@ -32,6 +34,7 @@ import {
 } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
 import { useAuthStore } from '../stores/authStore';
+import { exportToExcel, exportToPDF, type ExportColumn } from '../lib/export';
 
 export default function DashboardPage() {
   const usuario = useAuthStore((s) => s.usuario);
@@ -194,9 +197,41 @@ function AdminDashboard() {
     },
   ];
 
+  const exportColumns: ExportColumn[] = [
+    { header: 'Indicador', key: 'label' },
+    { header: 'Valor', key: 'value' },
+    { header: 'Detalle', key: 'detail' },
+  ];
+
+  function handleExportExcel() {
+    const data = cards.map((c) => ({ label: c.label, value: c.value, detail: c.sub ?? '' }));
+    exportToExcel(data, exportColumns, 'dashboard');
+  }
+
+  async function handleExportPDF() {
+    const data = cards.map((c) => ({ label: c.label, value: c.value, detail: c.sub ?? '' }));
+    await exportToPDF(data, exportColumns, 'Dashboard - Resumen General', 'dashboard');
+  }
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-navy-800 mb-6">Dashboard</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-navy-800">Dashboard</h1>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+          >
+            <FileSpreadsheet size={14} /> Excel
+          </button>
+          <button
+            onClick={handleExportPDF}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100"
+          >
+            <FileText size={14} /> PDF
+          </button>
+        </div>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {cards.map((card) => (
           <div key={card.label} className="bg-white rounded-lg shadow p-4 flex items-start gap-3">

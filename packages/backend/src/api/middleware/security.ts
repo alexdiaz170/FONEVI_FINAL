@@ -18,7 +18,7 @@ export const corsMiddleware = cors({
 
 export const rateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { ok: false, mensaje: 'Demasiadas peticiones. Intenta de nuevo en 15 minutos.' },

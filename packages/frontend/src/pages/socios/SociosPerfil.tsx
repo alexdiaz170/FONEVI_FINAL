@@ -13,13 +13,14 @@ import {
   TrendingUp,
   DollarSign,
   FileSpreadsheet,
+  FileText,
 } from 'lucide-react';
 import { apiObtenerSocio, apiGetReporteEstadoCuentaSocio } from '../../lib/api';
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { useState } from 'react';
 import { apiActualizarSocio } from '../../lib/api';
-import { exportToExcel, type ExportColumn } from '../../lib/export';
+import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
 
 export default function SociosPerfil() {
   const { id } = useParams<{ id: string }>();
@@ -74,6 +75,16 @@ export default function SociosPerfil() {
     );
   }
 
+  async function handleExportAportesPDF() {
+    if (!reporte?.aportes?.length) return;
+    await exportToPDF(
+      reporte.aportes as unknown as Record<string, unknown>[],
+      aportesColumns,
+      `Aportes - ${socio?.nombre ?? 'Socio'}`,
+      `aportes-${id}`,
+    );
+  }
+
   function handleExportCreditos() {
     if (!reporte?.creditos?.length) return;
     const data = reporte.creditos.map((c) => ({
@@ -84,6 +95,23 @@ export default function SociosPerfil() {
       estado: c.estado,
     }));
     exportToExcel(data as unknown as Record<string, unknown>[], creditosColumns, `creditos-${id}`);
+  }
+
+  async function handleExportCreditosPDF() {
+    if (!reporte?.creditos?.length) return;
+    const data = reporte.creditos.map((c) => ({
+      monto: c.monto,
+      saldoCapital: c.saldoCapital,
+      cuotas: c.cuotas,
+      cuotasPagadas: c.cuotasPagadas,
+      estado: c.estado,
+    }));
+    await exportToPDF(
+      data as unknown as Record<string, unknown>[],
+      creditosColumns,
+      `Créditos - ${socio?.nombre ?? 'Socio'}`,
+      `creditos-${id}`,
+    );
   }
 
   const creditosActivos = reporte?.creditos?.filter((c) => c.estado === 'activo') ?? [];
@@ -285,12 +313,20 @@ export default function SociosPerfil() {
               Aportes
             </h3>
             {reporte?.aportes && reporte.aportes.length > 0 && (
-              <button
-                onClick={handleExportAportes}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
-              >
-                <FileSpreadsheet size={14} /> Excel
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportAportes}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+                >
+                  <FileSpreadsheet size={14} /> Excel
+                </button>
+                <button
+                  onClick={handleExportAportesPDF}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100"
+                >
+                  <FileText size={14} /> PDF
+                </button>
+              </div>
             )}
           </div>
           {reporteLoading ? (
@@ -375,12 +411,20 @@ export default function SociosPerfil() {
               Créditos
             </h3>
             {reporte?.creditos && reporte.creditos.length > 0 && (
-              <button
-                onClick={handleExportCreditos}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
-              >
-                <FileSpreadsheet size={14} /> Excel
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportCreditos}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+                >
+                  <FileSpreadsheet size={14} /> Excel
+                </button>
+                <button
+                  onClick={handleExportCreditosPDF}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100"
+                >
+                  <FileText size={14} /> PDF
+                </button>
+              </div>
             )}
           </div>
           <div className="p-4">

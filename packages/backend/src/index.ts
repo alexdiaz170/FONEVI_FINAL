@@ -24,7 +24,10 @@ import configuracionRouter from './api/routes/configuracion.js';
 import auditoriaRouter from './api/routes/auditoria.js';
 import reportesRouter from './api/routes/reportes.js';
 import periodosRouter from './api/routes/periodos.js';
+import cierrePeriodoRouter from './api/routes/cierrePeriodo.js';
+import whatsappRouter from './api/routes/whatsapp.js';
 import usuariosRouter from './api/routes/usuarios.js';
+import backupRouter from './api/routes/backup.js';
 
 const app = express();
 
@@ -51,7 +54,10 @@ app.use('/api/configuracion', configuracionRouter);
 app.use('/api/auditoria', auditoriaRouter);
 app.use('/api/reportes', reportesRouter);
 app.use('/api/periodos', periodosRouter);
+app.use('/api/cierre-periodo', cierrePeriodoRouter);
+app.use('/api/whatsapp', whatsappRouter);
 app.use('/api/usuarios', usuariosRouter);
+app.use('/api/backup', backupRouter);
 
 // ─── Frontend build (SPA) ──────────────────────────────────
 const publicDir = resolve(__dirname, '..', 'public');
