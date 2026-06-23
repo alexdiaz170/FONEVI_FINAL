@@ -1,5 +1,6 @@
 import { Monto } from '@fonevi/shared';
 import { getPrismaClient } from '../../infrastructure/persistence/prismaClient.js';
+import { CalculadorInteresesMora } from './CalculadorCuota.js';
 
 export interface MoraCalculada {
   socioId: string;
@@ -11,7 +12,7 @@ export interface MoraCalculada {
 }
 
 export class MoraService {
-  async calcularMoraPorSocio(socioId: string): Promise<MoraCalculada | null> {
+  async calcularMoraPorSocio(socioId: string, tasaMensualMora = 0): Promise<MoraCalculada | null> {
     const prisma = getPrismaClient();
 
     const socio = await prisma.socio.findUnique({
@@ -40,12 +41,12 @@ export class MoraService {
         )
       : 0;
 
-    const prisma2 = getPrismaClient();
-    const moraCfg = await prisma2.configuracion.findUnique({
-      where: { clave: 'tasa_mora_mensual' },
-    });
-    const tasaMensualMora = Number(moraCfg?.valor ?? 0);
-    const interesMora = 0; // TODO: implementar cálculo con CalculadorInteresesMora
+    const calculador = new CalculadorInteresesMora();
+    const interesMora = calculador.calcular(
+      tasaMensualMora,
+      Monto.create(totalAdeudado),
+      diasMora,
+    ).value;
 
     return {
       socioId: socio.id,
@@ -57,7 +58,7 @@ export class MoraService {
     };
   }
 
-  async listarSociosEnMora(): Promise<MoraCalculada[]> {
+  async listarSociosEnMora(tasaMensualMora = 0): Promise<MoraCalculada[]> {
     const prisma = getPrismaClient();
     const sociosEnMora = await prisma.socio.findMany({
       where: { estado: 'mora', deletedAt: null },
@@ -66,7 +67,7 @@ export class MoraService {
 
     const resultados: MoraCalculada[] = [];
     for (const s of sociosEnMora) {
-      const mora = await this.calcularMoraPorSocio(s.id);
+      const mora = await this.calcularMoraPorSocio(s.id, tasaMensualMora);
       if (mora) resultados.push(mora);
     }
     return resultados;

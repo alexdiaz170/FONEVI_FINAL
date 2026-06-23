@@ -16,6 +16,12 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token requerido'),
 });
 
+export const cambiarPasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Contraseña actual requerida'),
+  newPassword: z.string().min(6, 'La nueva contraseña debe tener al menos 6 caracteres'),
+});
+
 export type LoginDTO = z.infer<typeof loginSchema>;
 export type RegisterDTO = z.infer<typeof registerSchema>;
 export type RefreshDTO = z.infer<typeof refreshSchema>;
+export type CambiarPasswordDTO = z.infer<typeof cambiarPasswordSchema>;

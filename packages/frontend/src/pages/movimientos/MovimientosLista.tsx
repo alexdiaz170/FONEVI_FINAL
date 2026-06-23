@@ -22,21 +22,24 @@ export default function MovimientosLista() {
   const [search, setSearch] = useState('');
   const [tipoFilter, setTipoFilter] = useState('');
   const [categoriaFilter, setCategoriaFilter] = useState('');
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['movimientos', page, tipoFilter],
-    queryFn: () => apiListarMovimientos({ page, limit: 15, tipo: tipoFilter || undefined }),
+    queryKey: ['movimientos', page, search, tipoFilter, categoriaFilter, desde, hasta],
+    queryFn: () =>
+      apiListarMovimientos({
+        page,
+        limit: 15,
+        tipo: tipoFilter || undefined,
+        categoria: categoriaFilter || undefined,
+        q: search || undefined,
+        desde: desde || undefined,
+        hasta: hasta || undefined,
+      }),
   });
 
-  const filteredData =
-    data?.data?.filter(
-      (m) =>
-        (!search ||
-          m.descripcion.toLowerCase().includes(search.toLowerCase()) ||
-          m.categoria.toLowerCase().includes(search.toLowerCase()) ||
-          (m.socioNombre ?? '').toLowerCase().includes(search.toLowerCase())) &&
-        (!categoriaFilter || m.categoria === categoriaFilter),
-    ) ?? [];
+  const movimientosList = data?.data ?? [];
 
   const exportColumns: ExportColumn[] = [
     { header: 'Fecha', key: 'fecha', format: (v) => (v ? formatDate(String(v)) : '—') },
@@ -49,7 +52,7 @@ export default function MovimientosLista() {
 
   const handleExportExcel = () => {
     exportToExcel(
-      filteredData as unknown as Record<string, unknown>[],
+      movimientosList as unknown as Record<string, unknown>[],
       exportColumns,
       'movimientos',
     );
@@ -57,7 +60,7 @@ export default function MovimientosLista() {
 
   const handleExportPDF = () => {
     exportToPDF(
-      filteredData as unknown as Record<string, unknown>[],
+      movimientosList as unknown as Record<string, unknown>[],
       exportColumns,
       'Listado de Movimientos',
       'movimientos',
@@ -79,7 +82,7 @@ export default function MovimientosLista() {
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 border-none outline-none text-sm"
             />
-            {filteredData.length > 0 && (
+            {movimientosList.length > 0 && (
               <>
                 <button
                   onClick={handleExportExcel}
@@ -127,6 +130,28 @@ export default function MovimientosLista() {
                 </option>
               ))}
             </select>
+            <div className="h-5 w-px bg-gray-300" />
+            <input
+              type="date"
+              value={desde}
+              onChange={(e) => {
+                setDesde(e.target.value);
+                setPage(1);
+              }}
+              className="border rounded px-2 py-1 text-sm"
+              title="Desde"
+            />
+            <span className="text-gray-400 text-xs">a</span>
+            <input
+              type="date"
+              value={hasta}
+              onChange={(e) => {
+                setHasta(e.target.value);
+                setPage(1);
+              }}
+              className="border rounded px-2 py-1 text-sm"
+              title="Hasta"
+            />
           </div>
         </div>
 
@@ -135,7 +160,7 @@ export default function MovimientosLista() {
           <div className="p-8 text-center text-red-500">Error: {(error as ApiError).message}</div>
         )}
 
-        {filteredData && (
+        {movimientosList && (
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -150,7 +175,7 @@ export default function MovimientosLista() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((mov: MovimientoDTO) => (
+                  {movimientosList.map((mov: MovimientoDTO) => (
                     <tr key={mov.id} className="border-t hover:bg-gray-50">
                       <td className="p-3 text-gray-600 text-xs whitespace-nowrap">
                         {formatDate(mov.fecha)}
@@ -184,7 +209,7 @@ export default function MovimientosLista() {
                       </td>
                     </tr>
                   ))}
-                  {filteredData.length === 0 && (
+                  {movimientosList.length === 0 && (
                     <tr>
                       <td colSpan={6} className="p-8 text-center text-gray-400">
                         No se encontraron movimientos

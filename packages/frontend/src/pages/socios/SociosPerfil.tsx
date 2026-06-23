@@ -12,12 +12,14 @@ import {
   CreditCard,
   TrendingUp,
   DollarSign,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { apiObtenerSocio, apiGetReporteEstadoCuentaSocio } from '../../lib/api';
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { useState } from 'react';
 import { apiActualizarSocio } from '../../lib/api';
+import { exportToExcel, type ExportColumn } from '../../lib/export';
 
 export default function SociosPerfil() {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +45,46 @@ export default function SociosPerfil() {
     queryFn: () => apiGetReporteEstadoCuentaSocio(id!),
     enabled: !!id,
   });
+
+  const aportesColumns: ExportColumn[] = [
+    { header: 'Periodo', key: 'periodoNombre' },
+    { header: 'Tipo', key: 'tipoOperacion' },
+    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Solidaridad', key: 'pagoSolidaridad', format: (v) => formatCurrency(Number(v)) },
+    { header: 'A Crédito', key: 'pagoCredito', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Ahorro', key: 'ahorro', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Fecha', key: 'fechaPago', format: (v) => formatDate(String(v)) },
+    { header: 'Estado', key: 'estado' },
+  ];
+
+  const creditosColumns: ExportColumn[] = [
+    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Saldo', key: 'saldoCapital', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Cuotas', key: 'cuotas' },
+    { header: 'Cuotas Pagadas', key: 'cuotasPagadas' },
+    { header: 'Estado', key: 'estado' },
+  ];
+
+  function handleExportAportes() {
+    if (!reporte?.aportes?.length) return;
+    exportToExcel(
+      reporte.aportes as unknown as Record<string, unknown>[],
+      aportesColumns,
+      `aportes-${id}`,
+    );
+  }
+
+  function handleExportCreditos() {
+    if (!reporte?.creditos?.length) return;
+    const data = reporte.creditos.map((c) => ({
+      monto: c.monto,
+      saldoCapital: c.saldoCapital,
+      cuotas: c.cuotas,
+      cuotasPagadas: c.cuotasPagadas,
+      estado: c.estado,
+    }));
+    exportToExcel(data as unknown as Record<string, unknown>[], creditosColumns, `creditos-${id}`);
+  }
 
   const creditosActivos = reporte?.creditos?.filter((c) => c.estado === 'activo') ?? [];
   const totalAportado = reporte?.totalAportado ?? 0;
@@ -238,10 +280,18 @@ export default function SociosPerfil() {
 
       <div className="flex flex-col gap-6">
         <div className="bg-white rounded-lg shadow">
-          <div className="p-4 border-b">
+          <div className="p-4 border-b flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
               Aportes
             </h3>
+            {reporte?.aportes && reporte.aportes.length > 0 && (
+              <button
+                onClick={handleExportAportes}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+              >
+                <FileSpreadsheet size={14} /> Excel
+              </button>
+            )}
           </div>
           {reporteLoading ? (
             <div className="text-center text-gray-400 py-8 text-sm">Cargando...</div>
@@ -320,10 +370,18 @@ export default function SociosPerfil() {
         </div>
 
         <div className="bg-white rounded-lg shadow">
-          <div className="p-4 border-b">
+          <div className="p-4 border-b flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
               Créditos
             </h3>
+            {reporte?.creditos && reporte.creditos.length > 0 && (
+              <button
+                onClick={handleExportCreditos}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+              >
+                <FileSpreadsheet size={14} /> Excel
+              </button>
+            )}
           </div>
           <div className="p-4">
             {reporteLoading ? (
@@ -371,18 +429,37 @@ export default function SociosPerfil() {
                     {c.pagos?.length > 0 && (
                       <details className="mt-2">
                         <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
-                          Últimos pagos ({c.pagos.length})
+                          Pagos realizados ({c.pagos.length})
                         </summary>
-                        <div className="mt-1 space-y-1">
-                          {c.pagos.slice(0, 3).map((p) => (
-                            <div
-                              key={p.numeroCuota}
-                              className="flex justify-between text-xs text-gray-500 pl-2"
-                            >
-                              <span>Cuota #{p.numeroCuota}</span>
-                              <span>{formatCurrency(p.monto)}</span>
-                            </div>
-                          ))}
+                        <div className="mt-2 overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="bg-gray-50 text-gray-500">
+                                <th className="text-left p-1.5 font-medium">N°</th>
+                                <th className="text-right p-1.5 font-medium">Monto</th>
+                                <th className="text-right p-1.5 font-medium">Capital</th>
+                                <th className="text-right p-1.5 font-medium">Interés</th>
+                                <th className="text-left p-1.5 font-medium">Fecha</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {c.pagos.map((p) => (
+                                <tr key={p.numeroCuota} className="border-t border-gray-100">
+                                  <td className="p-1.5">{p.numeroCuota}</td>
+                                  <td className="p-1.5 text-right font-mono">
+                                    {formatCurrency(p.monto)}
+                                  </td>
+                                  <td className="p-1.5 text-right font-mono">
+                                    {formatCurrency(p.montoCapital)}
+                                  </td>
+                                  <td className="p-1.5 text-right font-mono">
+                                    {formatCurrency(p.montoInteres)}
+                                  </td>
+                                  <td className="p-1.5">{formatDate(p.fechaPago)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       </details>
                     )}

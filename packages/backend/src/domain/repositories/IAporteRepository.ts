@@ -28,4 +28,5 @@ export interface IAporteRepository {
   update(aporte: Aporte): Promise<Aporte>;
   delete(id: string): Promise<void>;
   recalcularAhorroAcumulado(socioId: string): Promise<Monto>;
+  sumMontoByEstado(estado: string, desde?: Date): Promise<number>;
 }

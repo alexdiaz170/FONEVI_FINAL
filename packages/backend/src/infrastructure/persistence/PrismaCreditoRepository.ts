@@ -66,7 +66,7 @@ export class PrismaCreditoRepository implements ICreditoRepository {
   }
 
   async findAll(filters: CreditoFilter = {}): Promise<CreditoListResult> {
-    const { socioId, estado, page = 1, limit = 10 } = filters;
+    const { socioId, estado, fechaDesde, fechaHasta, page = 1, limit = 10 } = filters;
     const where: Record<string, unknown> = { deletedAt: null };
     if (socioId) where.socioId = socioId;
     if (estado) {
@@ -79,6 +79,12 @@ export class PrismaCreditoRepository implements ICreditoRepository {
       } else {
         where.estado = { in: estados };
       }
+    }
+    if (fechaDesde || fechaHasta) {
+      const fechaFilter: Record<string, Date> = {};
+      if (fechaDesde) fechaFilter.gte = fechaDesde;
+      if (fechaHasta) fechaFilter.lte = fechaHasta;
+      where.fechaDesembolso = fechaFilter;
     }
     const skip = (page - 1) * limit;
 
@@ -101,13 +107,21 @@ export class PrismaCreditoRepository implements ICreditoRepository {
     };
   }
 
-  async findActivoBySocioId(socioId: string): Promise<Credito | null> {
+  async findActiveOrPendingBySocioId(socioId: string): Promise<Credito | null> {
     const row = (await this.prisma.credito.findFirst({
-      where: { socioId, estado: 'activo', deletedAt: null } as never,
+      where: { socioId, estado: { in: ['activo', 'pendiente'] }, deletedAt: null } as never,
       orderBy: { createdAt: 'desc' } as never,
     })) as unknown as CreditoRow | null;
     if (!row) return null;
     return this.toDomain(row);
+  }
+
+  async sumSaldoCapitalBySocioId(socioId: string): Promise<number> {
+    const result = await this.prisma.credito.aggregate({
+      where: { socioId, estado: { in: ['activo', 'pendiente'] }, deletedAt: null } as never,
+      _sum: { saldoCapital: true },
+    });
+    return Number(result._sum.saldoCapital ?? 0);
   }
 
   async save(credito: Credito): Promise<Credito> {
@@ -150,5 +164,34 @@ export class PrismaCreditoRepository implements ICreditoRepository {
       where: { id },
       data: { deletedAt: new Date(), estado: 'cancelado' } as never,
     });
+  }
+
+  async countByEstado(estado: string): Promise<number> {
+    return this.prisma.credito.count({ where: { estado, deletedAt: null } as never });
+  }
+
+  async sumMontoByEstados(estados: string[]): Promise<number> {
+    const result = await this.prisma.credito.aggregate({
+      where: { estado: { in: estados }, deletedAt: null } as never,
+      _sum: { monto: true },
+    });
+    return Number(result._sum.monto ?? 0);
+  }
+
+  async sumSaldoCapitalByEstado(estado: string): Promise<number> {
+    const result = await this.prisma.credito.aggregate({
+      where: { estado, deletedAt: null } as never,
+      _sum: { saldoCapital: true },
+    });
+    return Number(result._sum.saldoCapital ?? 0);
+  }
+
+  async countDistinctSocioIdByEstados(estados: string[]): Promise<number> {
+    const result = await this.prisma.credito.findMany({
+      where: { estado: { in: estados }, deletedAt: null } as never,
+      select: { socioId: true },
+      distinct: ['socioId'],
+    });
+    return result.length;
   }
 }

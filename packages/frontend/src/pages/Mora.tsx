@@ -1,6 +1,15 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle, DollarSign } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle,
+  DollarSign,
+  Users,
+  AlertOctagon,
+  Clock,
+  FileSpreadsheet,
+  FileText,
+} from 'lucide-react';
 import {
   apiCalcularMora,
   apiCrearAcuerdo,
@@ -10,6 +19,7 @@ import {
   type AcuerdoPagoDTO,
 } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
+import { exportToExcel, exportToPDF, type ExportColumn } from '../lib/export';
 
 export default function MoraPage() {
   const queryClient = useQueryClient();
@@ -44,9 +54,116 @@ export default function MoraPage() {
     onError: (err) => setError(err instanceof ApiError ? err.message : 'Error al crear acuerdo'),
   });
 
+  const moraExportColumns: ExportColumn[] = [
+    { header: 'Socio', key: 'socioNombre' },
+    { header: 'Aportes Vencidos', key: 'aportesVencidos' },
+    { header: 'Total Adeudado', key: 'totalAdeudado', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Días Mora', key: 'diasMora' },
+    { header: 'Interés Mora', key: 'interesMora', format: (v) => formatCurrency(Number(v)) },
+  ];
+
+  function handleExportMoraExcel() {
+    if (!moraList) return;
+    exportToExcel(
+      moraList as unknown as Record<string, unknown>[],
+      moraExportColumns,
+      'socios-en-mora',
+    );
+  }
+
+  function handleExportMoraPDF() {
+    if (!moraList) return;
+    exportToPDF(
+      moraList as unknown as Record<string, unknown>[],
+      moraExportColumns,
+      'Socios en Mora',
+      'socios-en-mora',
+    );
+  }
+
+  const acuerdoExportColumns: ExportColumn[] = [
+    { header: 'Socio ID', key: 'socioId' },
+    { header: 'Monto Total', key: 'montoTotal', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Cuota', key: 'montoCuota', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Cuotas', key: 'cuotas' },
+    { header: 'Estado', key: 'estado' },
+    {
+      header: 'Inicio',
+      key: 'fechaInicio',
+      format: (v) => (v ? new Date(String(v)).toLocaleDateString() : '—'),
+    },
+  ];
+
+  function handleExportAcuerdosExcel() {
+    if (!acuerdosData) return;
+    exportToExcel(
+      acuerdosData.data as unknown as Record<string, unknown>[],
+      acuerdoExportColumns,
+      'acuerdos-de-pago',
+    );
+  }
+
+  function handleExportAcuerdosPDF() {
+    if (!acuerdosData) return;
+    exportToPDF(
+      acuerdosData.data as unknown as Record<string, unknown>[],
+      acuerdoExportColumns,
+      'Acuerdos de Pago',
+      'acuerdos-de-pago',
+    );
+  }
+
+  const kpis = useMemo(() => {
+    if (!moraList || moraList.length === 0) return null;
+    const totalAdeudado = moraList.reduce((s, m) => s + m.totalAdeudado, 0);
+    const totalIntereses = moraList.reduce((s, m) => s + m.interesMora, 0);
+    const promDias = Math.round(moraList.reduce((s, m) => s + m.diasMora, 0) / moraList.length);
+    const criticos = moraList.filter((m) => m.diasMora > 60).length;
+    return { totalAdeudado, totalIntereses, promDias, criticos };
+  }, [moraList]);
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-navy-800 mb-6">Panel de Mora</h1>
+
+      {kpis && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-red-500 to-red-600 p-4 text-white shadow">
+            <Users size={32} className="absolute right-3 top-2 opacity-20" />
+            <div className="text-xs font-medium uppercase tracking-wide opacity-80">
+              Total en Mora
+            </div>
+            <div className="text-2xl font-bold mt-1">{moraList!.length}</div>
+            <div className="text-xs mt-1 opacity-70">Socios con obligaciones vencidas</div>
+          </div>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 p-4 text-white shadow">
+            <DollarSign size={32} className="absolute right-3 top-2 opacity-20" />
+            <div className="text-xs font-medium uppercase tracking-wide opacity-80">
+              Total Adeudado
+            </div>
+            <div className="text-2xl font-bold mt-1">{formatCurrency(kpis.totalAdeudado)}</div>
+            <div className="text-xs mt-1 opacity-70">
+              Intereses: {formatCurrency(kpis.totalIntereses)}
+            </div>
+          </div>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 p-4 text-white shadow">
+            <Clock size={32} className="absolute right-3 top-2 opacity-20" />
+            <div className="text-xs font-medium uppercase tracking-wide opacity-80">
+              Promedío Días Mora
+            </div>
+            <div className="text-2xl font-bold mt-1">{kpis.promDias}</div>
+            <div className="text-xs mt-1 opacity-70">Días promedio sin pago</div>
+          </div>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-rose-600 to-rose-700 p-4 text-white shadow">
+            <AlertOctagon size={32} className="absolute right-3 top-2 opacity-20" />
+            <div className="text-xs font-medium uppercase tracking-wide opacity-80">
+              Casos Críticos
+            </div>
+            <div className="text-2xl font-bold mt-1">{kpis.criticos}</div>
+            <div className="text-xs mt-1 opacity-70">Más de 60 días en mora</div>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-2 mb-6">
         <button
@@ -71,6 +188,22 @@ export default function MoraPage() {
 
       {tab === 'mora' && (
         <div className="bg-white rounded-lg shadow">
+          {moraList && moraList.length > 0 && (
+            <div className="p-3 border-b flex gap-2">
+              <button
+                onClick={handleExportMoraExcel}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+              >
+                <FileSpreadsheet size={14} /> Excel
+              </button>
+              <button
+                onClick={handleExportMoraPDF}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100"
+              >
+                <FileText size={14} /> PDF
+              </button>
+            </div>
+          )}
           {moraLoading && <div className="p-8 text-center text-gray-400">Cargando...</div>}
           {moraList && (
             <div className="overflow-x-auto">
@@ -130,6 +263,22 @@ export default function MoraPage() {
 
       {tab === 'acuerdos' && (
         <div className="bg-white rounded-lg shadow">
+          {acuerdosData && acuerdosData.data.length > 0 && (
+            <div className="p-3 border-b flex gap-2">
+              <button
+                onClick={handleExportAcuerdosExcel}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+              >
+                <FileSpreadsheet size={14} /> Excel
+              </button>
+              <button
+                onClick={handleExportAcuerdosPDF}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100"
+              >
+                <FileText size={14} /> PDF
+              </button>
+            </div>
+          )}
           {acuerdosLoading && <div className="p-8 text-center text-gray-400">Cargando...</div>}
           {acuerdosData && (
             <div className="overflow-x-auto">

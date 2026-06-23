@@ -31,6 +31,7 @@ export const listarAportesSchema = z.object({
   socioId: z.string().min(1).optional(),
   periodoId: z.coerce.number().int().positive().optional(),
   estado: z.string().optional(),
+  q: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
 });

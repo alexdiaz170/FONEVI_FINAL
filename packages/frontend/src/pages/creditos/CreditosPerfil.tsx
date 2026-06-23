@@ -1,10 +1,11 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, Trash2, FileSpreadsheet } from 'lucide-react';
 import { apiObtenerCredito, apiAprobarCredito, apiEliminarPagoCuota } from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { useState } from 'react';
+import { exportToExcel, type ExportColumn } from '../../lib/export';
 
 export default function CreditosPerfil() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +36,35 @@ export default function CreditosPerfil() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['credito', id] }),
     onError: (err) => setError(err instanceof ApiError ? err.message : 'Error al eliminar pago'),
   });
+
+  const amortizacionColumns: ExportColumn[] = [
+    { header: 'N°', key: 'numeroCuota' },
+    { header: 'Cuota', key: 'monto', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Capital', key: 'montoCapital', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Interés', key: 'montoInteres', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Seguro', key: 'seguro', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Saldo', key: 'saldoRestante', format: (v) => formatCurrency(Number(v)) },
+  ];
+
+  const pagosColumns: ExportColumn[] = [
+    { header: 'N° Cuota', key: 'numeroCuota' },
+    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Capital', key: 'montoCapital', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Interés', key: 'montoInteres', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Fecha', key: 'fechaPago', format: (v) => formatDate(String(v)) },
+  ];
+
+  function handleExportAmortizacion() {
+    exportToExcel(
+      tablaAmortizacion as unknown as Record<string, unknown>[],
+      amortizacionColumns,
+      `amortizacion-${id}`,
+    );
+  }
+
+  function handleExportPagos() {
+    exportToExcel(pagos as unknown as Record<string, unknown>[], pagosColumns, `pagos-${id}`);
+  }
 
   if (isLoading)
     return (
@@ -138,9 +168,17 @@ export default function CreditosPerfil() {
         </div>
 
         <div className="p-6 border-t">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-            Tabla de Amortización
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+              Tabla de Amortización
+            </h3>
+            <button
+              onClick={handleExportAmortizacion}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+            >
+              <FileSpreadsheet size={14} /> Excel
+            </button>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -195,9 +233,17 @@ export default function CreditosPerfil() {
 
         {pagos.length > 0 && (
           <div className="p-6 border-t">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-              Pagos Realizados
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                Pagos Realizados
+              </h3>
+              <button
+                onClick={handleExportPagos}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+              >
+                <FileSpreadsheet size={14} /> Excel
+              </button>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

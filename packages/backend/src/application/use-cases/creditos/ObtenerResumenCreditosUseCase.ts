@@ -1,4 +1,4 @@
-import { getPrismaClient } from '../../../infrastructure/persistence/prismaClient.js';
+import { ICreditoRepository } from '../../../domain/repositories/ICreditoRepository.js';
 
 export interface ResumenCreditos {
   totalMontoPrestado: number;
@@ -10,38 +10,28 @@ export interface ResumenCreditos {
 }
 
 export class ObtenerResumenCreditosUseCase {
-  async execute(): Promise<ResumenCreditos> {
-    const prisma = getPrismaClient();
+  constructor(private readonly creditoRepo: ICreditoRepository) {}
 
+  async execute(): Promise<ResumenCreditos> {
     const estadosOtorgados = ['activo', 'pagado'];
 
-    const [montoAgg, socioAgg, activosCount, pagadosCount, pendientesCount] = await Promise.all([
-      prisma.credito.aggregate({
-        _sum: { monto: true },
-        where: { estado: { in: estadosOtorgados }, deletedAt: null },
-      }),
-      prisma.credito.findMany({
-        where: { estado: { in: estadosOtorgados }, deletedAt: null },
-        select: { socioId: true },
-        distinct: ['socioId'],
-      }),
-      prisma.credito.count({ where: { estado: 'activo', deletedAt: null } }),
-      prisma.credito.count({ where: { estado: 'pagado' } }),
-      prisma.credito.count({ where: { estado: 'pendiente', deletedAt: null } }),
-    ]);
-
-    const saldoAgg = await prisma.credito.aggregate({
-      _sum: { saldoCapital: true },
-      where: { estado: 'activo', deletedAt: null },
-    });
+    const [montoPrestado, totalSociosConCredito, activos, pagados, pendientes, saldoPorCobrar] =
+      await Promise.all([
+        this.creditoRepo.sumMontoByEstados(estadosOtorgados),
+        this.creditoRepo.countDistinctSocioIdByEstados(estadosOtorgados),
+        this.creditoRepo.countByEstado('activo'),
+        this.creditoRepo.countByEstado('pagado'),
+        this.creditoRepo.countByEstado('pendiente'),
+        this.creditoRepo.sumSaldoCapitalByEstado('activo'),
+      ]);
 
     return {
-      totalMontoPrestado: Number(montoAgg._sum.monto ?? 0),
-      totalSociosConCredito: socioAgg.length,
-      saldoPorCobrar: Number(saldoAgg._sum.saldoCapital ?? 0),
-      creditosActivos: activosCount,
-      creditosPagados: pagadosCount,
-      creditosPendientes: pendientesCount,
+      totalMontoPrestado: montoPrestado,
+      totalSociosConCredito,
+      saldoPorCobrar,
+      creditosActivos: activos,
+      creditosPagados: pagados,
+      creditosPendientes: pendientes,
     };
   }
 }

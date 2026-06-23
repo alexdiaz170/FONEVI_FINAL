@@ -46,9 +46,15 @@ export class PrismaSolidaridadMovimientoRepository implements ISolidaridadMovimi
   }
 
   async findAll(filters: SolidaridadFilter = {}): Promise<SolidaridadListResult> {
-    const { tipo, page = 1, limit = 10 } = filters;
+    const { tipo, desde, hasta, page = 1, limit = 10 } = filters;
     const where: Record<string, unknown> = {};
     if (tipo) where.tipo = tipo;
+    if (desde || hasta) {
+      const fechaFilter: Record<string, Date> = {};
+      if (desde) fechaFilter.gte = desde;
+      if (hasta) fechaFilter.lte = hasta;
+      where.fecha = fechaFilter;
+    }
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
@@ -82,5 +88,13 @@ export class PrismaSolidaridadMovimientoRepository implements ISolidaridadMovimi
       } as never,
     })) as unknown as SolidaridadRow;
     return this.toDomain(row);
+  }
+
+  async sumMontoByTipo(tipo: string): Promise<number> {
+    const result = await this.prisma.solidaridadMovimiento.aggregate({
+      where: { tipo } as never,
+      _sum: { monto: true },
+    });
+    return Number(result._sum.monto ?? 0);
   }
 }

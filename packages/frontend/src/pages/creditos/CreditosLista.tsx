@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Eye,
   Check,
+  X,
   Search,
   ChevronLeft,
   ChevronRight,
@@ -22,6 +23,7 @@ import {
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
+import { useAuthStore } from '../../stores/authStore';
 
 const ESTADOS = ['activo,pendiente', 'activo', 'pendiente', 'pagado', 'cancelado', ''];
 
@@ -35,18 +37,37 @@ const ESTADO_LABELS: Record<string, string> = {
 };
 
 export default function CreditosLista() {
+  const usuario = useAuthStore((s) => s.usuario);
+  const esSocio = usuario?.rol === 'socio';
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('activo,pendiente');
+  const [mesFilter, setMesFilter] = useState('');
   const queryClient = useQueryClient();
   const location = useLocation();
   const successMsg = (location.state as { success?: string })?.success;
-  location.state = {};
 
-  const estadosArray = estadoFilter ? estadoFilter.split(',') : [];
+  const fechaDesde = mesFilter ? `${mesFilter}-01` : '';
+  const fechaHasta = mesFilter
+    ? new Date(
+        new Date(`${mesFilter}-01`).getFullYear(),
+        new Date(`${mesFilter}-01`).getMonth() + 1,
+        0,
+      )
+        .toISOString()
+        .split('T')[0]
+    : '';
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['creditos', page, estadoFilter],
-    queryFn: () => apiListarCreditos({ page, limit: 10, estado: estadoFilter || undefined }),
+    queryKey: ['creditos', page, estadoFilter, mesFilter],
+    queryFn: () =>
+      apiListarCreditos({
+        page,
+        limit: 10,
+        estado: estadoFilter || undefined,
+        fechaDesde: fechaDesde || undefined,
+        fechaHasta: fechaHasta || undefined,
+      }),
     staleTime: 0,
   });
 
@@ -158,6 +179,27 @@ export default function CreditosLista() {
                 </option>
               ))}
             </select>
+            <select
+              value={mesFilter}
+              onChange={(e) => {
+                setMesFilter(e.target.value);
+                setPage(1);
+              }}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value="">Todos los meses</option>
+              {Array.from({ length: 12 }, (_, i) => {
+                const d = new Date();
+                d.setMonth(d.getMonth() - i);
+                const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                const label = d.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+                return (
+                  <option key={val} value={val}>
+                    {label}
+                  </option>
+                );
+              })}
+            </select>
           </div>
         </div>
 
@@ -261,7 +303,7 @@ export default function CreditosLista() {
                                 disabled={rechazarMutation.isPending}
                                 className="inline-flex items-center gap-1 px-2 py-1.5 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50"
                               >
-                                <Check size={14} /> No aprobar
+                                <X size={14} /> No aprobar
                               </button>
                             </>
                           )}

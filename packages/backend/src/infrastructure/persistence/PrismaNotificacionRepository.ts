@@ -14,6 +14,8 @@ interface NotificacionRow {
   mensaje: string;
   leida: boolean;
   urgente: boolean;
+  referenciaId: string | null;
+  referenciaTipo: string | null;
   createdAt: Date;
 }
 
@@ -32,6 +34,8 @@ export class PrismaNotificacionRepository implements INotificacionRepository {
       mensaje: row.mensaje,
       leida: row.leida,
       urgente: row.urgente,
+      referenciaId: row.referenciaId,
+      referenciaTipo: row.referenciaTipo,
       createdAt: row.createdAt,
     });
   }
@@ -79,6 +83,8 @@ export class PrismaNotificacionRepository implements INotificacionRepository {
         mensaje: notificacion.mensaje,
         leida: notificacion.leida,
         urgente: notificacion.urgente,
+        referenciaId: notificacion.referenciaId,
+        referenciaTipo: notificacion.referenciaTipo,
       } as never,
     })) as unknown as NotificacionRow;
     return this.toDomain(row);
@@ -90,6 +96,10 @@ export class PrismaNotificacionRepository implements INotificacionRepository {
       data: { leida: true } as never,
     })) as unknown as NotificacionRow;
     return this.toDomain(row);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.notificacion.delete({ where: { id } } as never);
   }
 
   async countNoLeidas(): Promise<number> {

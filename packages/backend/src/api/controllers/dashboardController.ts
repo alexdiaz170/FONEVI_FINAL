@@ -2,11 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 import { ObtenerResumenDashboardUseCase } from '../../application/use-cases/dashboard/ObtenerResumenDashboardUseCase.js';
 import { ObtenerBalanceUseCase } from '../../application/use-cases/movimientos/ObtenerBalanceUseCase.js';
 import { CalculadorBalanceGeneral } from '../../domain/services/contabilidad.js';
+import { ConfiguracionService } from '../../application/services/ConfiguracionService.js';
+import { IDashboardRepository } from '../../domain/repositories/IDashboardRepository.js';
 import { apiResponse } from '../response.js';
 
-export function createDashboardController() {
-  const resumenUseCase = new ObtenerResumenDashboardUseCase();
-  const balanceUseCase = new ObtenerBalanceUseCase(new CalculadorBalanceGeneral());
+export function createDashboardController(dashboardRepo: IDashboardRepository) {
+  const resumenUseCase = new ObtenerResumenDashboardUseCase(dashboardRepo);
+  const configService = new ConfiguracionService();
+  const balanceUseCase = new ObtenerBalanceUseCase(new CalculadorBalanceGeneral(), configService);
 
   return {
     async resumen(req: Request, res: Response, next: NextFunction): Promise<void> {

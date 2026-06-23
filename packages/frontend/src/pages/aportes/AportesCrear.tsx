@@ -15,6 +15,7 @@ function formatThousands(value: string): string {
 const TIPOS_OPERACION = [
   { value: 'cuota_normal', label: 'Cuota Normal' },
   { value: 'abono_credito', label: 'Abono a Crédito' },
+  { value: 'abono_ahorro', label: 'Abono a Ahorro' },
   { value: 'adelanto_cuotas', label: 'Adelanto de Cuotas' },
 ] as const;
 

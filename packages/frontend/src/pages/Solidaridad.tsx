@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { FileSpreadsheet, FileText } from 'lucide-react';
 import {
   apiListarSolidaridad,
   apiCrearMovimientoSolidaridad,
@@ -7,6 +8,7 @@ import {
   ApiError,
 } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
+import { exportToExcel, exportToPDF, type ExportColumn } from '../lib/export';
 
 const TIPOS_AYUDA = [
   'Apoyo educativo',
@@ -19,14 +21,18 @@ export default function SolidaridadPage() {
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [tipoFilter, setTipoFilter] = useState<'todos' | 'ingreso' | 'egreso'>('todos');
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['solidaridad', page, tipoFilter],
+    queryKey: ['solidaridad', page, tipoFilter, desde, hasta],
     queryFn: () =>
       apiListarSolidaridad({
         page,
         limit: 20,
         tipo: tipoFilter === 'todos' ? undefined : tipoFilter,
+        desde: desde || undefined,
+        hasta: hasta || undefined,
       }),
   });
 
@@ -34,6 +40,29 @@ export default function SolidaridadPage() {
     queryKey: ['solidaridad-all'],
     queryFn: () => apiListarSolidaridad({ page: 1, limit: 99999 }),
   });
+
+  const exportColumns: ExportColumn[] = [
+    { header: 'Fecha', key: 'fecha', format: (v) => formatDate(String(v)) },
+    { header: 'Tipo', key: 'tipo' },
+    { header: 'Descripción', key: 'descripcion' },
+    { header: 'Beneficiario', key: 'beneficiario' },
+    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
+  ];
+
+  function handleExportExcel() {
+    if (!data?.data?.length) return;
+    exportToExcel(data.data as unknown as Record<string, unknown>[], exportColumns, 'solidaridad');
+  }
+
+  function handleExportPDF() {
+    if (!data?.data?.length) return;
+    exportToPDF(
+      data.data as unknown as Record<string, unknown>[],
+      exportColumns,
+      'Fondo de Solidaridad',
+      'solidaridad',
+    );
+  }
 
   const totalIngresos =
     allData?.data.filter((m) => m.tipo === 'ingreso').reduce((s, m) => s + m.monto, 0) ?? 0;
@@ -65,7 +94,7 @@ export default function SolidaridadPage() {
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           {(['todos', 'ingreso', 'egreso'] as const).map((t) => (
             <button
               key={t}
@@ -82,13 +111,53 @@ export default function SolidaridadPage() {
               {t === 'todos' ? 'Todos' : t === 'ingreso' ? 'Ingresos' : 'Egresos'}
             </button>
           ))}
+          <div className="h-6 w-px bg-gray-300 mx-1" />
+          <input
+            type="date"
+            value={desde}
+            onChange={(e) => {
+              setDesde(e.target.value);
+              setPage(1);
+            }}
+            className="px-2 py-1.5 border rounded text-sm"
+            title="Desde"
+          />
+          <span className="text-gray-400 text-sm">a</span>
+          <input
+            type="date"
+            value={hasta}
+            onChange={(e) => {
+              setHasta(e.target.value);
+              setPage(1);
+            }}
+            className="px-2 py-1.5 border rounded text-sm"
+            title="Hasta"
+          />
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-navy-700 text-white rounded-md text-sm font-medium hover:bg-navy-800"
-        >
-          {showForm ? 'Cancelar' : 'Nuevo Movimiento'}
-        </button>
+        <div className="flex gap-2">
+          {data && data.data.length > 0 && (
+            <>
+              <button
+                onClick={handleExportExcel}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+              >
+                <FileSpreadsheet size={14} /> Excel
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100"
+              >
+                <FileText size={14} /> PDF
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2 bg-navy-700 text-white rounded-md text-sm font-medium hover:bg-navy-800"
+          >
+            {showForm ? 'Cancelar' : 'Nuevo Movimiento'}
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -217,20 +286,18 @@ function SolidaridadForm({ onSuccess }: { onSuccess: () => void }) {
       return;
     }
 
-    let beneficiario = form.beneficiario;
-    if (beneficiario) {
-      const socio = sociosData?.data.find((s) => s.id === beneficiario);
-      beneficiario = socio?.nombre ?? beneficiario;
-    }
-
     setLoading(true);
     try {
+      const socio = form.beneficiario
+        ? sociosData?.data.find((s) => s.id === form.beneficiario)
+        : undefined;
       await apiCrearMovimientoSolidaridad({
         tipo: form.tipo,
         descripcion: form.descripcion,
         monto: montoNum,
         fecha: form.fecha || undefined,
-        beneficiario: beneficiario || null,
+        beneficiario: socio?.nombre ?? (form.beneficiario || null),
+        socioId: socio?.id,
       });
       onSuccess();
     } catch (err) {

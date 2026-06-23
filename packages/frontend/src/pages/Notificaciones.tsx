@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckCheck, Mail, MailOpen, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Bell, CheckCheck, Mail, MailOpen, AlertCircle, ExternalLink, Trash2 } from 'lucide-react';
+import { useAuthStore } from '../stores/authStore';
 import {
   apiListarNotificaciones,
   apiCrearNotificacion,
   apiMarcarNotificacionLeida,
+  apiEliminarNotificacion,
   ApiError,
   type NotificacionDTO,
 } from '../lib/api';
 import { formatDate } from '../lib/utils';
 
 export default function NotificacionesPage() {
+  const usuario = useAuthStore((s) => s.usuario);
+  const esSocio = usuario?.rol === 'socio';
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [filtro, setFiltro] = useState<'todas' | 'noleidas' | 'leidas'>('noleidas');
@@ -31,6 +36,11 @@ export default function NotificacionesPage() {
 
   const marcarMutation = useMutation({
     mutationFn: (id: string) => apiMarcarNotificacionLeida(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notificaciones'] }),
+  });
+
+  const eliminarMutation = useMutation({
+    mutationFn: (id: string) => apiEliminarNotificacion(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notificaciones'] }),
   });
 
@@ -61,12 +71,14 @@ export default function NotificacionesPage() {
             <span className="text-sm font-normal text-gray-500">({noLeidas} sin leer)</span>
           )}
         </h1>
-        <button
-          onClick={() => setShowCrear(true)}
-          className="px-4 py-2 bg-navy-700 text-white rounded-md text-sm font-medium hover:bg-navy-800"
-        >
-          Nueva Notificación
-        </button>
+        {!esSocio && (
+          <button
+            onClick={() => setShowCrear(true)}
+            className="px-4 py-2 bg-navy-700 text-white rounded-md text-sm font-medium hover:bg-navy-800"
+          >
+            Nueva Notificación
+          </button>
+        )}
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -127,9 +139,38 @@ export default function NotificacionesPage() {
                       <CheckCheck size={16} />
                     </button>
                   )}
+                  <button
+                    onClick={() => {
+                      if (confirm('¿Eliminar esta notificación?')) eliminarMutation.mutate(n.id);
+                    }}
+                    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                    title="Eliminar"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
               <p className="text-sm text-gray-600 mt-1">{n.mensaje}</p>
+              {n.referenciaId && n.referenciaTipo && (
+                <div className="mt-2">
+                  {n.referenciaTipo === 'socio' && (
+                    <Link
+                      to={`/socios/${n.referenciaId}`}
+                      className="inline-flex items-center gap-1 text-xs text-navy-600 hover:text-navy-800 font-medium"
+                    >
+                      <ExternalLink size={12} /> Ver socio
+                    </Link>
+                  )}
+                  {n.referenciaTipo === 'credito' && (
+                    <Link
+                      to={`/creditos/${n.referenciaId}`}
+                      className="inline-flex items-center gap-1 text-xs text-navy-600 hover:text-navy-800 font-medium"
+                    >
+                      <ExternalLink size={12} /> Ver crédito
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
             <div className="shrink-0">
               {n.leida ? (

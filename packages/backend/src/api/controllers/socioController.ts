@@ -4,7 +4,9 @@ import { ActualizarSocioUseCase } from '../../application/use-cases/socios/Actua
 import { ObtenerSocioUseCase } from '../../application/use-cases/socios/ObtenerSocioUseCase.js';
 import { ListarSociosUseCase } from '../../application/use-cases/socios/ListarSociosUseCase.js';
 import { EliminarSocioUseCase } from '../../application/use-cases/socios/EliminarSocioUseCase.js';
+import { RegistrarUsuarioUseCase } from '../../application/use-cases/auth/RegistrarUsuarioUseCase.js';
 import { ISocioRepository } from '../../domain/repositories/ISocioRepository.js';
+import { IUsuarioRepository } from '../../domain/repositories/IUsuarioRepository.js';
 import { GeneradorCodigoSocio } from '../../domain/services/GeneradorCodigoSocio.js';
 import { apiResponse } from '../response.js';
 import {
@@ -14,9 +16,13 @@ import {
 } from '../../application/dto/socio.dto.js';
 import { ValidationError } from '../../application/errors.js';
 
-export function createSocioController(socioRepo: ISocioRepository) {
+export function createSocioController(
+  socioRepo: ISocioRepository,
+  usuarioRepo?: IUsuarioRepository,
+) {
   const generadorCodigo = new GeneradorCodigoSocio(socioRepo);
   const crearUseCase = new CrearSocioUseCase(socioRepo, generadorCodigo);
+  const registrarUsuarioUseCase = usuarioRepo ? new RegistrarUsuarioUseCase(usuarioRepo) : null;
   const actualizarUseCase = new ActualizarSocioUseCase(socioRepo);
   const obtenerUseCase = new ObtenerSocioUseCase(socioRepo);
   const listarUseCase = new ListarSociosUseCase(socioRepo);
@@ -70,7 +76,12 @@ export function createSocioController(socioRepo: ISocioRepository) {
     async list(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
         const query = socioQuerySchema.parse(req.query);
-        const result = await listarUseCase.execute(query.page, query.limit, query.includeDeleted);
+        const result = await listarUseCase.execute(
+          query.page,
+          query.limit,
+          query.includeDeleted,
+          query.buscar,
+        );
 
         apiResponse.paginated(
           res,
@@ -111,6 +122,19 @@ export function createSocioController(socioRepo: ISocioRepository) {
         }
 
         const result = await crearUseCase.execute(parsed.data);
+
+        if (registrarUsuarioUseCase && result.socio.email) {
+          try {
+            await registrarUsuarioUseCase.execute({
+              nombre: result.socio.nombre,
+              email: result.socio.email.value,
+              password: result.passwordInicial,
+              rol: 'socio',
+            });
+          } catch {
+            // si el email ya existe como usuario, ignoramos
+          }
+        }
 
         apiResponse.created(res, {
           socio: mapSocio(result.socio),

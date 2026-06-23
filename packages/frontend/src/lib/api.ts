@@ -133,6 +133,13 @@ export async function apiGetProfile() {
   }>('/auth/profile');
 }
 
+export async function apiCambiarPassword(currentPassword: string, newPassword: string) {
+  return api<{ message: string }>('/auth/password', {
+    method: 'PUT',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
 export interface SocioDTO {
   id: string;
   codigo: string;
@@ -155,10 +162,15 @@ export interface SocioDTO {
   updatedAt: string;
 }
 
-export async function apiListarSocios(page = 1, limit = 10, includeDeleted = false) {
-  return apiPaginated<SocioDTO>(
-    `/api/socios?page=${page}&limit=${limit}&includeDeleted=${includeDeleted}`,
-  );
+export async function apiListarSocios(
+  page = 1,
+  limit = 10,
+  includeDeleted = false,
+  buscar?: string,
+) {
+  let url = `/api/socios?page=${page}&limit=${limit}&includeDeleted=${includeDeleted}`;
+  if (buscar) url += `&buscar=${encodeURIComponent(buscar)}`;
+  return apiPaginated<SocioDTO>(url);
 }
 
 export async function apiObtenerSocio(id: string) {
@@ -224,6 +236,7 @@ export async function apiListarAportes(
     socioId?: string;
     periodoId?: number;
     estado?: string;
+    q?: string;
     page?: number;
     limit?: number;
   } = {},
@@ -327,7 +340,14 @@ export async function apiResumenCreditos() {
 }
 
 export async function apiListarCreditos(
-  params: { socioId?: string; estado?: string; page?: number; limit?: number } = {},
+  params: {
+    socioId?: string;
+    estado?: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+    page?: number;
+    limit?: number;
+  } = {},
 ) {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
@@ -427,6 +447,53 @@ export async function apiGetDashboardBalance() {
   return api<BalanceGeneral>('/api/dashboard/balance');
 }
 
+// ─── Mi Dashboard (Socio) ─────────────────
+export interface MiDashboardSocio {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipoDocumento: string;
+  numeroDocumento: string;
+  email: string | null;
+  telefono: string | null;
+  ahorroAcumulado: number;
+  estado: string;
+}
+
+export interface MiDashboardCredito {
+  id: string;
+  monto: number;
+  saldoCapital: number;
+  cuotas: number;
+  cuotasPagadas: number;
+  cuotasRestantes: number;
+  cuotaMensual: number;
+  estado: string;
+}
+
+export interface MiDashboardAporte {
+  id: string;
+  periodoId: number;
+  monto: number;
+  estado: string;
+  createdAt: string;
+}
+
+export interface MiDashboardResult {
+  socio: MiDashboardSocio;
+  creditos: MiDashboardCredito[];
+  ultimosAportes: MiDashboardAporte[];
+  config: {
+    tasaInteresMensual: number;
+    multiplicadorMaximoCredito: number;
+    porcentajeSeguro: number;
+  };
+}
+
+export async function apiMiDashboard() {
+  return api<MiDashboardResult>('/auth/mi-dashboard');
+}
+
 // ─── Mora ──────────────────────────────────
 
 export interface MoraCalculada {
@@ -464,7 +531,7 @@ export async function apiListarAcuerdos(page = 1, limit = 10) {
     page: number;
     limit: number;
     totalPages: number;
-  }>(`/api/acuerdos?page=${page}&limit=${limit}`);
+  }>(`/api/mora/acuerdos?page=${page}&limit=${limit}`);
 }
 
 export async function apiCrearAcuerdo(data: {
@@ -474,7 +541,7 @@ export async function apiCrearAcuerdo(data: {
   fechaInicio?: string;
   notas?: string | null;
 }) {
-  return api<AcuerdoPagoDTO>('/api/acuerdos', { method: 'POST', body: JSON.stringify(data) });
+  return api<AcuerdoPagoDTO>('/api/mora/acuerdos', { method: 'POST', body: JSON.stringify(data) });
 }
 
 // ─── Movimientos ────────────────────────────
@@ -497,6 +564,7 @@ export async function apiListarMovimientos(
     categoria?: string;
     desde?: string;
     hasta?: string;
+    q?: string;
     page?: number;
     limit?: number;
   } = {},
@@ -527,6 +595,8 @@ export interface NotificacionDTO {
   mensaje: string;
   leida: boolean;
   urgente: boolean;
+  referenciaId: string | null;
+  referenciaTipo: string | null;
   createdAt: string;
 }
 
@@ -545,6 +615,8 @@ export async function apiCrearNotificacion(data: {
   titulo: string;
   mensaje: string;
   urgente?: boolean;
+  referenciaId?: string;
+  referenciaTipo?: string;
 }) {
   return api<NotificacionDTO>('/api/notificaciones', {
     method: 'POST',
@@ -554,6 +626,10 @@ export async function apiCrearNotificacion(data: {
 
 export async function apiMarcarNotificacionLeida(id: string) {
   return api<NotificacionDTO>(`/api/notificaciones/${id}/leer`, { method: 'PATCH' });
+}
+
+export async function apiEliminarNotificacion(id: string) {
+  return api<{ mensaje: string }>(`/api/notificaciones/${id}`, { method: 'DELETE' });
 }
 
 // ─── Solidaridad ──────────────────────────
@@ -569,7 +645,7 @@ export interface SolidaridadMovimientoDTO {
 }
 
 export async function apiListarSolidaridad(
-  params: { tipo?: string; page?: number; limit?: number } = {},
+  params: { tipo?: string; desde?: string; hasta?: string; page?: number; limit?: number } = {},
 ) {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
@@ -584,6 +660,7 @@ export async function apiCrearMovimientoSolidaridad(data: {
   monto: number;
   fecha?: string;
   beneficiario?: string | null;
+  socioId?: string;
 }) {
   return api<SolidaridadMovimientoDTO>('/api/solidaridad', {
     method: 'POST',
@@ -608,6 +685,41 @@ export async function apiUpdateConfiguracion(clave: string, valor: string) {
     method: 'PUT',
     body: JSON.stringify({ valor }),
   });
+}
+
+// ─── Usuarios (admin) ──────────────────────
+
+export interface UsuarioDTO {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: string;
+  estado: string;
+  createdAt: string;
+}
+
+export async function apiListarUsuarios() {
+  return api<UsuarioDTO[]>('/api/usuarios');
+}
+
+export async function apiCrearUsuario(data: {
+  nombre: string;
+  email: string;
+  password: string;
+  rol: string;
+}) {
+  return api<UsuarioDTO>('/api/usuarios', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function apiActualizarUsuario(
+  id: string,
+  data: { nombre?: string; email?: string; password?: string; rol?: string; estado?: string },
+) {
+  return api<UsuarioDTO>(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export async function apiEliminarUsuario(id: string) {
+  return api<{ mensaje: string }>(`/api/usuarios/${id}`, { method: 'DELETE' });
 }
 
 // ─── Reportes ─────────────────────────────
@@ -720,4 +832,35 @@ export async function apiCrearPeriodo(data: { nombre: string; anio: number; mes:
 
 export async function apiActivarPeriodo(id: number) {
   return api<{ mensaje: string }>(`/api/periodos/${id}/activar`, { method: 'POST' });
+}
+
+export async function apiEliminarPeriodo(id: number) {
+  return api<{ mensaje: string }>(`/api/periodos/${id}`, { method: 'DELETE' });
+}
+
+// ─── Dividendos ─────────────────────────────
+
+export interface DividendoDTO {
+  id: string;
+  periodo: string;
+  montoTotal: number;
+  distribuido: boolean;
+  fechaCalculo: string;
+  fechaPago: string | null;
+  createdAt: string;
+}
+
+export async function apiListarDividendos(page = 1, limit = 10) {
+  return apiPaginated<DividendoDTO>(`/api/dividendos?page=${page}&limit=${limit}`);
+}
+
+export async function apiCrearDividendo(data: { periodo: string; montoTotal: number }) {
+  return api<DividendoDTO>('/api/dividendos', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function apiDistribuirDividendo(id: string, socioIds: string[]) {
+  return api<{ id: string; socioId: string; monto: number }[]>(`/api/dividendos/${id}/distribuir`, {
+    method: 'POST',
+    body: JSON.stringify({ socioIds }),
+  });
 }

@@ -23,8 +23,8 @@ export default function SociosLista() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['socios', page],
-    queryFn: () => apiListarSocios(page, 10),
+    queryKey: ['socios', page, search],
+    queryFn: () => apiListarSocios(page, 10, false, search || undefined),
   });
 
   const handleDelete = async (id: string) => {
@@ -40,13 +40,7 @@ export default function SociosLista() {
     }
   };
 
-  const filteredData =
-    data?.data?.filter(
-      (s) =>
-        !search ||
-        s.nombre.toLowerCase().includes(search.toLowerCase()) ||
-        s.numeroDocumento.includes(search),
-    ) ?? [];
+  const sociosList = data?.data ?? [];
 
   const exportColumns: ExportColumn[] = [
     { header: 'Código', key: 'codigoSocio' },
@@ -70,13 +64,13 @@ export default function SociosLista() {
   ];
 
   const handleExportExcel = () => {
-    exportToExcel(filteredData as unknown as Record<string, unknown>[], exportColumns, 'socios');
+    exportToExcel(sociosList as unknown as Record<string, unknown>[], exportColumns, 'socios');
   };
 
   const handleExportPDF = () => {
     const pdfColumns = exportColumns.filter((c) => c.key !== 'ahorroAcumulado');
     exportToPDF(
-      filteredData as unknown as Record<string, unknown>[],
+      sociosList as unknown as Record<string, unknown>[],
       pdfColumns,
       'Listado de Socios',
       'socios',
@@ -84,11 +78,9 @@ export default function SociosLista() {
   };
 
   const total = data?.total ?? 0;
-  const activos = filteredData.filter((s) => s.estado === 'activo').length;
-  const enMora = filteredData.filter((s) => s.estado === 'mora').length;
-  const pendientes = filteredData.filter(
-    (s) => s.estado !== 'activo' && s.estado !== 'mora',
-  ).length;
+  const activos = sociosList.filter((s) => s.estado === 'activo').length;
+  const enMora = sociosList.filter((s) => s.estado === 'mora').length;
+  const pendientes = sociosList.filter((s) => s.estado !== 'activo' && s.estado !== 'mora').length;
 
   const kpiCards = [
     {
@@ -146,7 +138,7 @@ export default function SociosLista() {
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 border-none outline-none text-sm"
           />
-          {filteredData.length > 0 && (
+          {sociosList.length > 0 && (
             <>
               <button
                 onClick={handleExportExcel}
@@ -171,7 +163,7 @@ export default function SociosLista() {
           <div className="p-8 text-center text-red-500">Error: {(error as ApiError).message}</div>
         )}
 
-        {filteredData && (
+        {sociosList && (
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -187,7 +179,7 @@ export default function SociosLista() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((socio: SocioDTO) => (
+                  {sociosList.map((socio: SocioDTO) => (
                     <tr key={socio.id} className="border-t hover:bg-gray-50">
                       <td className="p-3 font-mono text-xs">{socio.codigoSocio ?? socio.codigo}</td>
                       <td className="p-3 font-medium text-gray-900">{socio.nombre}</td>
@@ -230,7 +222,7 @@ export default function SociosLista() {
                       </td>
                     </tr>
                   ))}
-                  {filteredData.length === 0 && (
+                  {sociosList.length === 0 && (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-gray-400">
                         No se encontraron socios

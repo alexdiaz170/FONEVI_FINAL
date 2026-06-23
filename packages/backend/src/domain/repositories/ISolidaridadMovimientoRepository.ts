@@ -2,6 +2,8 @@ import { SolidaridadMovimiento } from '../entities/SolidaridadMovimiento.js';
 
 export interface SolidaridadFilter {
   tipo?: string;
+  desde?: Date;
+  hasta?: Date;
   page?: number;
   limit?: number;
 }
@@ -18,4 +20,5 @@ export interface ISolidaridadMovimientoRepository {
   findById(id: string): Promise<SolidaridadMovimiento | null>;
   findAll(filters?: SolidaridadFilter): Promise<SolidaridadListResult>;
   save(movimiento: SolidaridadMovimiento): Promise<SolidaridadMovimiento>;
+  sumMontoByTipo(tipo: string): Promise<number>;
 }

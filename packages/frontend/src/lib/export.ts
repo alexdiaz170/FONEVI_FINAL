@@ -15,12 +15,31 @@ export interface FundInfo {
   representante: string;
 }
 
-const defaultFundInfo: FundInfo = {
-  nombre: 'FONEVI',
-  nombreCompleto: 'Fondo de Empleados Docentes FONEVI',
-  nit: '800.123.456-7',
-  representante: 'Alexander Diaz',
-};
+let cachedFundInfo: FundInfo | null = null;
+
+async function fetchFundInfo(): Promise<FundInfo> {
+  if (cachedFundInfo) return cachedFundInfo;
+  try {
+    const { apiGetConfiguraciones } = await import('./api');
+    const configs = await apiGetConfiguraciones();
+    const get = (clave: string, fallback: string) =>
+      configs.find((c) => c.clave === clave)?.valor ?? fallback;
+    cachedFundInfo = {
+      nombre: get('nombre_institucion', 'FONEVI').split(' ')[0] ?? 'FONEVI',
+      nombreCompleto: get('nombre_institucion', 'Fondo de Empleados Docentes FONEVI'),
+      nit: get('nit_institucion', '800.123.456-7'),
+      representante: get('representante', 'Alexander Diaz'),
+    };
+    return cachedFundInfo;
+  } catch {
+    return {
+      nombre: 'FONEVI',
+      nombreCompleto: 'Fondo de Empleados Docentes FONEVI',
+      nit: '800.123.456-7',
+      representante: 'Alexander Diaz',
+    };
+  }
+}
 
 function loadSvgAsPng(svgUrl: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -72,8 +91,9 @@ export async function exportToPDF<T extends Record<string, unknown>>(
   columns: ExportColumn[],
   titulo: string,
   filename: string,
-  fundInfo: FundInfo = defaultFundInfo,
+  fundInfo?: FundInfo,
 ): Promise<void> {
+  if (!fundInfo) fundInfo = await fetchFundInfo();
   const doc = new jsPDF('landscape', 'mm', 'letter');
 
   let logoDataUrl: string | null = null;

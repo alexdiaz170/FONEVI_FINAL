@@ -6,7 +6,8 @@ export const solicitarCreditoSchema = z.object({
   tasaMensual: z
     .number()
     .positive('La tasa debe ser mayor a 0')
-    .max(100, 'La tasa no puede exceder 100'),
+    .max(100, 'La tasa no puede exceder 100')
+    .optional(),
   cuotas: z.number().int().min(1, 'Debe haber al menos 1 cuota'),
   fechaDesembolso: z
     .string()
@@ -23,6 +24,8 @@ export const pagarCuotaSchema = z.object({
 export const listarCreditosSchema = z.object({
   socioId: z.string().optional(),
   estado: z.string().optional(),
+  fechaDesde: z.string().optional(),
+  fechaHasta: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
 });

@@ -87,9 +87,9 @@ export class Credito {
     const r = this.tasaMensual.tasaDecimal;
     const n = this.cuotas;
     const p = this.monto.value;
-    if (r === 0) return Monto.create(p / n);
+    if (r === 0) return Monto.create(Math.round(p / n));
     const factor = (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-    return Monto.create(Math.round(p * factor * 100) / 100);
+    return Monto.create(Math.round(p * factor));
   }
 
   esActivo(): boolean {

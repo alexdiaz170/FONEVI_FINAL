@@ -1,8 +1,10 @@
 import { LogOut, Bell, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 
 export function Topbar() {
   const { usuario, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
@@ -16,7 +18,11 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="relative p-2 text-gray-500 hover:text-navy-700 hover:bg-gray-100 rounded-full">
+        <button
+          onClick={() => navigate('/notificaciones')}
+          className="relative p-2 text-gray-500 hover:text-navy-700 hover:bg-gray-100 rounded-full"
+          title="Notificaciones"
+        >
           <Bell size={20} />
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
         </button>

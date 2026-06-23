@@ -83,5 +83,16 @@ export function createPeriodoController(periodoRepo: IPeriodoRepository) {
         next(error);
       }
     },
+
+    async eliminar(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+        const id = Number(req.params.id);
+        if (isNaN(id)) throw new ValidationError('ID de período inválido');
+        await periodoRepo.delete(id);
+        apiResponse.success(res, { mensaje: 'Período eliminado correctamente' });
+      } catch (error) {
+        next(error);
+      }
+    },
   };
 }

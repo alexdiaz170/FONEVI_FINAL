@@ -37,7 +37,7 @@ export function createCreditoController(
     configService,
   );
   const listarUseCase = new ListarCreditosUseCase(creditoRepo);
-  const resumenUseCase = new ObtenerResumenCreditosUseCase();
+  const resumenUseCase = new ObtenerResumenCreditosUseCase(creditoRepo);
   const rechazarUseCase = new RechazarCreditoUseCase(creditoRepo);
   const estadoCuentaUseCase = new ObtenerEstadoCuentaUseCase(
     creditoRepo,
@@ -138,8 +138,15 @@ export function createCreditoController(
 
     async list(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const query = listarCreditosSchema.parse(req.query);
-        const result = await listarUseCase.execute(query);
+        const parsed = listarCreditosSchema.parse(req.query);
+        const query: Record<string, unknown> = { ...parsed };
+
+        if (req.usuario?.rol === 'socio' && !query.socioId) {
+          const socio = await socioRepo.findByEmail(req.usuario.email);
+          if (socio) query.socioId = socio.id;
+        }
+
+        const result = await listarUseCase.execute(query as never);
 
         const socioIds = [...new Set(result.data.map((c) => c.socioId))];
         const socios =
@@ -203,7 +210,7 @@ export function createCreditoController(
         if (!parsed.success) {
           throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
         }
-        const credito = await solicitarUseCase.execute(parsed.data);
+        const credito = await solicitarUseCase.execute(parsed.data, req.usuario?.rol);
         apiResponse.created(res, mapCredito(credito));
       } catch (error) {
         next(error);

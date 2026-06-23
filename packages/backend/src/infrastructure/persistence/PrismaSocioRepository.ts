@@ -133,8 +133,15 @@ export class PrismaSocioRepository implements ISocioRepository {
     return rows.map((row) => this.toDomain(row));
   }
 
-  async findPaginated(page: number, limit: number, includeDeleted = false) {
-    const where = includeDeleted ? {} : { deletedAt: null };
+  async findPaginated(page: number, limit: number, includeDeleted = false, buscar?: string) {
+    const where: Record<string, unknown> = {};
+    if (!includeDeleted) where.deletedAt = null;
+    if (buscar) {
+      where.OR = [
+        { nombre: { contains: buscar, mode: 'insensitive' } },
+        { documento: { contains: buscar, mode: 'insensitive' } },
+      ];
+    }
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
@@ -190,8 +197,14 @@ export class PrismaSocioRepository implements ISocioRepository {
   }
 
   async count(includeDeleted = false): Promise<number> {
-    const where = includeDeleted ? {} : { deleted_at: null };
+    const where = includeDeleted ? {} : { deletedAt: null };
     return this.prisma.socio.count({ where: where as never });
+  }
+
+  async countByEstado(estado: string): Promise<number> {
+    return this.prisma.socio.count({
+      where: { estado, deletedAt: null } as never,
+    });
   }
 
   async obtenerMaximoSufijo(): Promise<number> {

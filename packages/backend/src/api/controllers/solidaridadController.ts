@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ISolidaridadMovimientoRepository } from '../../domain/repositories/ISolidaridadMovimientoRepository.js';
+import { IMovimientoRepository } from '../../domain/repositories/IMovimientoRepository.js';
 import { RegistrarSolidaridadUseCase } from '../../application/use-cases/solidaridad/RegistrarSolidaridadUseCase.js';
 import { ListarSolidaridadUseCase } from '../../application/use-cases/solidaridad/ListarSolidaridadUseCase.js';
 import { apiResponse } from '../response.js';
@@ -9,8 +10,11 @@ import {
 } from '../../application/dto/notificacion-solidaridad.dto.js';
 import { ValidationError } from '../../application/errors.js';
 
-export function createSolidaridadController(solidaridadRepo: ISolidaridadMovimientoRepository) {
-  const registrarUseCase = new RegistrarSolidaridadUseCase(solidaridadRepo);
+export function createSolidaridadController(
+  solidaridadRepo: ISolidaridadMovimientoRepository,
+  movimientoRepo: IMovimientoRepository,
+) {
+  const registrarUseCase = new RegistrarSolidaridadUseCase(solidaridadRepo, movimientoRepo);
   const listarUseCase = new ListarSolidaridadUseCase(solidaridadRepo);
 
   function mapSolidaridad(m: {
@@ -37,7 +41,13 @@ export function createSolidaridadController(solidaridadRepo: ISolidaridadMovimie
     async list(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
         const query = listarSolidaridadSchema.parse(req.query);
-        const result = await listarUseCase.execute(query);
+        const result = await listarUseCase.execute({
+          tipo: query.tipo,
+          desde: query.desde ? new Date(query.desde) : undefined,
+          hasta: query.hasta ? new Date(query.hasta) : undefined,
+          page: query.page,
+          limit: query.limit,
+        });
         apiResponse.paginated(
           res,
           result.data.map(mapSolidaridad),

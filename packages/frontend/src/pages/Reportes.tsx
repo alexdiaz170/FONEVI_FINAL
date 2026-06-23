@@ -7,17 +7,21 @@ import {
   apiGetReporteEstadoCuentaSocio,
   apiListarPeriodos,
   apiListarSocios,
+  apiListarDividendos,
+  apiCrearDividendo,
+  apiDistribuirDividendo,
 } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { exportToExcel, exportToPDF, type ExportColumn } from '../lib/export';
 
-type Tab = 'balance' | 'cartera' | 'estado-cuenta' | 'flujo-caja';
+type Tab = 'balance' | 'cartera' | 'estado-cuenta' | 'flujo-caja' | 'dividendos';
 
 const tabs: { key: Tab; label: string }[] = [
   { key: 'balance', label: 'Balance General' },
   { key: 'cartera', label: 'Cartera' },
   { key: 'estado-cuenta', label: 'Estado de Cuenta' },
   { key: 'flujo-caja', label: 'Flujo de Caja' },
+  { key: 'dividendos', label: 'Dividendos' },
 ];
 
 export default function ReportesPage() {
@@ -47,6 +51,7 @@ export default function ReportesPage() {
       {activeTab === 'cartera' && <CarteraTab />}
       {activeTab === 'estado-cuenta' && <EstadoCuentaTab />}
       {activeTab === 'flujo-caja' && <FlujoCajaTab />}
+      {activeTab === 'dividendos' && <DividendosTab />}
     </div>
   );
 }
@@ -670,6 +675,203 @@ function FlujoCajaTab() {
               </tbody>
             </table>
           </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function DividendosTab() {
+  const [page, setPage] = useState(1);
+  const [showCrear, setShowCrear] = useState(false);
+  const [periodo, setPeriodo] = useState('');
+  const [montoTotal, setMontoTotal] = useState('');
+  const [distribuyendoId, setDistribuyendoId] = useState<string | null>(null);
+
+  const { data: socios } = useQuery({
+    queryKey: ['socios-lista'],
+    queryFn: () => apiListarSocios(1, 999),
+  });
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['dividendos', page],
+    queryFn: () => apiListarDividendos(page, 10),
+  });
+
+  const mutationCrear = async () => {
+    if (!periodo || !montoTotal) return;
+    try {
+      await apiCrearDividendo({ periodo, montoTotal: Number(montoTotal) });
+      setShowCrear(false);
+      setPeriodo('');
+      setMontoTotal('');
+      refetch();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Error al crear dividendo');
+    }
+  };
+
+  const mutationDistribuir = async (id: string) => {
+    if (!socios?.data.length) return;
+    setDistribuyendoId(id);
+    try {
+      const socioIds = socios.data.map((s) => s.id);
+      await apiDistribuirDividendo(id, socioIds);
+      refetch();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Error al distribuir dividendo');
+    } finally {
+      setDistribuyendoId(null);
+    }
+  };
+
+  const totalMonto = data?.data.reduce((s, d) => s + d.montoTotal, 0) ?? 0;
+  const distribuidos = data?.data.filter((d) => d.distribuido).length ?? 0;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div />
+        <button
+          onClick={() => setShowCrear(!showCrear)}
+          className="px-3 py-1.5 text-xs bg-navy-700 text-white rounded hover:bg-navy-800"
+        >
+          {showCrear ? 'Cancelar' : '+ Nuevo Dividendo'}
+        </button>
+      </div>
+
+      {showCrear && (
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Crear Dividendo</h3>
+          <div className="flex items-end gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Período</label>
+              <input
+                type="text"
+                value={periodo}
+                onChange={(e) => setPeriodo(e.target.value)}
+                placeholder="Ej: 2026-06"
+                className="px-3 py-2 border rounded-md text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Monto Total</label>
+              <input
+                type="number"
+                value={montoTotal}
+                onChange={(e) => setMontoTotal(e.target.value)}
+                placeholder="0"
+                className="px-3 py-2 border rounded-md text-sm"
+              />
+            </div>
+            <button
+              onClick={mutationCrear}
+              disabled={!periodo || !montoTotal}
+              className="px-3 py-2 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              Guardar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isLoading && <div className="text-gray-400 text-center py-8">Cargando...</div>}
+      {error && <div className="text-red-500 text-center py-8">Error al cargar dividendos</div>}
+
+      {data && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Total Dividendos</p>
+              <p className="text-xl font-bold text-navy-700 mt-1">{data.total}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Monto Acumulado</p>
+              <p className="text-xl font-bold text-green-600 mt-1">{formatCurrency(totalMonto)}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Distribuidos</p>
+              <p className="text-xl font-bold text-orange-600 mt-1">
+                {distribuidos} / {data.total}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-600">
+                <tr>
+                  <th className="text-left px-4 py-3">Período</th>
+                  <th className="text-right px-4 py-3">Monto Total</th>
+                  <th className="text-left px-4 py-3">Fecha Cálculo</th>
+                  <th className="text-center px-4 py-3">Distribuido</th>
+                  <th className="text-left px-4 py-3">Fecha Pago</th>
+                  <th className="text-center px-4 py-3">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {data.data.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="text-center text-gray-400 py-8">
+                      No hay dividendos registrados
+                    </td>
+                  </tr>
+                )}
+                {data.data.map((d) => (
+                  <tr key={d.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium">{d.periodo}</td>
+                    <td className="px-4 py-3 text-right">{formatCurrency(d.montoTotal)}</td>
+                    <td className="px-4 py-3">{formatDate(d.fechaCalculo)}</td>
+                    <td className="px-4 py-3 text-center">
+                      {d.distribuido ? (
+                        <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                          Sí
+                        </span>
+                      ) : (
+                        <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700">
+                          No
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">{d.fechaPago ? formatDate(d.fechaPago) : '—'}</td>
+                    <td className="px-4 py-3 text-center">
+                      {!d.distribuido && (
+                        <button
+                          onClick={() => mutationDistribuir(d.id)}
+                          disabled={distribuyendoId === d.id}
+                          className="px-2 py-1 text-xs bg-navy-600 text-white rounded hover:bg-navy-700 disabled:opacity-50"
+                        >
+                          {distribuyendoId === d.id ? 'Distribuyendo...' : 'Distribuir'}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {data.totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-4">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="px-3 py-1 text-xs border rounded disabled:opacity-30"
+              >
+                Anterior
+              </button>
+              <span className="px-3 py-1 text-xs text-gray-600">
+                Página {data.page} de {data.totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
+                disabled={page >= data.totalPages}
+                className="px-3 py-1 text-xs border rounded disabled:opacity-30"
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

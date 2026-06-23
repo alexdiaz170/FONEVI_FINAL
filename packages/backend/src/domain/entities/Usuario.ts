@@ -1,7 +1,7 @@
 import { Email } from '@fonevi/shared';
 import { DomainError } from '../errors.js';
 
-export type UsuarioRol = 'admin' | 'socio' | 'superadmin';
+export type UsuarioRol = 'admin' | 'socio' | 'superadmin' | 'contador';
 export type UsuarioEstado = 'activo' | 'inactivo' | 'suspendido';
 
 export interface UsuarioProps {
@@ -40,7 +40,7 @@ export class Usuario {
     if (!props.nombre || props.nombre.trim().length < 2) {
       throw new DomainError('El nombre debe tener al menos 2 caracteres');
     }
-    if (!['admin', 'socio', 'superadmin'].includes(props.rol)) {
+    if (!['admin', 'socio', 'superadmin', 'contador'].includes(props.rol)) {
       throw new DomainError('Rol de usuario inválido');
     }
     return new Usuario(props);
@@ -60,6 +60,18 @@ export class Usuario {
 
   desactivar(): Usuario {
     return new Usuario({ ...this.toProps(), estado: 'inactivo' });
+  }
+
+  cambiarNombre(nombre: string): Usuario {
+    return new Usuario({ ...this.toProps(), nombre });
+  }
+
+  cambiarEmail(email: string): Usuario {
+    return new Usuario({ ...this.toProps(), email: Email.create(email) });
+  }
+
+  cambiarRol(rol: UsuarioRol): Usuario {
+    return new Usuario({ ...this.toProps(), rol });
   }
 
   toProps(): UsuarioProps {

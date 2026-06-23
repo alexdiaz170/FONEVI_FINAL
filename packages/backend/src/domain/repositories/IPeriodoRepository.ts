@@ -7,4 +7,5 @@ export interface IPeriodoRepository {
   findAll(): Promise<Periodo[]>;
   save(periodo: Periodo): Promise<Periodo>;
   update(periodo: Periodo): Promise<Periodo>;
+  delete(id: number): Promise<void>;
 }

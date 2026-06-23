@@ -14,7 +14,7 @@ const aporteController = createAporteController(aporteRepo, periodoRepo, socioRe
 router.get(
   '/',
   authenticate,
-  authorize('admin', 'superadmin'),
+  authorize('admin', 'superadmin', 'socio'),
   aporteController.list.bind(aporteController),
 );
 router.get('/periodos', authenticate, aporteController.periodos.bind(aporteController));

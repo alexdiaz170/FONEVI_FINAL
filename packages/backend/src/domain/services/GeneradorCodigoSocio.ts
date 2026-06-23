@@ -14,6 +14,9 @@ export class GeneradorCodigoSocio {
 
 export function generarPasswordInicial(documento: string): string {
   const texto = String(documento || '').trim();
-  if (!texto) return 'fono1234';
-  return texto.length > 4 ? texto.slice(-4) : texto;
+  if (!texto) return 'fono123456';
+  const digitos = texto.replace(/\D/g, '');
+  if (digitos.length >= 6) return digitos.slice(-6);
+  if (digitos.length > 0) return digitos.padStart(6, '0');
+  return 'fono123456';
 }

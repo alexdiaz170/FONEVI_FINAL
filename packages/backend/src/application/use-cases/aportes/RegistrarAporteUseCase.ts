@@ -13,6 +13,7 @@ import {
 import { DomainError, EntityNotFoundError } from '../../../domain/errors.js';
 import { getPrismaClient } from '../../../infrastructure/persistence/prismaClient.js';
 import { CalculadorCuota } from '../../../domain/services/CalculadorCuota.js';
+import { ConfiguracionService } from '../../services/ConfiguracionService.js';
 
 export class RegistrarAporteUseCase {
   constructor(
@@ -20,6 +21,7 @@ export class RegistrarAporteUseCase {
     private readonly periodoRepo: IPeriodoRepository,
     private readonly socioRepo: ISocioRepository,
     private readonly distribucionService: DistribucionAporteService,
+    private readonly configService: ConfiguracionService,
   ) {}
 
   async execute(dto: {
@@ -49,14 +51,20 @@ export class RegistrarAporteUseCase {
 
     const prisma = getPrismaClient();
 
-    const [solidaridadCfg, seguroCfg, ahorroCfg] = await Promise.all([
-      prisma.configuracion.findUnique({ where: { clave: 'valor_solidaridad' } }),
-      prisma.configuracion.findUnique({ where: { clave: 'porcentaje_seguro' } }),
-      prisma.configuracion.findUnique({ where: { clave: 'valor_ahorro_mensual' } }),
-    ]);
-    const valorSolidaridad = Number(solidaridadCfg?.valor ?? 5000);
-    const tasaSeguro = Number(seguroCfg?.valor ?? 0.5) / 1000;
-    const valorAhorroMensual = Number(ahorroCfg?.valor ?? 125000);
+    const [valorSolidaridad, tasaSeguro, valorAhorroMensual, valorMinimoAporte] = await Promise.all(
+      [
+        this.configService.getValorSolidaridad(),
+        this.configService.getTasaSeguro(),
+        this.configService.getValorAhorroMensual(),
+        this.configService.getValorMinimoAporte(),
+      ],
+    );
+
+    if (montoTotal.value < valorMinimoAporte) {
+      throw new DomainError(
+        `El monto del aporte (${montoTotal.value}) es menor al mínimo permitido (${valorMinimoAporte})`,
+      );
+    }
 
     return await prisma.$transaction(async () => {
       let creditoActivo: CreditoActivo | null = null;
@@ -142,7 +150,9 @@ export class RegistrarAporteUseCase {
           ? 'Adelanto Cuotas'
           : dto.tipoOperacion === 'abono_credito'
             ? 'Abono Crédito'
-            : 'Cuota Normal';
+            : dto.tipoOperacion === 'abono_ahorro'
+              ? 'Abono Ahorro'
+              : 'Cuota Normal';
 
       await prisma.movimiento.create({
         data: {

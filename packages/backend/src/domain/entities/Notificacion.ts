@@ -7,6 +7,8 @@ export interface NotificacionProps {
   mensaje: string;
   leida?: boolean;
   urgente?: boolean;
+  referenciaId?: string | null;
+  referenciaTipo?: string | null;
   createdAt?: Date;
 }
 
@@ -17,6 +19,8 @@ export class Notificacion {
   readonly mensaje: string;
   readonly leida: boolean;
   readonly urgente: boolean;
+  readonly referenciaId: string | null;
+  readonly referenciaTipo: string | null;
   readonly createdAt: Date;
 
   private constructor(props: NotificacionProps) {
@@ -26,6 +30,8 @@ export class Notificacion {
     this.mensaje = props.mensaje;
     this.leida = props.leida ?? false;
     this.urgente = props.urgente ?? false;
+    this.referenciaId = props.referenciaId ?? null;
+    this.referenciaTipo = props.referenciaTipo ?? null;
     this.createdAt = props.createdAt ?? new Date();
   }
 

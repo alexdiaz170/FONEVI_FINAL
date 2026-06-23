@@ -21,5 +21,11 @@ router.post(
   authorize('admin', 'superadmin'),
   controller.activate.bind(controller),
 );
+router.delete(
+  '/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  controller.eliminar.bind(controller),
+);
 
 export default router;

@@ -15,6 +15,7 @@ import {
 } from '../../application/dto/aporte.dto.js';
 import { ValidationError } from '../../application/errors.js';
 import { getPrismaClient } from '../../infrastructure/persistence/prismaClient.js';
+import { ConfiguracionService } from '../../application/services/ConfiguracionService.js';
 
 export function createAporteController(
   aporteRepo: IAporteRepository,
@@ -22,11 +23,13 @@ export function createAporteController(
   socioRepo: ISocioRepository,
 ) {
   const distribucionService = new DistribucionAporteService();
+  const configService = new ConfiguracionService();
   const registrarUseCase = new RegistrarAporteUseCase(
     aporteRepo,
     periodoRepo,
     socioRepo,
     distribucionService,
+    configService,
   );
   const actualizarUseCase = new ActualizarAporteUseCase(aporteRepo);
   const listarUseCase = new ListarAportesUseCase(aporteRepo);
@@ -83,8 +86,15 @@ export function createAporteController(
   return {
     async list(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const query = listarAportesSchema.parse(req.query);
-        const result = await listarUseCase.execute(query);
+        const parsed = listarAportesSchema.parse(req.query);
+        const query: Record<string, unknown> = { ...parsed };
+
+        if (req.usuario?.rol === 'socio' && !query.socioId) {
+          const socio = await socioRepo.findByEmail(req.usuario.email);
+          if (socio) query.socioId = socio.id;
+        }
+
+        const result = await listarUseCase.execute(query as never);
 
         const socioIds = [...new Set(result.data.map((a) => a.socioId))];
         const socios =

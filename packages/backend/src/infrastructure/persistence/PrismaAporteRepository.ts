@@ -84,11 +84,23 @@ export class PrismaAporteRepository implements IAporteRepository {
   }
 
   async findAll(filters: AporteFilter = {}): Promise<AporteListResult> {
-    const { socioId, periodoId, estado, page = 1, limit = 10 } = filters;
+    const { socioId, periodoId, estado, q, page = 1, limit = 10 } = filters;
     const where: Record<string, unknown> = {};
     if (socioId) where.socioId = socioId;
     if (periodoId) where.periodoId = periodoId;
     if (estado) where.estado = estado;
+    if (q) {
+      const sociosMatch = (await this.prisma.socio.findMany({
+        where: {
+          OR: [
+            { nombre: { contains: q, mode: 'insensitive' } },
+            { documento: { contains: q, mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true },
+      })) as { id: string }[];
+      where.socioId = { in: sociosMatch.map((s) => s.id) };
+    }
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
@@ -161,6 +173,18 @@ export class PrismaAporteRepository implements IAporteRepository {
   async delete(id: string): Promise<void> {
     await this.prisma.aporteDetalle.deleteMany({ where: { aporteId: id } });
     await this.prisma.aporte.deleteMany({ where: { id } });
+  }
+
+  async sumMontoByEstado(estado: string, desde?: Date): Promise<number> {
+    const where: Record<string, unknown> = { estado };
+    if (desde) {
+      where.fechaPago = { gte: desde };
+    }
+    const result = (await this.prisma.aporte.aggregate({
+      where: where as never,
+      _sum: { monto: true },
+    })) as unknown as { _sum: { monto: number | null } };
+    return Number(result._sum.monto ?? 0);
   }
 
   async recalcularAhorroAcumulado(socioId: string): Promise<Monto> {

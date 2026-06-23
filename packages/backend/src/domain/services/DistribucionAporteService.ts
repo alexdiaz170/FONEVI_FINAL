@@ -40,7 +40,20 @@ export class DistribucionAporteService {
     const tasaSeguro = tasaSeguroOverride ?? this.tasaSeguro;
     const ahorroMensual = aporteAhorroMensualOverride ?? this.aporteAhorroMensual;
 
-    if (tipoOperacion === 'adelanto_cuotas' && !creditoActivo) {
+    if (tipoOperacion === 'abono_ahorro') {
+      return {
+        pagoSolidaridad: Monto.create(0),
+        pagoInteres: Monto.create(0),
+        pagoSeguro: Monto.create(0),
+        pagoCapital: Monto.create(0),
+        totalPagoCredito: Monto.create(0),
+        ahorro: montoTotal,
+        nuevoSaldoCapital: creditoActivo?.saldoCapital ?? Monto.create(0),
+        creditoPagado: false,
+      };
+    }
+
+    if (tipoOperacion === 'adelanto_cuotas') {
       const costoPorPeriodo = aporteSolidaridad + ahorroMensual;
       const numPeriodos = Math.floor(montoTotal.value / costoPorPeriodo) || 1;
       const solidaridadTotal = numPeriodos * aporteSolidaridad;
@@ -81,13 +94,13 @@ export class DistribucionAporteService {
         pagoSeguro = Monto.create(0);
         restante = Monto.create(0);
       } else {
-        // Cuota normal: periodo fijo de 30 días (coincide con la tabla de amortización)
-        pagoInteres = Monto.create(Number((saldo.value * tasaDecimal).toFixed(2)));
+        // Cuota normal: redondeo a enteros (consistente con tabla de amortización)
+        pagoInteres = Monto.create(Math.round(saldo.value * tasaDecimal));
         pagoInteres = restante.esMenorQue(pagoInteres) ? restante : pagoInteres;
         restante = restante.restar(pagoInteres);
 
         if (restante.value > 0) {
-          pagoSeguro = Monto.create(Number((saldo.value * tasaSeguro).toFixed(2)));
+          pagoSeguro = Monto.create(Math.round(saldo.value * tasaSeguro));
           pagoSeguro = restante.esMenorQue(pagoSeguro) ? restante : pagoSeguro;
           restante = restante.restar(pagoSeguro);
         }

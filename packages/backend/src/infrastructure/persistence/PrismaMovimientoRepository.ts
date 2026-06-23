@@ -48,7 +48,7 @@ export class PrismaMovimientoRepository implements IMovimientoRepository {
   }
 
   async findAll(filters: MovimientoFilter = {}): Promise<MovimientoListResult> {
-    const { tipo, categoria, desde, hasta, page = 1, limit = 10 } = filters;
+    const { tipo, categoria, desde, hasta, q, page = 1, limit = 10 } = filters;
     const where: Record<string, unknown> = {};
     if (tipo) where.tipo = tipo;
     if (categoria) where.categoria = categoria;
@@ -57,6 +57,12 @@ export class PrismaMovimientoRepository implements IMovimientoRepository {
       if (desde) fechaFilter.gte = desde;
       if (hasta) fechaFilter.lte = hasta;
       where.fecha = fechaFilter;
+    }
+    if (q) {
+      where.OR = [
+        { descripcion: { contains: q, mode: 'insensitive' } },
+        { categoria: { contains: q, mode: 'insensitive' } },
+      ];
     }
     const skip = (page - 1) * limit;
 
@@ -120,5 +126,13 @@ export class PrismaMovimientoRepository implements IMovimientoRepository {
 
   async delete(id: string): Promise<void> {
     await this.prisma.movimiento.delete({ where: { id } });
+  }
+
+  async sumMontoByTipo(tipo: string): Promise<number> {
+    const result = await this.prisma.movimiento.aggregate({
+      where: { tipo } as never,
+      _sum: { monto: true },
+    });
+    return Number(result._sum.monto ?? 0);
   }
 }

@@ -85,4 +85,8 @@ export class PrismaPeriodoRepository implements IPeriodoRepository {
     })) as unknown as PeriodoRow;
     return this.toDomain(row);
   }
+
+  async delete(id: number): Promise<void> {
+    await this.prisma.periodo.delete({ where: { id } });
+  }
 }

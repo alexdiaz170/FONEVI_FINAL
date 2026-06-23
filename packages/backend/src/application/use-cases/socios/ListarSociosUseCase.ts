@@ -12,8 +12,13 @@ export interface SociosListResult {
 export class ListarSociosUseCase {
   constructor(private readonly socioRepo: ISocioRepository) {}
 
-  async execute(page: number, limit: number, includeDeleted = false): Promise<SociosListResult> {
-    return this.socioRepo.findPaginated(page, limit, includeDeleted);
+  async execute(
+    page: number,
+    limit: number,
+    includeDeleted = false,
+    buscar?: string,
+  ): Promise<SociosListResult> {
+    return this.socioRepo.findPaginated(page, limit, includeDeleted, buscar);
   }
 
   async listAll(includeDeleted = false): Promise<Socio[]> {

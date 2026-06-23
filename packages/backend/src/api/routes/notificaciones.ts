@@ -15,5 +15,11 @@ router.post(
   controller.create.bind(controller),
 );
 router.patch('/:id/leer', authenticate, controller.marcarLeida.bind(controller));
+router.delete(
+  '/:id',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  controller.eliminar.bind(controller),
+);
 
 export default router;

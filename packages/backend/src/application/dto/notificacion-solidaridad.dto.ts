@@ -5,6 +5,8 @@ export const crearNotificacionSchema = z.object({
   titulo: z.string().min(2, 'El título debe tener al menos 2 caracteres'),
   mensaje: z.string().min(3, 'El mensaje debe tener al menos 3 caracteres'),
   urgente: z.boolean().optional(),
+  referenciaId: z.string().optional(),
+  referenciaTipo: z.string().optional(),
 });
 
 export const listarNotificacionesSchema = z.object({
@@ -23,10 +25,13 @@ export const registrarSolidaridadSchema = z.object({
   monto: z.number().positive('El monto debe ser mayor a 0'),
   fecha: z.string().optional(),
   beneficiario: z.string().nullable().optional(),
+  socioId: z.string().optional(),
 });
 
 export const listarSolidaridadSchema = z.object({
   tipo: z.enum(['ingreso', 'egreso']).optional(),
+  desde: z.string().optional(),
+  hasta: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(99999).default(10),
 });

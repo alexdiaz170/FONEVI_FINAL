@@ -1,9 +1,14 @@
 import { Monto } from '@fonevi/shared';
 import { SolidaridadMovimiento } from '../../../domain/entities/SolidaridadMovimiento.js';
 import { ISolidaridadMovimientoRepository } from '../../../domain/repositories/ISolidaridadMovimientoRepository.js';
+import { IMovimientoRepository } from '../../../domain/repositories/IMovimientoRepository.js';
+import { Movimiento } from '../../../domain/entities/Movimiento.js';
 
 export class RegistrarSolidaridadUseCase {
-  constructor(private readonly solidaridadRepo: ISolidaridadMovimientoRepository) {}
+  constructor(
+    private readonly solidaridadRepo: ISolidaridadMovimientoRepository,
+    private readonly movimientoRepo: IMovimientoRepository,
+  ) {}
 
   async execute(dto: {
     tipo: string;
@@ -11,6 +16,7 @@ export class RegistrarSolidaridadUseCase {
     monto: number;
     fecha?: string | null;
     beneficiario?: string | null;
+    socioId?: string;
   }): Promise<SolidaridadMovimiento> {
     const monto = Monto.create(dto.monto);
     const fecha = dto.fecha ? new Date(dto.fecha) : new Date();
@@ -23,6 +29,19 @@ export class RegistrarSolidaridadUseCase {
       beneficiario: dto.beneficiario ?? null,
     });
 
-    return await this.solidaridadRepo.save(movimiento);
+    const solidaridadMov = await this.solidaridadRepo.save(movimiento);
+
+    const mov = Movimiento.create({
+      tipo: dto.tipo,
+      categoria: 'Solidaridad',
+      descripcion: `[Solidaridad] ${dto.descripcion}`,
+      monto,
+      fecha,
+      socioId: dto.socioId,
+    });
+
+    await this.movimientoRepo.save(mov);
+
+    return solidaridadMov;
   }
 }

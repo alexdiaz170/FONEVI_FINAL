@@ -11,10 +11,12 @@ export interface ISocioRepository extends ICodigoSocioRepository {
     page: number,
     limit: number,
     includeDeleted?: boolean,
+    buscar?: string,
   ): Promise<{ data: Socio[]; total: number; page: number; limit: number; totalPages: number }>;
   save(socio: Socio): Promise<Socio>;
   update(socio: Socio): Promise<Socio>;
   softDelete(id: string): Promise<void>;
   hardDelete(id: string): Promise<void>;
   count(includeDeleted?: boolean): Promise<number>;
+  countByEstado(estado: string): Promise<number>;
 }

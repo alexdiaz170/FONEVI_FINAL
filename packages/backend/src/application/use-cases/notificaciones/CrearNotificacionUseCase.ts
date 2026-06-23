@@ -9,12 +9,16 @@ export class CrearNotificacionUseCase {
     titulo: string;
     mensaje: string;
     urgente?: boolean;
+    referenciaId?: string;
+    referenciaTipo?: string;
   }): Promise<Notificacion> {
     const notificacion = Notificacion.create({
       tipo: dto.tipo,
       titulo: dto.titulo,
       mensaje: dto.mensaje,
       urgente: dto.urgente ?? false,
+      referenciaId: dto.referenciaId ?? null,
+      referenciaTipo: dto.referenciaTipo ?? null,
     });
     return await this.notificacionRepo.save(notificacion);
   }

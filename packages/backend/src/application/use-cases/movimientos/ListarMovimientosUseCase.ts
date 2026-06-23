@@ -11,6 +11,7 @@ export class ListarMovimientosUseCase {
     categoria?: string;
     desde?: string;
     hasta?: string;
+    q?: string;
     page?: number;
     limit?: number;
   }): Promise<MovimientoListResult> {
@@ -19,6 +20,7 @@ export class ListarMovimientosUseCase {
       categoria: filters.categoria,
       desde: filters.desde ? new Date(filters.desde) : undefined,
       hasta: filters.hasta ? new Date(filters.hasta) : undefined,
+      q: filters.q,
       page: filters.page ?? 1,
       limit: filters.limit ?? 10,
     });

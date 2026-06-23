@@ -5,6 +5,7 @@ export interface MovimientoFilter {
   categoria?: string;
   desde?: Date;
   hasta?: Date;
+  q?: string;
   page?: number;
   limit?: number;
 }
@@ -23,4 +24,5 @@ export interface IMovimientoRepository {
   save(movimiento: Movimiento): Promise<Movimiento>;
   update(movimiento: Movimiento): Promise<Movimiento>;
   delete(id: string): Promise<void>;
+  sumMontoByTipo(tipo: string): Promise<number>;
 }

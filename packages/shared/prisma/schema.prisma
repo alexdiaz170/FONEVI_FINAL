@@ -143,13 +143,15 @@ model PagoCuota {
 }
 
 model Notificacion {
-  id        String   @id @default(uuid())
-  tipo      String
-  titulo    String
-  mensaje   String
-  leida     Boolean  @default(false)
-  urgente   Boolean  @default(false)
-  createdAt DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  tipo          String
+  titulo        String
+  mensaje       String
+  leida         Boolean  @default(false)
+  urgente       Boolean  @default(false)
+  referenciaId  String?  @map("referencia_id")
+  referenciaTipo String? @map("referencia_tipo")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   @@map("notificaciones")
 }

@@ -13,15 +13,18 @@ export class SolicitarCreditoUseCase {
     private readonly configService: ConfiguracionService,
   ) {}
 
-  async execute(dto: {
-    socioId: string;
-    monto: number;
-    tasaMensual: number;
-    cuotas: number;
-    fechaDesembolso?: string | null;
-    proposito?: string | null;
-    notas?: string | null;
-  }): Promise<Credito> {
+  async execute(
+    dto: {
+      socioId: string;
+      monto: number;
+      tasaMensual?: number;
+      cuotas: number;
+      fechaDesembolso?: string | null;
+      proposito?: string | null;
+      notas?: string | null;
+    },
+    rol?: string,
+  ): Promise<Credito> {
     const socio = await this.socioRepo.findById(dto.socioId);
     if (!socio) throw new EntityNotFoundError('Socio', dto.socioId);
 
@@ -30,17 +33,25 @@ export class SolicitarCreditoUseCase {
     }
 
     const multiplicador = await this.configService.getMultiplicadorMaximoCredito();
-    const maxMonto = socio.ahorroAcumulado.value * multiplicador;
+    const capacidadBase = socio.ahorroAcumulado.value * multiplicador;
+    const deudaActivaSaldoCapital = await this.creditoRepo.sumSaldoCapitalBySocioId(dto.socioId);
+    const maxMonto = Math.max(0, capacidadBase - deudaActivaSaldoCapital);
     if (dto.monto > maxMonto) {
       throw new DomainError(
-        `El monto del crédito ($${dto.monto.toLocaleString('es-CO')}) excede el máximo permitido. ` +
-          `Basado en el ahorro acumulado del socio ($${socio.ahorroAcumulado.value.toLocaleString('es-CO')} × ${multiplicador}), ` +
-          `el máximo es $${maxMonto.toLocaleString('es-CO')}.`,
+        `El monto del crédito ($${dto.monto.toLocaleString('es-CO')}) excede el máximo disponible. ` +
+          `Basado en el ahorro acumulado ($${socio.ahorroAcumulado.value.toLocaleString('es-CO')} × ${multiplicador}) ` +
+          `menos la deuda activa ($${deudaActivaSaldoCapital.toLocaleString('es-CO')}), ` +
+          `el máximo disponible es $${maxMonto.toLocaleString('es-CO')}.`,
       );
     }
 
     const monto = Monto.create(dto.monto);
-    const tasaMensual = TasaInteres.create(dto.tasaMensual);
+    const esAdmin = rol === 'admin' || rol === 'superadmin';
+    const tasaRaw =
+      esAdmin && dto.tasaMensual !== undefined
+        ? dto.tasaMensual
+        : await this.configService.getTasaInteresMensual();
+    const tasaMensual = TasaInteres.create(tasaRaw);
     const fechaDesembolso = dto.fechaDesembolso ? new Date(dto.fechaDesembolso) : new Date();
 
     const credito = Credito.create({

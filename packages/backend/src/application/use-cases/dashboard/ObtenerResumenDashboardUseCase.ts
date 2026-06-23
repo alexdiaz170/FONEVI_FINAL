@@ -1,4 +1,4 @@
-import { getPrismaClient } from '../../../infrastructure/persistence/prismaClient.js';
+import { IDashboardRepository } from '../../../domain/repositories/IDashboardRepository.js';
 
 export interface ResumenDashboard {
   socios: {
@@ -30,83 +30,42 @@ export interface ResumenDashboard {
 }
 
 export class ObtenerResumenDashboardUseCase {
+  constructor(private readonly dashboardRepo: IDashboardRepository) {}
+
   async execute(): Promise<ResumenDashboard> {
-    const prisma = getPrismaClient();
+    const inicioMes = new Date();
+    inicioMes.setDate(1);
+    inicioMes.setHours(0, 0, 0, 0);
 
-    const [
-      totalSocios,
-      sociosActivos,
-      sociosMora,
-      totalAhorros,
-      creditosActivos,
-      creditosPagados,
-      totalSolidaridad,
-      totalAportes,
-      movimientosIngresos,
-      movimientosEgresos,
-      configReservas,
-      aportesMes,
-    ] = await Promise.all([
-      prisma.socio.count({ where: { deletedAt: null } }),
-      prisma.socio.count({ where: { estado: 'activo', deletedAt: null } }),
-      prisma.socio.count({ where: { estado: 'mora', deletedAt: null } }),
-      prisma.socio.aggregate({ _sum: { ahorroAcumulado: true }, where: { deletedAt: null } }),
-      prisma.credito.count({ where: { estado: 'activo', deletedAt: null } }),
-      prisma.credito.count({ where: { estado: 'pagado' } }),
-      prisma.solidaridadMovimiento.aggregate({ _sum: { monto: true }, where: { tipo: 'ingreso' } }),
-      prisma.aporte.aggregate({ _sum: { monto: true }, where: { estado: 'pagado' } }),
-      prisma.movimiento.aggregate({ _sum: { monto: true }, where: { tipo: 'ingreso' } }),
-      prisma.movimiento.aggregate({ _sum: { monto: true }, where: { tipo: 'egreso' } }),
-      prisma.configuracion.findUnique({ where: { clave: 'reservas' } }),
-      prisma.aporte.aggregate({
-        _sum: { monto: true },
-        where: {
-          estado: 'pagado',
-          fechaPago: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-          },
-        },
-      }),
-    ]);
-
-    const [creditosMontoData, creditosSaldoData] = await Promise.all([
-      prisma.credito.aggregate({
-        _sum: { monto: true },
-        where: { estado: { in: ['activo', 'pagado'] }, deletedAt: null },
-      }),
-      prisma.credito.aggregate({
-        _sum: { saldoCapital: true },
-        where: { estado: 'activo', deletedAt: null },
-      }),
-    ]);
+    const r = await this.dashboardRepo.getResumen(inicioMes);
 
     return {
       socios: {
-        activos: sociosActivos,
-        enMora: sociosMora,
-        total: totalSocios,
+        activos: r.sociosActivos,
+        enMora: r.sociosMora,
+        total: r.totalSocios,
       },
       ahorros: {
-        totalAcumulado: Number(totalAhorros._sum.ahorroAcumulado ?? 0),
+        totalAcumulado: r.totalAhorros,
       },
       creditos: {
-        activos: creditosActivos,
-        montoPrestado: Number(creditosMontoData._sum.monto ?? 0),
-        saldoPorCobrar: Number(creditosSaldoData._sum.saldoCapital ?? 0),
-        pagados: creditosPagados,
+        activos: r.creditosActivos,
+        montoPrestado: r.montoPrestado,
+        saldoPorCobrar: r.saldoPorCobrar,
+        pagados: r.creditosPagados,
       },
       aportes: {
-        delMes: Number(aportesMes._sum.monto ?? 0),
-        totalRecibido: Number(totalAportes._sum.monto ?? 0),
+        delMes: r.aportesMes,
+        totalRecibido: r.totalAportes,
       },
       solidaridad: {
-        totalRecibido: Number(totalSolidaridad._sum.monto ?? 0),
+        totalRecibido: r.solidaridadTotal,
       },
       movimientos: {
-        ingresos: Number(movimientosIngresos._sum.monto ?? 0),
-        egresos: Number(movimientosEgresos._sum.monto ?? 0),
+        ingresos: r.ingresos,
+        egresos: r.egresos,
       },
-      reservas: Number(configReservas?.valor ?? 2500000),
+      reservas: r.reservas,
     };
   }
 }

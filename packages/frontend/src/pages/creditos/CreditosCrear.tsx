@@ -6,6 +6,7 @@ import {
   apiCrearCredito,
   apiCalcularCredito,
   apiListarSocios,
+  apiListarCreditos,
   apiGetConfiguraciones,
   type AmortizacionPreviewDTO,
 } from '../../lib/api';
@@ -69,9 +70,9 @@ export default function CreditosCrear() {
       setError('Debe haber al menos 1 cuota');
       return;
     }
-    if (monto > maxCredito) {
+    if (monto > capacidadDisponible) {
       setError(
-        `El monto excede el máximo permitido. El socio tiene ${formatCurrency(socioSeleccionado!.ahorroAcumulado)} de ahorro × ${multiplicador} = ${formatCurrency(maxCredito)}`,
+        `El monto excede la capacidad disponible. Ahorro: ${formatCurrency(socioSeleccionado!.ahorroAcumulado)} × ${multiplicador} = ${formatCurrency(maxCredito)}${deudaActiva > 0 ? ` - deuda activa ${formatCurrency(deudaActiva)}` : ''} = ${formatCurrency(capacidadDisponible)}`,
       );
       return;
     }
@@ -111,9 +112,30 @@ export default function CreditosCrear() {
   const multiplicador = Number(
     configs?.find((c) => c.clave === 'multiplicador_maximo_credito')?.valor ?? 4,
   );
+  const tasaFromConfig = configs?.find((c) => c.clave === 'tasa_interes_mensual')?.valor;
 
   const socioSeleccionado = sociosData?.data.find((s) => s.id === form.socioId);
   const maxCredito = socioSeleccionado ? socioSeleccionado.ahorroAcumulado * multiplicador : 0;
+
+  const { data: creditosData } = useQuery({
+    queryKey: ['creditos-socio', form.socioId],
+    queryFn: () =>
+      apiListarCreditos({ socioId: form.socioId, estado: 'activo,pendiente', limit: 100 }),
+    enabled: !!form.socioId,
+  });
+  const deudaActiva = creditosData?.data.reduce((sum, c) => sum + c.saldoCapital, 0) ?? 0;
+  const capacidadDisponible = Math.max(0, maxCredito - deudaActiva);
+
+  useEffect(() => {
+    if (tasaFromConfig !== undefined) {
+      setForm((prev) => {
+        if (prev.tasaMensual !== tasaFromConfig) {
+          return { ...prev, tasaMensual: tasaFromConfig };
+        }
+        return prev;
+      });
+    }
+  }, [tasaFromConfig]);
 
   const montoNum = Number(form.monto);
   const tasaNum = Number(form.tasaMensual);
@@ -179,18 +201,27 @@ export default function CreditosCrear() {
             </select>
           </div>
           {socioSeleccionado && (
-            <div className="md:col-span-2 bg-gray-50 border border-gray-200 rounded p-3 text-sm">
+            <div className="md:col-span-2 bg-gray-50 border border-gray-200 rounded p-3 text-sm space-y-1">
               <p className="text-gray-600">
                 <span className="font-medium">Ahorro acumulado:</span>{' '}
                 {formatCurrency(socioSeleccionado.ahorroAcumulado)}
                 <span className="mx-2">·</span>
-                <span className="font-medium">Máximo crédito:</span>{' '}
-                <span
-                  className={montoNum > maxCredito ? 'text-red-600 font-bold' : 'text-gray-900'}
-                >
-                  {formatCurrency(maxCredito)}
-                </span>
+                <span className="font-medium">Capacidad total:</span> {formatCurrency(maxCredito)}
                 <span className="ml-1 text-gray-400">(×{multiplicador})</span>
+              </p>
+              {deudaActiva > 0 && (
+                <p className="text-gray-600">
+                  <span className="font-medium">Deuda activa:</span>{' '}
+                  <span className="text-orange-600">{formatCurrency(deudaActiva)}</span>
+                </p>
+              )}
+              <p className="text-gray-600">
+                <span className="font-medium">Capacidad disponible:</span>{' '}
+                <span
+                  className={`font-bold ${montoNum > capacidadDisponible ? 'text-red-600' : 'text-green-700'}`}
+                >
+                  {formatCurrency(capacidadDisponible)}
+                </span>
               </p>
             </div>
           )}
@@ -208,16 +239,18 @@ export default function CreditosCrear() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tasa Mensual % *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tasa Mensual %
+              <span className="text-gray-400 font-normal ml-1">(desde configuración)</span>
+            </label>
             <input
               name="tasaMensual"
               type="number"
               min="0"
               step="0.1"
               value={form.tasaMensual}
-              onChange={handleChange}
-              placeholder="0.0"
-              className="w-full px-3 py-2 border rounded-md text-sm"
+              readOnly
+              className="w-full px-3 py-2 border rounded-md text-sm bg-gray-100 text-gray-500 cursor-not-allowed"
             />
           </div>
           <div>

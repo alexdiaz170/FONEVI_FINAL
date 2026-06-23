@@ -5,6 +5,7 @@ import { MoraService } from '../../domain/services/MoraService.js';
 import { CalcularMoraUseCase } from '../../application/use-cases/mora/CalcularMoraUseCase.js';
 import { RegistrarAcuerdoUseCase } from '../../application/use-cases/mora/RegistrarAcuerdoUseCase.js';
 import { ListarAcuerdosUseCase } from '../../application/use-cases/mora/ListarAcuerdosUseCase.js';
+import { ConfiguracionService } from '../../application/services/ConfiguracionService.js';
 import { apiResponse } from '../response.js';
 import {
   registrarAcuerdoSchema,
@@ -17,7 +18,8 @@ export function createMoraController(
   socioRepo: ISocioRepository,
 ) {
   const moraService = new MoraService();
-  const calcularUseCase = new CalcularMoraUseCase(moraService);
+  const configService = new ConfiguracionService();
+  const calcularUseCase = new CalcularMoraUseCase(moraService, configService);
   const registrarAcuerdoUseCase = new RegistrarAcuerdoUseCase(acuerdoRepo, socioRepo);
   const listarAcuerdosUseCase = new ListarAcuerdosUseCase(acuerdoRepo);
 

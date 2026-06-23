@@ -8,6 +8,8 @@ export class ListarSolidaridadUseCase {
 
   async execute(filters: {
     tipo?: string;
+    desde?: Date;
+    hasta?: Date;
     page?: number;
     limit?: number;
   }): Promise<SolidaridadListResult> {

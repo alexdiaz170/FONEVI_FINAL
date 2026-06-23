@@ -4,10 +4,12 @@ import { ObtenerCarteraUseCase } from '../../application/use-cases/reportes/Obte
 import { ObtenerFlujoCajaUseCase } from '../../application/use-cases/reportes/ObtenerFlujoCajaUseCase.js';
 import { ObtenerEstadoCuentaSocioUseCase } from '../../application/use-cases/reportes/ObtenerEstadoCuentaSocioUseCase.js';
 import { CalculadorBalanceGeneral } from '../../domain/services/contabilidad.js';
+import { ConfiguracionService } from '../../application/services/ConfiguracionService.js';
 import { apiResponse } from '../response.js';
 
 export function createReporteController() {
-  const balanceUseCase = new ObtenerBalanceUseCase(new CalculadorBalanceGeneral());
+  const configService = new ConfiguracionService();
+  const balanceUseCase = new ObtenerBalanceUseCase(new CalculadorBalanceGeneral(), configService);
   const carteraUseCase = new ObtenerCarteraUseCase();
   const flujoCajaUseCase = new ObtenerFlujoCajaUseCase();
   const estadoCuentaSocioUseCase = new ObtenerEstadoCuentaSocioUseCase();

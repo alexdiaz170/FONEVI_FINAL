@@ -22,10 +22,13 @@ import { formatCurrency, formatDate } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
 import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { useAuthStore } from '../../stores/authStore';
 
 const ESTADOS = ['', 'pendiente', 'pagado', 'mora', 'vencido', 'anulado'];
 
 export default function AportesLista() {
+  const usuario = useAuthStore((s) => s.usuario);
+  const esSocio = usuario?.rol === 'socio';
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
@@ -33,13 +36,14 @@ export default function AportesLista() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['aportes', page, estadoFilter, periodoFilter],
+    queryKey: ['aportes', page, search, estadoFilter, periodoFilter],
     queryFn: () =>
       apiListarAportes({
         page,
         limit: 10,
         estado: estadoFilter || undefined,
         periodoId: periodoFilter ? Number(periodoFilter) : undefined,
+        q: search || undefined,
       }),
   });
 
@@ -61,10 +65,7 @@ export default function AportesLista() {
 
   const periodoMap = new Map(periodos?.map((p) => [p.id, p.nombre]) ?? []);
 
-  const filteredData =
-    data?.data?.filter(
-      (a) => !search || (a.socioId ?? '').toLowerCase().includes(search.toLowerCase()),
-    ) ?? [];
+  const aportesList = data?.data ?? [];
 
   const exportColumns: ExportColumn[] = [
     { header: 'Socio ID', key: 'socioId' },
@@ -83,12 +84,12 @@ export default function AportesLista() {
   ];
 
   const handleExportExcel = () => {
-    exportToExcel(filteredData as unknown as Record<string, unknown>[], exportColumns, 'aportes');
+    exportToExcel(aportesList as unknown as Record<string, unknown>[], exportColumns, 'aportes');
   };
 
   const handleExportPDF = () => {
     exportToPDF(
-      filteredData as unknown as Record<string, unknown>[],
+      aportesList as unknown as Record<string, unknown>[],
       exportColumns,
       'Listado de Aportes',
       'aportes',
@@ -111,12 +112,12 @@ export default function AportesLista() {
             <Search size={18} className="text-gray-400 shrink-0" />
             <input
               type="text"
-              placeholder="Buscar por ID de socio..."
+              placeholder="Buscar por nombre o documento..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 border-none outline-none text-sm"
             />
-            {filteredData.length > 0 && (
+            {aportesList.length > 0 && (
               <>
                 <button
                   onClick={handleExportExcel}
@@ -175,7 +176,7 @@ export default function AportesLista() {
           <div className="p-8 text-center text-red-500">Error: {(error as ApiError).message}</div>
         )}
 
-        {filteredData && (
+        {aportesList && (
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -187,11 +188,11 @@ export default function AportesLista() {
                     <th className="text-left p-3 font-medium">Estado</th>
                     <th className="text-left p-3 font-medium">Fecha Pago</th>
                     <th className="text-right p-3 font-medium">Solidaridad</th>
-                    <th className="text-center p-3 font-medium">Acciones</th>
+                    {!esSocio && <th className="text-center p-3 font-medium">Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((aporte: AporteDTO) => (
+                  {aportesList.map((aporte: AporteDTO) => (
                     <tr key={aporte.id} className="border-t hover:bg-gray-50">
                       <td className="p-3 text-sm">
                         {aporte.nombreSocio ?? aporte.socioId.slice(0, 8)}
@@ -223,19 +224,21 @@ export default function AportesLista() {
                           >
                             <Eye size={16} />
                           </Link>
-                          <button
-                            onClick={() => setConfirmDelete(aporte.id)}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {!esSocio && (
+                            <button
+                              onClick={() => setConfirmDelete(aporte.id)}
+                              className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
                   ))}
-                  {filteredData.length === 0 && (
+                  {aportesList.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-gray-400">
+                      <td colSpan={esSocio ? 6 : 7} className="p-8 text-center text-gray-400">
                         No se encontraron aportes
                       </td>
                     </tr>

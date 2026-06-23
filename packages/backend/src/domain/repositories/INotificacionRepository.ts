@@ -20,5 +20,6 @@ export interface INotificacionRepository {
   findAll(filters?: NotificacionFilter): Promise<NotificacionListResult>;
   save(notificacion: Notificacion): Promise<Notificacion>;
   marcarLeida(id: string): Promise<Notificacion>;
+  delete(id: string): Promise<void>;
   countNoLeidas(): Promise<number>;
 }
