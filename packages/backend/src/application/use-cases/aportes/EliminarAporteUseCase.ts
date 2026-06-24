@@ -20,8 +20,15 @@ export class EliminarAporteUseCase {
     }
 
     if (aporte.pagoSolidaridad.value > 0) {
+      const fechaAporte = aporte.createdAt ?? new Date();
+      const ventanaInicio = new Date(fechaAporte.getTime() - 5000);
+      const ventanaFin = new Date(fechaAporte.getTime() + 5000);
       const solidaridadMov = await prisma.solidaridadMovimiento.findFirst({
-        where: { monto: aporte.pagoSolidaridad.value, tipo: 'ingreso' },
+        where: {
+          monto: aporte.pagoSolidaridad.value,
+          tipo: 'ingreso',
+          fecha: { gte: ventanaInicio, lte: ventanaFin },
+        },
         orderBy: { createdAt: 'desc' },
       });
       if (solidaridadMov) {

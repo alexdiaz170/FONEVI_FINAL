@@ -190,20 +190,31 @@ export class RegistrarAporteUseCase {
             saldoCapital: distribucion.nuevoSaldoCapital.value,
             cuotasPagadas: nuevasPagadas,
             estado: distribucion.creditoPagado ? 'pagado' : 'activo',
+            fechaUltimoPago: fechaPago ?? new Date(),
           },
         });
       }
 
       if (distribucion.pagoSolidaridad.value > 0) {
-        await prisma.solidaridadMovimiento.create({
-          data: {
-            tipo: 'ingreso',
-            descripcion: 'Aporte solidaridad',
+        const existing = await prisma.solidaridadMovimiento.findFirst({
+          where: {
             monto: distribucion.pagoSolidaridad.value,
-            fecha: new Date(),
+            tipo: 'ingreso',
             beneficiario: socio.nombre,
+            createdAt: { gte: new Date(Date.now() - 60000) },
           },
         });
+        if (!existing) {
+          await prisma.solidaridadMovimiento.create({
+            data: {
+              tipo: 'ingreso',
+              descripcion: 'Aporte solidaridad',
+              monto: distribucion.pagoSolidaridad.value,
+              fecha: new Date(),
+              beneficiario: socio.nombre,
+            },
+          });
+        }
       }
 
       if (estado.esMoraOVencido()) {

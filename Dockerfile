@@ -15,7 +15,7 @@ COPY . .
 
 RUN npx prisma generate --schema=packages/shared/prisma/schema.prisma
 
-RUN npx turbo run build --filter=backend...
+RUN npx turbo run build
 
 RUN npm prune --omit=dev
 
@@ -32,11 +32,13 @@ RUN chmod +x /start.sh
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
+COPY --from=builder /app/packages/backend/public ./packages/backend/public
 COPY --from=builder /app/packages/shared ./packages/shared
 COPY --from=builder /app/packages/external ./packages/external
 COPY --from=builder /app/packages/backend/package.json ./packages/backend/
 COPY --from=builder /app/packages/shared/package.json ./packages/shared/
 COPY --from=builder /app/packages/external/package.json ./packages/external/
+COPY --from=builder /app/packages/shared/prisma/migrations ./packages/shared/prisma/migrations
 
 EXPOSE 3001
 

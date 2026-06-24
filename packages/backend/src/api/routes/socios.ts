@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import { PrismaSocioRepository } from '../../infrastructure/persistence/PrismaSocioRepository.js';
+import { PrismaAporteRepository } from '../../infrastructure/persistence/PrismaAporteRepository.js';
 import { PrismaUsuarioRepository } from '../../infrastructure/persistence/PrismaUsuarioRepository.js';
 import { createSocioController } from '../controllers/socioController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = Router();
 const socioRepo = new PrismaSocioRepository();
+const aporteRepo = new PrismaAporteRepository();
 const usuarioRepo = new PrismaUsuarioRepository();
-const socioController = createSocioController(socioRepo, usuarioRepo);
+const socioController = createSocioController(socioRepo, aporteRepo, usuarioRepo);
 
 router.get(
   '/',

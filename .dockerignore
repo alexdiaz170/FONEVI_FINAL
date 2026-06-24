@@ -8,7 +8,5 @@ dist
 .env.*
 backups
 docs
-scripts
-.turbo
-.turbo**
+/scripts
 coverage

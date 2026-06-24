@@ -6,6 +6,7 @@ import { ListarSociosUseCase } from '../../application/use-cases/socios/ListarSo
 import { EliminarSocioUseCase } from '../../application/use-cases/socios/EliminarSocioUseCase.js';
 import { RegistrarUsuarioUseCase } from '../../application/use-cases/auth/RegistrarUsuarioUseCase.js';
 import { ISocioRepository } from '../../domain/repositories/ISocioRepository.js';
+import { IAporteRepository } from '../../domain/repositories/IAporteRepository.js';
 import { IUsuarioRepository } from '../../domain/repositories/IUsuarioRepository.js';
 import { GeneradorCodigoSocio } from '../../domain/services/GeneradorCodigoSocio.js';
 import { apiResponse } from '../response.js';
@@ -18,6 +19,7 @@ import { ValidationError } from '../../application/errors.js';
 
 export function createSocioController(
   socioRepo: ISocioRepository,
+  aporteRepo?: IAporteRepository,
   usuarioRepo?: IUsuarioRepository,
 ) {
   const generadorCodigo = new GeneradorCodigoSocio(socioRepo);
@@ -108,7 +110,12 @@ export function createSocioController(
       try {
         const id = String(req.params.id ?? '');
         const socio = await obtenerUseCase.execute(id);
-        apiResponse.success(res, mapSocio(socio));
+        const data = mapSocio(socio);
+        if (aporteRepo) {
+          const ahorro = await aporteRepo.recalcularAhorroAcumulado(id);
+          data.ahorroAcumulado = ahorro.value;
+        }
+        apiResponse.success(res, data);
       } catch (error) {
         next(error);
       }

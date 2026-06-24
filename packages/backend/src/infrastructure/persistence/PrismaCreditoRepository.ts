@@ -154,6 +154,7 @@ export class PrismaCreditoRepository implements ICreditoRepository {
         proposito: credito.proposito,
         aprobadoPor: credito.aprobadoPor,
         notas: credito.notas,
+        fechaUltimoPago: credito.fechaUltimoPago,
       } as never,
     })) as unknown as CreditoRow;
     return this.toDomain(row);
