@@ -3,6 +3,7 @@ import { SolidaridadMovimiento } from '../../../domain/entities/SolidaridadMovim
 import { ISolidaridadMovimientoRepository } from '../../../domain/repositories/ISolidaridadMovimientoRepository.js';
 import { IMovimientoRepository } from '../../../domain/repositories/IMovimientoRepository.js';
 import { Movimiento } from '../../../domain/entities/Movimiento.js';
+import { DomainError } from '../../../domain/errors.js';
 
 export class RegistrarSolidaridadUseCase {
   constructor(
@@ -18,6 +19,17 @@ export class RegistrarSolidaridadUseCase {
     beneficiario?: string | null;
     socioId?: string;
   }): Promise<SolidaridadMovimiento> {
+    if (dto.tipo === 'egreso') {
+      const ingresos = await this.solidaridadRepo.sumMontoByTipo('ingreso');
+      const egresos = await this.solidaridadRepo.sumMontoByTipo('egreso');
+      const saldo = ingresos - egresos;
+      if (saldo < dto.monto) {
+        throw new DomainError(
+          `Saldo insuficiente en fondo de solidaridad: disponible ${saldo}, solicitado ${dto.monto}`,
+        );
+      }
+    }
+
     const monto = Monto.create(dto.monto);
     const fecha = dto.fecha ? new Date(dto.fecha) : new Date();
 
