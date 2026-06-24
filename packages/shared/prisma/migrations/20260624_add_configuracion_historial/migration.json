@@ -1,0 +1,24 @@
+{
+  "version": "5.22.0",
+  "steps": [
+    {
+      "tag": "CreateTable",
+      "table": "configuracion_historial",
+      "columns": [
+        { "name": "id", "type": "Text", "isRequired": true, "isList": false, "isId": true },
+        { "name": "clave", "type": "Text", "isRequired": true, "isList": false },
+        { "name": "valor_anterior", "type": "Text", "isRequired": false, "isList": false },
+        { "name": "valor_nuevo", "type": "Text", "isRequired": true, "isList": false },
+        { "name": "usuario_id", "type": "Text", "isRequired": false, "isList": false },
+        { "name": "created_at", "type": "DateTime", "isRequired": true, "isList": false }
+      ],
+      "primaryKey": { "name": "configuracion_historial_pkey", "fields": ["id"] },
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "indexes": [
+        { "name": "configuracion_historial_clave_idx", "fields": ["clave"] },
+        { "name": "configuracion_historial_created_at_idx", "fields": ["created_at"] }
+      ]
+    }
+  ]
+}

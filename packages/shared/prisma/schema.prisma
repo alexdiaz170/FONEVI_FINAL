@@ -161,7 +161,22 @@ model Configuracion {
   valor     String
   updatedAt DateTime @updatedAt @map("updated_at")
 
+
+
   @@map("configuracion")
+}
+
+model ConfiguracionHistorial {
+  id        String   @id @default(uuid())
+  clave     String
+  valorAnterior String? @map("valor_anterior")
+  valorNuevo    String  @map("valor_nuevo")
+  usuarioId String?  @map("usuario_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([clave])
+  @@index([createdAt])
+  @@map("configuracion_historial")
 }
 
 model Movimiento {

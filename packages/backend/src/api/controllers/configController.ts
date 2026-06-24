@@ -36,7 +36,7 @@ export function createConfigController(configRepo: IConfiguracionRepository) {
         const parsed = actualizarConfigSchema.safeParse(req.body);
         if (!parsed.success)
           throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        const config = await actualizarUseCase.execute(clave, parsed.data.valor);
+        const config = await actualizarUseCase.execute(clave, parsed.data.valor, req.usuario?.id);
         apiResponse.success(res, config);
       } catch (error) {
         next(error);
