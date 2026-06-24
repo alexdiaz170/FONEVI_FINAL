@@ -39,6 +39,8 @@ export class RegistrarAporteUseCase {
 
     const periodo = await this.periodoRepo.findById(dto.periodoId);
     if (!periodo) throw new EntityNotFoundError('Periodo', String(dto.periodoId));
+    if (!periodo.activo)
+      throw new DomainError('No se pueden registrar aportes en un período cerrado');
 
     const montoTotal = Monto.create(dto.monto);
     const estado = EstadoAporte.create(dto.estado ?? 'pendiente');

@@ -2,11 +2,15 @@ import { Monto } from '@fonevi/shared';
 import { Aporte } from '../../../domain/entities/Aporte.js';
 import { EstadoAporte } from '../../../domain/value-objects/EstadoAporte.js';
 import { IAporteRepository } from '../../../domain/repositories/IAporteRepository.js';
-import { EntityNotFoundError } from '../../../domain/errors.js';
+import { IPeriodoRepository } from '../../../domain/repositories/IPeriodoRepository.js';
+import { EntityNotFoundError, DomainError } from '../../../domain/errors.js';
 import { getPrismaClient } from '../../../infrastructure/persistence/prismaClient.js';
 
 export class ActualizarAporteUseCase {
-  constructor(private readonly aporteRepo: IAporteRepository) {}
+  constructor(
+    private readonly aporteRepo: IAporteRepository,
+    private readonly periodoRepo: IPeriodoRepository,
+  ) {}
 
   async execute(
     id: string,
@@ -20,6 +24,10 @@ export class ActualizarAporteUseCase {
   ): Promise<Aporte> {
     const aporte = await this.aporteRepo.findById(id);
     if (!aporte) throw new EntityNotFoundError('Aporte', id);
+
+    const periodo = await this.periodoRepo.findById(aporte.periodoId);
+    if (periodo && !periodo.activo)
+      throw new DomainError('No se pueden modificar aportes en un período cerrado');
 
     const actualizaciones: Record<string, unknown> = {};
     if (dto.monto !== undefined) actualizaciones.monto = Monto.create(dto.monto);

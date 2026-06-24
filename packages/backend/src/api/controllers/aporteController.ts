@@ -31,9 +31,9 @@ export function createAporteController(
     distribucionService,
     configService,
   );
-  const actualizarUseCase = new ActualizarAporteUseCase(aporteRepo);
+  const actualizarUseCase = new ActualizarAporteUseCase(aporteRepo, periodoRepo);
   const listarUseCase = new ListarAportesUseCase(aporteRepo);
-  const eliminarUseCase = new EliminarAporteUseCase(aporteRepo);
+  const eliminarUseCase = new EliminarAporteUseCase(aporteRepo, periodoRepo);
 
   function mapAporte(aporte: {
     id: string;
