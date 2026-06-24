@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -11,61 +11,472 @@ import {
   HandHeart,
   Building2,
   User,
-  BadgeCheck,
-  Banknote,
-  Calendar,
-  Calculator,
-  RefreshCw,
-  Table as TableIcon,
   Printer,
   Bell,
   FileSpreadsheet,
   FileText,
+  ArrowRight,
+  List,
+  LayoutDashboard,
+  AlertTriangle,
+  UserPlus,
+  DollarSign,
+  Clock,
+  BadgeCheck,
 } from 'lucide-react';
 import {
   apiGetDashboardResumen,
   apiMiDashboard,
-  apiCalcularCredito,
   apiListarNotificaciones,
   apiListarAportes,
+  apiListarSocios,
   ApiError,
-  type MiDashboardResult,
-  type AmortizacionPreviewDTO,
 } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
 import { useAuthStore } from '../stores/authStore';
 import { exportToExcel, exportToPDF, type ExportColumn } from '../lib/export';
+import {
+  AnimatedStaggerContainer,
+  AnimatedStaggerItem,
+  AnimatedFadeIn,
+  CardPanel,
+  AnimatedButton,
+  AnimatedTableRow,
+} from '../components/ui';
 
 export default function DashboardPage() {
   const usuario = useAuthStore((s) => s.usuario);
-
   if (usuario?.rol === 'socio') return <SocioDashboard />;
-
   return <AdminDashboard />;
 }
 
-function SkeletonCards() {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-      {Array.from({ length: 10 }).map((_, i) => (
+const quickActions = [
+  { to: '/socios/crear', label: 'Nuevo Socio', icon: UserPlus, color: 'from-blue-600 to-blue-500' },
+  {
+    to: '/aportes/crear',
+    label: 'Registrar Aporte',
+    icon: PiggyBank,
+    color: 'from-emerald-600 to-emerald-500',
+  },
+  {
+    to: '/creditos/crear',
+    label: 'Nuevo Crédito',
+    icon: CreditCard,
+    color: 'from-purple-600 to-purple-500',
+  },
+  {
+    to: '/movimientos/crear',
+    label: 'Nuevo Movimiento',
+    icon: DollarSign,
+    color: 'from-cyan-600 to-teal-500',
+  },
+  {
+    to: '/notificaciones',
+    label: 'Notificaciones',
+    icon: Bell,
+    color: 'from-amber-500 to-orange-500',
+  },
+  { to: '/mora', label: 'Gestión de Mora', icon: AlertTriangle, color: 'from-red-500 to-rose-600' },
+];
+
+function AdminDashboard() {
+  const {
+    data: resumen,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['dashboard-resumen'],
+    queryFn: () => apiGetDashboardResumen(),
+    refetchInterval: 30000,
+  });
+
+  const { data: sociosRecientes } = useQuery({
+    queryKey: ['socios-recientes'],
+    queryFn: () => apiListarSocios({ limit: 5 }),
+  });
+
+  const { data: notis } = useQuery({
+    queryKey: ['notificaciones-no-leidas-admin'],
+    queryFn: () => apiListarNotificaciones({ leida: false, limit: 4 }),
+    refetchInterval: 15000,
+  });
+
+  if (isLoading)
+    return (
+      <div>
+        <div className="h-8 bg-gray-200 rounded w-40 mb-6 animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl p-4 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-20 mb-2" />
+              <div className="h-6 bg-gray-200 rounded w-28" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  if (error)
+    return <div className="text-center text-red-500">Error: {(error as ApiError).message}</div>;
+  if (!resumen) return null;
+
+  const now = new Date();
+  const greeting =
+    now.getHours() < 12 ? 'Buenos días' : now.getHours() < 18 ? 'Buenas tardes' : 'Buenas noches';
+
+  function DashboardCard({ card }: { card: (typeof cards)[0] }) {
+    return (
+      <AnimatedStaggerItem>
         <div
-          key={i}
-          className="bg-white rounded-lg shadow p-4 flex items-start gap-3 animate-pulse"
+          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.bg} p-4 text-white shadow-lg`}
         >
-          <div className="w-10 h-10 bg-gray-200 rounded-lg shrink-0" />
-          <div className="flex-1 space-y-2">
-            <div className="h-3 bg-gray-200 rounded w-20" />
-            <div className="h-5 bg-gray-200 rounded w-28" />
+          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-1/3 translate-x-1/4" />
+          <div className="relative">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+                {card.label}
+              </span>
+              <card.icon size={16} className="opacity-50" />
+            </div>
+            <p className="text-xl font-bold font-mono">{card.value}</p>
+            {card.sub && <p className="text-xs mt-1 opacity-70">{card.sub}</p>}
           </div>
         </div>
-      ))}
+      </AnimatedStaggerItem>
+    );
+  }
+
+  const exportColumns: ExportColumn[] = [
+    { header: 'Indicador', key: 'label' },
+    { header: 'Valor', key: 'value' },
+    { header: 'Detalle', key: 'detail' },
+  ];
+  const cards = [
+    {
+      label: 'Socios Activos',
+      value: String(resumen.socios.activos),
+      sub: `${resumen.socios.enMora} en mora`,
+      bg: 'from-blue-600 to-blue-500',
+      icon: Users,
+      group: 'socios',
+    },
+    {
+      label: 'Socios Totales',
+      value: String(resumen.socios.total),
+      sub: `${resumen.socios.activos} activos`,
+      bg: 'from-navy-600 to-navy-500',
+      icon: Users,
+      group: 'socios',
+    },
+    {
+      label: 'Créditos Activos',
+      value: String(resumen.creditos.activos),
+      sub: `${resumen.creditos.pagados} pagados`,
+      bg: 'from-purple-600 to-purple-500',
+      icon: CreditCard,
+      group: 'creditos',
+    },
+    {
+      label: 'Saldo por Cobrar',
+      value: formatCurrency(resumen.creditos.saldoPorCobrar),
+      bg: 'from-orange-500 to-orange-600',
+      icon: CreditCard,
+      group: 'creditos',
+    },
+    {
+      label: 'Ahorro Acumulado',
+      value: formatCurrency(resumen.ahorros.totalAcumulado),
+      bg: 'from-emerald-600 to-emerald-500',
+      icon: Wallet,
+      group: 'aportes',
+    },
+    {
+      label: 'Aportes del Mes',
+      value: formatCurrency(resumen.aportes.delMes),
+      sub: `Total: ${formatCurrency(resumen.aportes.totalRecibido)}`,
+      bg: 'from-teal-500 to-teal-600',
+      icon: PiggyBank,
+      group: 'aportes',
+    },
+    {
+      label: 'Ingresos',
+      value: formatCurrency(resumen.movimientos.ingresos),
+      bg: 'from-emerald-500 to-green-600',
+      icon: TrendingUp,
+      group: 'movimientos',
+    },
+    {
+      label: 'Egresos',
+      value: formatCurrency(resumen.movimientos.egresos),
+      bg: 'from-red-500 to-red-600',
+      icon: TrendingDown,
+      group: 'movimientos',
+    },
+    {
+      label: 'Fondo Solidaridad',
+      value: formatCurrency(resumen.solidaridad.totalRecibido),
+      bg: 'from-pink-500 to-rose-600',
+      icon: HandHeart,
+      group: 'fondos',
+    },
+    {
+      label: 'Reservas',
+      value: formatCurrency(resumen.reservas),
+      bg: 'from-yellow-500 to-yellow-600',
+      icon: Building2,
+      group: 'fondos',
+    },
+  ];
+
+  return (
+    <div className="relative">
+      <div className="absolute top-0 right-0 w-96 h-96 bg-navy-500/5 rounded-full -translate-y-1/3 translate-x-1/3 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-500/5 rounded-full translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-navy-800">{greeting}, Admin</h1>
+          <p className="text-sm text-gray-500">
+            {now.toLocaleDateString('es-CO', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <AnimatedButton
+            onClick={() => {
+              const data = cards.map((c) => ({
+                label: c.label,
+                value: c.value,
+                detail: c.sub ?? '',
+              }));
+              exportToExcel(data, exportColumns, 'dashboard');
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100"
+          >
+            <FileSpreadsheet size={14} /> Excel
+          </AnimatedButton>
+          <AnimatedButton
+            onClick={() => {
+              const data = cards.map((c) => ({
+                label: c.label,
+                value: c.value,
+                detail: c.sub ?? '',
+              }));
+              exportToPDF(data, exportColumns, 'Dashboard - Resumen General', 'dashboard');
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100"
+          >
+            <FileText size={14} /> PDF
+          </AnimatedButton>
+        </div>
+      </div>
+
+      <div className="space-y-6 mb-6">
+        <div>
+          <h3 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
+            <Users size={16} /> Socios
+          </h3>
+          <AnimatedStaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {cards
+              .filter((c) => c.group === 'socios')
+              .map((card) => (
+                <DashboardCard key={card.label} card={card} />
+              ))}
+          </AnimatedStaggerContainer>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
+            <CreditCard size={16} /> Créditos
+          </h3>
+          <AnimatedStaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {cards
+              .filter((c) => c.group === 'creditos')
+              .map((card) => (
+                <DashboardCard key={card.label} card={card} />
+              ))}
+          </AnimatedStaggerContainer>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
+            <PiggyBank size={16} /> Aportes &amp; Ahorro
+          </h3>
+          <AnimatedStaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {cards
+              .filter((c) => c.group === 'aportes')
+              .map((card) => (
+                <DashboardCard key={card.label} card={card} />
+              ))}
+          </AnimatedStaggerContainer>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
+            <TrendingUp size={16} /> Movimientos
+          </h3>
+          <AnimatedStaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {cards
+              .filter((c) => c.group === 'movimientos')
+              .map((card) => (
+                <DashboardCard key={card.label} card={card} />
+              ))}
+          </AnimatedStaggerContainer>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
+            <Building2 size={16} /> Fondos
+          </h3>
+          <AnimatedStaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {cards
+              .filter((c) => c.group === 'fondos')
+              .map((card) => (
+                <DashboardCard key={card.label} card={card} />
+              ))}
+          </AnimatedStaggerContainer>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <AnimatedFadeIn>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-4">
+              <h2 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
+                <LayoutDashboard size={16} className="text-navy-500" /> Acciones Rápidas
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {quickActions.map((action) => (
+                  <Link
+                    key={action.to}
+                    to={action.to}
+                    className={`flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-gradient-to-r ${action.color} text-white text-sm font-medium shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all`}
+                  >
+                    <action.icon size={16} />
+                    <span>{action.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </AnimatedFadeIn>
+        </div>
+        <div>
+          <AnimatedFadeIn>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-navy-800 flex items-center gap-2">
+                  <Bell size={16} className="text-amber-500" /> Notificaciones
+                </h2>
+                <Link
+                  to="/notificaciones"
+                  className="text-xs text-navy-600 hover:text-navy-800 font-medium"
+                >
+                  Ver todas
+                </Link>
+              </div>
+              {notis && notis.data.length > 0 ? (
+                <div className="space-y-2 max-h-52 overflow-y-auto">
+                  {notis.data.map((n) => (
+                    <div
+                      key={n.id}
+                      className="flex items-start gap-2.5 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100"
+                    >
+                      <div
+                        className={`p-1 rounded-lg shrink-0 ${n.urgente ? 'bg-red-100' : 'bg-blue-100'}`}
+                      >
+                        <Bell size={12} className={n.urgente ? 'text-red-500' : 'text-blue-500'} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-navy-700 truncate">{n.titulo}</p>
+                        <p className="text-[11px] text-gray-400 truncate">{n.mensaje}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-400 text-xs text-center py-6">
+                  Sin notificaciones pendientes
+                </p>
+              )}
+            </div>
+          </AnimatedFadeIn>
+        </div>
+      </div>
+
+      <AnimatedFadeIn>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-navy-800 flex items-center gap-2">
+              <Users size={16} className="text-blue-500" /> Socios Recientes
+            </h2>
+            <Link
+              to="/socios"
+              className="flex items-center gap-1 text-xs text-navy-600 hover:text-navy-800 font-medium"
+            >
+              Ver todos <ArrowRight size={12} />
+            </Link>
+          </div>
+          {sociosRecientes && sociosRecientes.data && sociosRecientes.data.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 text-gray-500">
+                    <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Nombre
+                    </th>
+                    <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Documento
+                    </th>
+                    <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="text-center p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Estado
+                    </th>
+                    <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Acción
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sociosRecientes.data.slice(0, 5).map((s, idx) => (
+                    <AnimatedTableRow key={s.id} index={idx}>
+                      <td className="p-3.5 font-medium text-navy-800">{s.nombre}</td>
+                      <td className="p-3.5 text-gray-600 text-xs">
+                        {s.tipoDocumento} {s.numeroDocumento}
+                      </td>
+                      <td className="p-3.5 text-gray-500 text-xs">{s.email ?? '—'}</td>
+                      <td className="p-3.5 text-center">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.estado === 'activo' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+                        >
+                          {s.estado}
+                        </span>
+                      </td>
+                      <td className="p-3.5 text-right">
+                        <Link
+                          to={`/socios/${s.id}`}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-all"
+                        >
+                          Ver <ArrowRight size={10} />
+                        </Link>
+                      </td>
+                    </AnimatedTableRow>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-gray-400 text-sm text-center py-8">No hay socios registrados</p>
+          )}
+        </div>
+      </AnimatedFadeIn>
     </div>
   );
 }
 
 function SkeletonCarnet() {
   return (
-    <div className="md:col-span-2 bg-gray-200 rounded-xl p-5 animate-pulse">
+    <div className="md:col-span-2 bg-gray-200 rounded-2xl p-5 animate-pulse">
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 bg-gray-300 rounded-full shrink-0" />
         <div className="flex-1 space-y-3">
@@ -85,7 +496,7 @@ function SkeletonCarnet() {
 
 function SkeletonSavings() {
   return (
-    <div className="bg-gray-200 rounded-xl p-5 animate-pulse">
+    <div className="bg-gray-200 rounded-2xl p-5 animate-pulse">
       <div className="h-3 bg-gray-300 rounded w-24 mb-2" />
       <div className="h-8 bg-gray-300 rounded w-32 mb-2" />
       <div className="h-3 bg-gray-300 rounded w-28" />
@@ -95,7 +506,7 @@ function SkeletonSavings() {
 
 function SkeletonPanel() {
   return (
-    <div className="bg-white rounded-lg shadow animate-pulse">
+    <div className="bg-white/80 rounded-2xl animate-pulse border border-gray-100">
       <div className="px-5 py-4 border-b border-gray-100">
         <div className="h-4 bg-gray-200 rounded w-28" />
       </div>
@@ -114,142 +525,6 @@ function SkeletonPanel() {
   );
 }
 
-function AdminDashboard() {
-  const {
-    data: resumen,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['dashboard-resumen'],
-    queryFn: () => apiGetDashboardResumen(),
-    refetchInterval: 30000,
-  });
-
-  if (isLoading)
-    return (
-      <div>
-        <h1 className="text-2xl font-bold text-gray-300 bg-gray-200 rounded w-40 h-8 mb-6 animate-pulse" />
-        <SkeletonCards />
-      </div>
-    );
-  if (error)
-    return <div className="text-center text-red-500">Error: {(error as ApiError).message}</div>;
-  if (!resumen) return null;
-
-  const cards = [
-    {
-      label: 'Socios Activos',
-      value: resumen.socios.activos,
-      sub: `${resumen.socios.enMora} en mora`,
-      icon: Users,
-      color: 'bg-blue-500',
-    },
-    { label: 'Socios Totales', value: resumen.socios.total, icon: Users, color: 'bg-navy-600' },
-    {
-      label: 'Ahorro Acumulado',
-      value: formatCurrency(resumen.ahorros.totalAcumulado),
-      icon: Wallet,
-      color: 'bg-green-500',
-    },
-    {
-      label: 'Créditos Activos',
-      value: resumen.creditos.activos,
-      sub: `${resumen.creditos.pagados} pagados`,
-      icon: CreditCard,
-      color: 'bg-purple-500',
-    },
-    {
-      label: 'Saldo por Cobrar',
-      value: formatCurrency(resumen.creditos.saldoPorCobrar),
-      icon: CreditCard,
-      color: 'bg-orange-500',
-    },
-    {
-      label: 'Aportes del Mes',
-      value: formatCurrency(resumen.aportes.delMes),
-      sub: `Total: ${formatCurrency(resumen.aportes.totalRecibido)}`,
-      icon: PiggyBank,
-      color: 'bg-teal-500',
-    },
-    {
-      label: 'Fondo Solidaridad',
-      value: formatCurrency(resumen.solidaridad.totalRecibido),
-      icon: HandHeart,
-      color: 'bg-pink-500',
-    },
-    {
-      label: 'Reservas',
-      value: formatCurrency(resumen.reservas),
-      icon: Building2,
-      color: 'bg-yellow-500',
-    },
-    {
-      label: 'Ingresos',
-      value: formatCurrency(resumen.movimientos.ingresos),
-      icon: TrendingUp,
-      color: 'bg-emerald-500',
-    },
-    {
-      label: 'Egresos',
-      value: formatCurrency(resumen.movimientos.egresos),
-      icon: TrendingDown,
-      color: 'bg-red-500',
-    },
-  ];
-
-  const exportColumns: ExportColumn[] = [
-    { header: 'Indicador', key: 'label' },
-    { header: 'Valor', key: 'value' },
-    { header: 'Detalle', key: 'detail' },
-  ];
-
-  function handleExportExcel() {
-    const data = cards.map((c) => ({ label: c.label, value: c.value, detail: c.sub ?? '' }));
-    exportToExcel(data, exportColumns, 'dashboard');
-  }
-
-  async function handleExportPDF() {
-    const data = cards.map((c) => ({ label: c.label, value: c.value, detail: c.sub ?? '' }));
-    await exportToPDF(data, exportColumns, 'Dashboard - Resumen General', 'dashboard');
-  }
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-navy-800">Dashboard</h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleExportExcel}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
-          >
-            <FileSpreadsheet size={14} /> Excel
-          </button>
-          <button
-            onClick={handleExportPDF}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100"
-          >
-            <FileText size={14} /> PDF
-          </button>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {cards.map((card) => (
-          <div key={card.label} className="bg-white rounded-lg shadow p-4 flex items-start gap-3">
-            <div className={`${card.color} p-2 rounded-lg shrink-0`}>
-              <card.icon size={20} className="text-white" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">{card.label}</p>
-              <p className="text-lg font-bold font-mono text-gray-900 truncate">{card.value}</p>
-              {card.sub && <p className="text-xs text-gray-400">{card.sub}</p>}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function SocioDashboard() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['mi-dashboard'],
@@ -258,7 +533,7 @@ function SocioDashboard() {
   });
 
   const { data: notis } = useQuery({
-    queryKey: ['notificaciones', 'no-leidas'],
+    queryKey: ['notificaciones-no-leidas'],
     queryFn: () => apiListarNotificaciones({ leida: false, limit: 5 }),
     refetchInterval: 15000,
   });
@@ -287,99 +562,114 @@ function SocioDashboard() {
   const notisNoLeidas = notis?.data ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      <div className="absolute top-0 right-0 w-96 h-96 bg-navy-500/5 rounded-full -translate-y-1/3 translate-x-1/3 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-500/5 rounded-full translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+
       <h1 className="text-2xl font-bold text-navy-800">Bienvenido, {data.socio.nombre}</h1>
 
-      {/* Carnet + Savings */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 bg-gradient-to-br from-navy-700 via-navy-600 to-blue-800 rounded-xl shadow-lg p-5 text-white relative overflow-hidden print:bg-white print:text-black print:border-2 print:border-gray-300">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/4" />
-          <div className="flex items-start gap-4 relative">
-            <div className="bg-white/20 p-3 rounded-full shrink-0 ring-2 ring-white/30">
-              <User size={28} className="text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-xs text-navy-200 uppercase tracking-wider font-medium">
-                    FONDO DE EMPLEADOS DOCENTES FONEVI
-                  </p>
-                  <h2 className="text-xl font-bold mt-0.5">{data.socio.nombre}</h2>
-                </div>
-                <button
-                  onClick={() => window.print()}
-                  className="print:hidden p-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white/80 hover:text-white"
-                  title="Imprimir carnet"
-                >
-                  <Printer size={16} />
-                </button>
+      <AnimatedStaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <AnimatedStaggerItem className="md:col-span-2">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-navy-700 via-navy-600 to-blue-800 shadow-lg p-5 text-white print:bg-white print:text-black print:border-2 print:border-gray-300">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/4" />
+            <div className="flex items-start gap-4 relative">
+              <div className="bg-white/20 p-3 rounded-full shrink-0 ring-2 ring-white/30">
+                <User size={28} className="text-white" />
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-3 text-sm">
-                <p className="text-navy-200">
-                  <span className="text-navy-300 text-xs">Documento</span>
-                  <br />
-                  <span className="text-white font-medium">
-                    {data.socio.tipoDocumento} {data.socio.numeroDocumento}
-                  </span>
-                </p>
-                <p className="text-navy-200">
-                  <span className="text-navy-300 text-xs">Código</span>
-                  <br />
-                  <span className="text-white font-medium">{data.socio.codigo}</span>
-                </p>
-                <p className="text-navy-200">
-                  <span className="text-navy-300 text-xs">Email</span>
-                  <br />
-                  <span className="text-white font-medium truncate block">
-                    {data.socio.email ?? '—'}
-                  </span>
-                </p>
-                <p className="text-navy-200">
-                  <span className="text-navy-300 text-xs">Estado</span>
-                  <br />
-                  <span
-                    className={`inline-block mt-0.5 px-2 py-0.5 rounded text-xs font-medium ${data.socio.estado === 'activo' ? 'bg-green-400/30 text-green-200' : 'bg-gray-400/30 text-gray-200'}`}
+              <div className="min-w-0 flex-1">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-[10px] text-navy-200 uppercase tracking-wider font-medium">
+                      FONDO DE EMPLEADOS DOCENTES FONEVI
+                    </p>
+                    <h2 className="text-xl font-bold mt-0.5">{data.socio.nombre}</h2>
+                  </div>
+                  <button
+                    onClick={() => window.print()}
+                    className="print:hidden p-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white/80 hover:text-white transition-all"
+                    title="Imprimir carnet"
                   >
-                    {data.socio.estado === 'activo' ? 'Activo' : data.socio.estado}
-                  </span>
-                </p>
+                    <Printer size={16} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-3 text-sm">
+                  <p className="text-navy-200">
+                    <span className="text-navy-300 text-xs">Documento</span>
+                    <br />
+                    <span className="text-white font-medium">
+                      {data.socio.tipoDocumento} {data.socio.numeroDocumento}
+                    </span>
+                  </p>
+                  <p className="text-navy-200">
+                    <span className="text-navy-300 text-xs">Código</span>
+                    <br />
+                    <span className="text-white font-medium">{data.socio.codigo}</span>
+                  </p>
+                  <p className="text-navy-200">
+                    <span className="text-navy-300 text-xs">Email</span>
+                    <br />
+                    <span className="text-white font-medium truncate block">
+                      {data.socio.email ?? '—'}
+                    </span>
+                  </p>
+                  <p className="text-navy-200">
+                    <span className="text-navy-300 text-xs">Estado</span>
+                    <br />
+                    <span
+                      className={`inline-block mt-0.5 px-2 py-0.5 rounded-lg text-xs font-medium ${data.socio.estado === 'activo' ? 'bg-green-400/20 text-green-200' : 'bg-gray-400/20 text-gray-200'}`}
+                    >
+                      {data.socio.estado === 'activo' ? 'Activo' : data.socio.estado}
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </AnimatedStaggerItem>
 
-        <div className="bg-gradient-to-br from-navy-600 to-navy-800 rounded-xl shadow p-5 text-white flex flex-col justify-center">
-          <p className="text-sm text-navy-200 uppercase tracking-wider font-medium">
-            Ahorro Acumulado
-          </p>
-          <p className="text-3xl font-bold font-mono mt-1">
-            {formatCurrency(data.socio.ahorroAcumulado)}
-          </p>
-          <p className="text-xs text-navy-300 mt-1">
-            Capacidad de crédito: hasta{' '}
-            {formatCurrency(
-              Math.round(data.socio.ahorroAcumulado * data.config.multiplicadorMaximoCredito),
-            )}
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Creditos Activos */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-            <CreditCard size={18} className="text-purple-500" />
-            <h2 className="font-semibold text-gray-800">Mis Créditos</h2>
+        <AnimatedStaggerItem>
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-navy-600 to-navy-800 shadow-lg p-5 text-white flex flex-col justify-center h-full">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-1/3 translate-x-1/4" />
+            <div className="relative">
+              <p className="text-sm text-navy-200 uppercase tracking-wider font-medium">
+                Ahorro Acumulado
+              </p>
+              <p className="text-3xl font-bold font-mono mt-1">
+                {formatCurrency(data.socio.ahorroAcumulado)}
+              </p>
+              <p className="text-xs text-navy-300 mt-2">
+                Capacidad de crédito: hasta{' '}
+                {formatCurrency(
+                  Math.round(data.socio.ahorroAcumulado * data.config.multiplicadorMaximoCredito),
+                )}
+              </p>
+              <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-3 text-xs text-navy-300">
+                <div className="flex items-center gap-1">
+                  <BadgeCheck size={12} className="text-green-300" /> Al día
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock size={12} className="text-navy-300" /> {data.socio.antiguedad ?? '—'}
+                </div>
+              </div>
+            </div>
           </div>
+        </AnimatedStaggerItem>
+      </AnimatedStaggerContainer>
+
+      <AnimatedStaggerContainer className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CardPanel title="Mis Créditos" icon={CreditCard} iconColor="text-purple-500">
           {creditosActivos.length === 0 ? (
             <p className="text-gray-400 text-sm text-center py-8">No tienes créditos activos</p>
           ) : (
             <div className="divide-y divide-gray-100">
               {creditosActivos.map((c) => (
-                <div key={c.id} className="px-5 py-3 flex justify-between items-center">
+                <div
+                  key={c.id}
+                  className="px-5 py-3.5 flex justify-between items-center hover:bg-gray-50/50 transition-colors"
+                >
                   <div>
-                    <p className="font-medium text-gray-900">{formatCurrency(c.monto)}</p>
+                    <p className="font-medium text-navy-800">{formatCurrency(c.monto)}</p>
                     <p className="text-xs text-gray-500">
                       {c.cuotasPagadas}/{c.cuotas} cuotas · Cuota: {formatCurrency(c.cuotaMensual)}
                     </p>
@@ -394,28 +684,26 @@ function SocioDashboard() {
               ))}
             </div>
           )}
-        </div>
+        </CardPanel>
 
-        {/* Ultimos Aportes */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-            <PiggyBank size={18} className="text-teal-500" />
-            <h2 className="font-semibold text-gray-800">Últimos Aportes</h2>
-          </div>
+        <CardPanel title="Últimos Aportes" icon={PiggyBank} iconColor="text-teal-500">
           {data.ultimosAportes.length === 0 ? (
             <p className="text-gray-400 text-sm text-center py-8">No hay aportes registrados</p>
           ) : (
             <div className="divide-y divide-gray-100">
               {data.ultimosAportes.map((a) => (
-                <div key={a.id} className="px-5 py-3 flex justify-between items-center">
+                <div
+                  key={a.id}
+                  className="px-5 py-3.5 flex justify-between items-center hover:bg-gray-50/50 transition-colors"
+                >
                   <div>
-                    <p className="font-medium text-gray-900">{formatCurrency(a.monto)}</p>
+                    <p className="font-medium text-navy-800">{formatCurrency(a.monto)}</p>
                     <p className="text-xs text-gray-500">
                       {new Date(a.createdAt).toLocaleDateString('es-CO')}
                     </p>
                   </div>
                   <span
-                    className={`px-2 py-0.5 rounded text-xs font-medium ${a.estado === 'pagado' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${a.estado === 'pagado' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}
                   >
                     {a.estado}
                   </span>
@@ -423,29 +711,30 @@ function SocioDashboard() {
               ))}
             </div>
           )}
-        </div>
-      </div>
+        </CardPanel>
+      </AnimatedStaggerContainer>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Notificaciones */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Bell size={18} className="text-amber-500" />
-              <h2 className="font-semibold text-gray-800">Notificaciones</h2>
+      <AnimatedStaggerContainer className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CardPanel
+          title="Notificaciones"
+          icon={Bell}
+          iconColor="text-amber-500"
+          headerRight={
+            <>
               {notisNoLeidas.length > 0 && (
                 <span className="bg-amber-100 text-amber-700 text-xs font-bold px-1.5 py-0.5 rounded-full">
                   {notisNoLeidas.length}
                 </span>
               )}
-            </div>
-            <Link
-              to="/notificaciones"
-              className="text-xs text-navy-600 hover:text-navy-800 font-medium"
-            >
-              Ver todas
-            </Link>
-          </div>
+              <Link
+                to="/notificaciones"
+                className="text-xs text-navy-600 hover:text-navy-800 font-medium ml-auto"
+              >
+                Ver todas
+              </Link>
+            </>
+          }
+        >
           {notisNoLeidas.length === 0 ? (
             <p className="text-gray-400 text-sm text-center py-8">
               No tienes notificaciones pendientes
@@ -453,13 +742,13 @@ function SocioDashboard() {
           ) : (
             <div className="divide-y divide-gray-100 max-h-52 overflow-y-auto">
               {notisNoLeidas.map((n) => (
-                <div key={n.id} className="px-5 py-3">
+                <div key={n.id} className="px-5 py-3 hover:bg-gray-50/50 transition-colors">
                   <div className="flex items-start gap-2">
                     {n.urgente && (
                       <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0" />
                     )}
                     <div className="min-w-0">
-                      <p className="font-medium text-sm text-gray-900">{n.titulo}</p>
+                      <p className="font-medium text-sm text-navy-800">{n.titulo}</p>
                       <p className="text-xs text-gray-500 truncate">{n.mensaje}</p>
                       <p className="text-xs text-gray-400 mt-0.5">
                         {new Date(n.createdAt).toLocaleDateString('es-CO')}
@@ -470,20 +759,12 @@ function SocioDashboard() {
               ))}
             </div>
           )}
-        </div>
+        </CardPanel>
 
-        {/* Aportes Chart */}
-        <AportesChart />
-      </div>
-
-      {/* Credit Simulator */}
-      <SimuladorCredito
-        ahorroAcumulado={data.socio.ahorroAcumulado}
-        multiplicador={data.config.multiplicadorMaximoCredito}
-        tasaInteres={data.config.tasaInteresMensual}
-        porcentajeSeguro={data.config.porcentajeSeguro}
-        deudaActiva={creditosActivos.reduce((sum, c) => sum + c.saldoCapital, 0)}
-      />
+        <AnimatedStaggerItem>
+          <AportesChart />
+        </AnimatedStaggerItem>
+      </AnimatedStaggerContainer>
     </div>
   );
 }
@@ -497,7 +778,7 @@ function AportesChart() {
 
   if (isLoading)
     return (
-      <div className="bg-white rounded-lg shadow animate-pulse">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 animate-pulse">
         <div className="px-5 py-4 border-b border-gray-100">
           <div className="h-4 bg-gray-200 rounded w-32" />
         </div>
@@ -518,10 +799,10 @@ function AportesChart() {
 
   if (!data || data.data.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
           <TrendingUp size={18} className="text-emerald-500" />
-          <h2 className="font-semibold text-gray-800">Historial de Aportes</h2>
+          <h2 className="font-semibold text-navy-800">Historial de Aportes</h2>
         </div>
         <p className="text-gray-400 text-sm text-center py-8">No hay aportes registrados</p>
       </div>
@@ -530,19 +811,17 @@ function AportesChart() {
 
   const porPeriodo = new Map<number, number>();
   for (const a of data.data) {
-    if (a.estado === 'pagado') {
+    if (a.estado === 'pagado')
       porPeriodo.set(a.periodoId, (porPeriodo.get(a.periodoId) ?? 0) + a.monto);
-    }
   }
-
   const periodos = [...porPeriodo.entries()].sort(([a], [b]) => a - b).slice(-6);
   const maxValor = Math.max(...periodos.map(([, v]) => v), 1);
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100">
       <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
         <TrendingUp size={18} className="text-emerald-500" />
-        <h2 className="font-semibold text-gray-800">Historial de Aportes</h2>
+        <h2 className="font-semibold text-navy-800">Historial de Aportes</h2>
       </div>
       <div className="p-5">
         <div className="flex items-end gap-2" style={{ height: 120 }}>
@@ -560,204 +839,6 @@ function AportesChart() {
             </div>
           ))}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function SimuladorCredito({
-  ahorroAcumulado,
-  multiplicador,
-  tasaInteres,
-  porcentajeSeguro,
-  deudaActiva,
-}: {
-  ahorroAcumulado: number;
-  multiplicador: number;
-  tasaInteres: number;
-  porcentajeSeguro: number;
-  deudaActiva: number;
-}) {
-  const [monto, setMonto] = useState(500000);
-  const [cuotas, setCuotas] = useState(6);
-  const [resultado, setResultado] = useState<AmortizacionPreviewDTO | null>(null);
-  const [calculando, setCalculando] = useState(false);
-
-  const maxCredito = Math.round(ahorroAcumulado * multiplicador);
-  const capacidadDisponible = Math.max(0, maxCredito - deudaActiva);
-  const excede = monto > capacidadDisponible;
-
-  useEffect(() => {
-    if (monto > 0 && cuotas > 0 && monto <= capacidadDisponible) {
-      const timer = setTimeout(async () => {
-        setCalculando(true);
-        try {
-          const data = await apiCalcularCredito(monto, tasaInteres, cuotas);
-          setResultado(data);
-        } catch {
-          setResultado(null);
-        } finally {
-          setCalculando(false);
-        }
-      }, 300);
-      return () => clearTimeout(timer);
-    } else {
-      setResultado(null);
-    }
-  }, [monto, cuotas, tasaInteres]);
-
-  return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-        <Calculator size={18} className="text-navy-500" />
-        <h2 className="font-semibold text-gray-800">Simulador de Crédito</h2>
-      </div>
-      <div className="p-5">
-        {/* Capacidad */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm space-y-1">
-          <p className="text-gray-600">
-            <span className="font-medium">Ahorro acumulado:</span> {formatCurrency(ahorroAcumulado)}
-            <span className="mx-2">·</span>
-            <span className="font-medium">Capacidad total:</span> {formatCurrency(maxCredito)}
-            <span className="ml-1 text-gray-400">(×{multiplicador})</span>
-          </p>
-          {deudaActiva > 0 && (
-            <p className="text-gray-600">
-              <span className="font-medium">Deuda activa:</span>{' '}
-              <span className="text-orange-600">{formatCurrency(deudaActiva)}</span>
-            </p>
-          )}
-          <p className="text-gray-600">
-            <span className="font-medium">Capacidad disponible:</span>{' '}
-            <span className={`font-bold ${excede ? 'text-red-600' : 'text-green-700'}`}>
-              {formatCurrency(capacidadDisponible)}
-            </span>
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Monto solicitado</label>
-            <input
-              type="number"
-              value={monto}
-              onChange={(e) => setMonto(Math.max(0, Number(e.target.value) || 0))}
-              min={0}
-              max={capacidadDisponible}
-              step={50000}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            />
-            <input
-              type="range"
-              value={monto}
-              onChange={(e) => setMonto(Number(e.target.value))}
-              min={0}
-              max={capacidadDisponible}
-              step={50000}
-              className="w-full mt-1"
-            />
-            {excede && (
-              <p className="text-xs text-red-500 mt-1">El monto excede su capacidad disponible</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Plazo (meses)</label>
-            <select
-              value={cuotas}
-              onChange={(e) => setCuotas(Number(e.target.value))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            >
-              {[3, 6, 9, 12, 18, 24, 36].map((n) => (
-                <option key={n} value={n}>
-                  {n} meses
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tasa mensual</label>
-            <div className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600">
-              {tasaInteres}%
-            </div>
-          </div>
-        </div>
-
-        {calculando && <div className="text-center text-gray-400 text-sm py-4">Calculando...</div>}
-
-        {resultado && !calculando && (
-          <div className="border border-navy-200 rounded-lg bg-navy-50/50 p-4 space-y-4">
-            <h3 className="font-semibold text-navy-800 text-sm">Resumen del crédito</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Cuota mensual</p>
-                <p className="text-xl font-bold font-mono text-navy-700">
-                  {formatCurrency(resultado.cuotaFija)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Total intereses</p>
-                <p className="text-lg font-semibold font-mono text-amber-600">
-                  {formatCurrency(resultado.totalIntereses)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Total seguro</p>
-                <p className="text-lg font-semibold font-mono text-orange-600">
-                  {formatCurrency(resultado.totalSeguro)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Total a pagar</p>
-                <p className="text-lg font-semibold font-mono text-gray-900">
-                  {formatCurrency(resultado.totalPagar)}
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-medium text-navy-700 text-sm mb-2">Tabla de amortización</h4>
-              <div className="overflow-x-auto max-h-60 overflow-y-auto border border-navy-200 rounded">
-                <table className="w-full text-xs">
-                  <thead className="bg-navy-100 text-navy-700 sticky top-0">
-                    <tr>
-                      <th className="px-2 py-1.5 text-left">#</th>
-                      <th className="px-2 py-1.5 text-right">Cuota</th>
-                      <th className="px-2 py-1.5 text-right">Capital</th>
-                      <th className="px-2 py-1.5 text-right">Interés</th>
-                      <th className="px-2 py-1.5 text-right">Seguro</th>
-                      <th className="px-2 py-1.5 text-right">Saldo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resultado.tabla.map((row) => (
-                      <tr
-                        key={row.numero}
-                        className="border-b border-navy-100/50 hover:bg-navy-50/50"
-                      >
-                        <td className="px-2 py-1.5 text-gray-600">{row.numero}</td>
-                        <td className="px-2 py-1.5 text-right font-mono">
-                          {formatCurrency(row.cuota)}
-                        </td>
-                        <td className="px-2 py-1.5 text-right font-mono">
-                          {formatCurrency(row.capital)}
-                        </td>
-                        <td className="px-2 py-1.5 text-right font-mono">
-                          {formatCurrency(row.interes)}
-                        </td>
-                        <td className="px-2 py-1.5 text-right font-mono">
-                          {formatCurrency(row.seguro)}
-                        </td>
-                        <td className="px-2 py-1.5 text-right font-mono">
-                          {formatCurrency(row.saldo)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

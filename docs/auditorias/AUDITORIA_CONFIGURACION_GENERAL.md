@@ -25,7 +25,7 @@ Recomendación inmediata: mitigar riesgos de seguridad (no almacenar datos sensi
 - `backend/package.json`
 - `package.json` (raíz)
 - `.gitignore`
-- `DEPLOYMENT.md`
+- `docs/DEPLOYMENT.md`
 - `backend/scratch/*` (scripts auxiliares)
 
 ## 3. Clasificación y justificación por archivo
@@ -90,7 +90,7 @@ Recomendación inmediata: mitigar riesgos de seguridad (no almacenar datos sensi
   - Estado: Conservar.
   - Justificación: Correcto bloqueo de sesiones y secretos; verificar que no existan secretos en el repo.
 
-- `DEPLOYMENT.md`
+- `docs/DEPLOYMENT.md`
   - Estado: Conservar (actualizar).
   - Justificación: Buen contenido operativo; consolidar ejemplos y evitar duplicaciones.
 
@@ -145,25 +145,30 @@ Recomendación inmediata: mitigar riesgos de seguridad (no almacenar datos sensi
 ## 8. Plan de acción priorizado (Backlog por sprints)
 
 Sprint 1 (1–2 semanas, seguridad urgente)
+
 - Migración de secretos a gestor: rotación de `JWT_SECRET` y actualización de `DEPLOYMENT.md`.
 - Cambios en frontend auth: almacenar solo token (pruebas y QA). (`js/auth.js`)
 - Forzar TLS/SSL en `backend/src/db/index.js` y pruebas en staging.
 
 Sprint 2 (2 semanas, endurecimiento y consolidación)
+
 - Restringir CORS y CSP en `backend/src/app.js` para producción.
 - Consolidar entrypoint: eliminar/archivar `backend/start.js` y `backend/server.js`.
 - Mover `http-proxy-middleware` a devDependencies.
 
 Sprint 3 (2–3 semanas, refactor funcional)
+
 - Migrar frontend para consumir `/api/configuracion` y eliminar `DB.config` persistente.
 - Refactorizar `backend/src/routes/configuracion.js` en módulo `modules/configuracion` (service + repo).
 - Añadir validación en PUT `/api/configuracion/:clave` y pruebas unitarias.
 
 Sprint 4 (2–3 semanas, mejora operativa)
+
 - Añadir caching/ETag en `/api/configuracion` y control de cache en frontend.
 - Automatizar migraciones Prisma en CI/CD y documentar rollback.
 
 Sprint 5 (roadmap)
+
 - Implementar Panel SuperAdmin con RBAC completo y auditoría extendida.
 - Refactor mayor hacia Monolito Modular y Clean Architecture, introducir value objects DDD.
 
@@ -185,6 +190,7 @@ Sprint 5 (roadmap)
   - Panel UI + endpoints seguros para editar configuraciones. Requisitos: `requireRole('administrador')`, validación, audit trail, versionado de cambios y rollback de cambios críticos.
 
 ## 10. Decisión oficial: Multi-tenancy
+
 FONEVI se diseñará para:
 
 Una base de datos independiente por fondo.
@@ -225,4 +231,5 @@ Si deseas, puedo generar ahora:
 - Un parche (PR) inicial que implementa los cambios de seguridad críticos (no incluye cambios en lógica de negocio del dominio sin tu confirmación).
 
 ---
+
 Auditoría generada por revisión de archivos y documentación del repositorio FONEVI.

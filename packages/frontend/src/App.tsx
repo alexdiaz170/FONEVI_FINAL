@@ -27,6 +27,7 @@ const NotificacionesPage = React.lazy(() => import('./pages/Notificaciones'));
 const MovimientosLista = React.lazy(() => import('./pages/movimientos/MovimientosLista'));
 const MovimientosCrear = React.lazy(() => import('./pages/movimientos/MovimientosCrear'));
 const SolidaridadPage = React.lazy(() => import('./pages/Solidaridad'));
+const SimuladorCreditoPage = React.lazy(() => import('./pages/SimuladorCredito'));
 const AuditoriaPage = React.lazy(() => import('./pages/Auditoria'));
 const CierrePeriodoPage = React.lazy(() => import('./pages/CierrePeriodo'));
 const ReportesPage = React.lazy(() => import('./pages/Reportes'));
@@ -106,6 +107,14 @@ export default function App() {
               <Route path="crear" element={<CreditosCrear />} />
               <Route path=":id" element={<CreditosPerfil />} />
             </Route>
+            <Route
+              path="simulador-credito"
+              element={
+                <LazyLoader>
+                  <SimuladorCreditoPage />
+                </LazyLoader>
+              }
+            />
             <Route
               path="mora"
               element={

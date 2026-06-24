@@ -34,6 +34,17 @@ router.post(
   authorize('admin', 'superadmin'),
   creditoController.rechazar.bind(creditoController),
 );
+router.get(
+  '/capacidad/:socioId',
+  authenticate,
+  creditoController.calcularCapacidad.bind(creditoController),
+);
+router.get(
+  '/:id/amortizacion',
+  authenticate,
+  creditoController.getAmortizacion.bind(creditoController),
+);
+router.get('/:id/pagos', authenticate, creditoController.getPagos.bind(creditoController));
 router.post('/:id/pagar', authenticate, creditoController.pagarCuota.bind(creditoController));
 router.delete(
   '/:id/pagos/:pagoId',

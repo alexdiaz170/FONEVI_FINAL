@@ -2,7 +2,11 @@ import { PrismaClient } from '@prisma/client';
 import { getPrismaClient } from './prismaClient.js';
 import { Dividendo } from '../../domain/entities/Dividendo.js';
 import { DividendoSocio } from '../../domain/entities/DividendoSocio.js';
-import { IDividendoRepository } from '../../domain/repositories/IDividendoRepository.js';
+import {
+  IDividendoRepository,
+  DividendoDetail,
+  DividendoSocioDetail,
+} from '../../domain/repositories/IDividendoRepository.js';
 import { Monto } from '@fonevi/shared';
 
 export class PrismaDividendoRepository implements IDividendoRepository {
@@ -16,6 +20,33 @@ export class PrismaDividendoRepository implements IDividendoRepository {
       where: { id },
     })) as unknown as DividendoRow | null;
     return row ? this.toDomain(row) : null;
+  }
+
+  async findByIdWithSocios(id: string): Promise<DividendoDetail | null> {
+    const row = (await this.prisma.dividendo.findUnique({
+      where: { id },
+      include: {
+        socioDividendos: {
+          include: { socio: true },
+        },
+      } as never,
+    })) as unknown as
+      | (DividendoRow & {
+          socioDividendos: (DividendoSocioRow & { socio: { nombre: string } })[];
+        })
+      | null;
+    if (!row) return null;
+    const dividendo = this.toDomain(row);
+    const socios: DividendoSocioDetail[] = row.socioDividendos.map((s) => ({
+      id: s.id,
+      socioId: s.socioId,
+      socioNombre: s.socio.nombre,
+      monto: Number(s.monto),
+      pagado: s.pagado,
+      fechaPago: s.fechaPago,
+      createdAt: s.createdAt,
+    }));
+    return { ...dividendo, socios };
   }
 
   async findAll(page = 1, limit = 10) {

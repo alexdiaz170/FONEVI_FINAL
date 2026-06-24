@@ -29,6 +29,20 @@ export function createDividendoController(
       }
     },
 
+    async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+        const id = String(req.params.id ?? '');
+        const result = await dividendoRepo.findByIdWithSocios(id);
+        if (!result) {
+          apiResponse.error(res, 404, 'Dividendo no encontrado');
+          return;
+        }
+        apiResponse.success(res, result);
+      } catch (error) {
+        next(error);
+      }
+    },
+
     async create(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
         const parsed = crearDividendoSchema.safeParse(req.body);

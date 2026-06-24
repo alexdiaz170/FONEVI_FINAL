@@ -1,10 +1,17 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, DollarSign } from 'lucide-react';
 import { apiCrearAporte, apiListarPeriodos, apiListarSocios } from '../../lib/api';
 import { formatCurrency } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
+import {
+  GlassCard,
+  AnimatedStaggerContainer,
+  AnimatedStaggerItem,
+  AnimatedButton,
+  AnimatedFadeIn,
+} from '../../components/ui';
 
 function formatThousands(value: string): string {
   const digits = value.replace(/\D/g, '');
@@ -124,159 +131,195 @@ export default function AportesCrear() {
   };
 
   return (
-    <div>
-      <Link
-        to="/aportes"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy-700 mb-4"
-      >
-        <ArrowLeft size={16} /> Volver a lista
-      </Link>
+    <div className="relative">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -translate-y-1/4 translate-x-1/4 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/10 rounded-full translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
-      <div className="bg-white rounded-lg shadow p-6 max-w-2xl">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Registrar Aporte</h2>
+      <AnimatedStaggerContainer>
+        <AnimatedStaggerItem>
+          <Link
+            to="/aportes"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-navy-700 mb-4 transition-colors"
+          >
+            <ArrowLeft size={15} /> Volver a lista
+          </Link>
+        </AnimatedStaggerItem>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm mb-4">
-            <p>{error}</p>
-            {fieldErrors && (
-              <ul className="mt-1 list-disc list-inside text-xs">
-                {Object.entries(fieldErrors).map(([field, msgs]) => (
-                  <li key={field}>
-                    <strong>{field}:</strong> {msgs.join(', ')}
-                  </li>
-                ))}
-              </ul>
+        <AnimatedStaggerItem>
+          <GlassCard className="max-w-2xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-400 flex items-center justify-center shadow-md">
+                <DollarSign size={20} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Registrar Aporte</h2>
+                <p className="text-sm text-gray-500">Ingresa un nuevo aporte de socio</p>
+              </div>
+            </div>
+
+            {error && (
+              <AnimatedFadeIn>
+                <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
+                  <p>{error}</p>
+                  {fieldErrors && (
+                    <ul className="mt-1 list-disc list-inside text-xs">
+                      {Object.entries(fieldErrors).map(([field, msgs]) => (
+                        <li key={field}>
+                          <strong>{field}:</strong> {msgs.join(', ')}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </AnimatedFadeIn>
             )}
-          </div>
-        )}
 
-        <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Socio *</label>
-            <select
-              name="socioId"
-              value={form.socioId}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
+            <form
+              onSubmit={handleSubmit}
+              noValidate
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
-              <option value="">Seleccione un socio...</option>
-              {sociosData?.data.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nombre} ({s.numeroDocumento})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Periodo *</label>
-            <select
-              name="periodoId"
-              value={form.periodoId}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            >
-              <option value="">Seleccione un periodo...</option>
-              {periodos?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
-            <input
-              name="monto"
-              type="text"
-              inputMode="numeric"
-              value={formatThousands(form.monto)}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tipo de Operación *
-            </label>
-            <select
-              name="tipoOperacion"
-              value={form.tipoOperacion}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            >
-              {TIPOS_OPERACION.map((op) => (
-                <option key={op.value} value={op.value}>
-                  {op.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-            <select
-              name="estado"
-              value={form.estado}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            >
-              <option value="pendiente">Pendiente</option>
-              <option value="pagado">Pagado</option>
-              <option value="mora">Mora</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Pago</label>
-            <input
-              name="fechaPago"
-              type="date"
-              value={form.fechaPago}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Método</label>
-            <select
-              name="metodo"
-              value={form.metodo}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            >
-              {METODOS_PAGO.map((op) => (
-                <option key={op.value} value={op.value}>
-                  {op.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
-            <textarea
-              name="notas"
-              rows={3}
-              value={form.notas}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div className="md:col-span-2 flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-navy-700 text-white rounded-md text-sm font-medium hover:bg-navy-800 disabled:opacity-50"
-            >
-              {loading ? 'Guardando...' : 'Guardar Aporte'}
-            </button>
-            <Link
-              to="/aportes"
-              className="px-6 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-50"
-            >
-              Cancelar
-            </Link>
-          </div>
-        </form>
-      </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Socio <span className="text-red-400">*</span>
+                </label>
+                <select
+                  name="socioId"
+                  value={form.socioId}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
+                >
+                  <option value="">Seleccione un socio...</option>
+                  {sociosData?.data.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre} ({s.numeroDocumento})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Periodo <span className="text-red-400">*</span>
+                </label>
+                <select
+                  name="periodoId"
+                  value={form.periodoId}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
+                >
+                  <option value="">Seleccione un periodo...</option>
+                  {periodos?.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Monto <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">
+                    $
+                  </span>
+                  <input
+                    name="monto"
+                    type="text"
+                    inputMode="numeric"
+                    value={formatThousands(form.monto)}
+                    onChange={handleChange}
+                    className="w-full pl-8 pr-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Tipo de Operación <span className="text-red-400">*</span>
+                </label>
+                <select
+                  name="tipoOperacion"
+                  value={form.tipoOperacion}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
+                >
+                  {TIPOS_OPERACION.map((op) => (
+                    <option key={op.value} value={op.value}>
+                      {op.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Estado</label>
+                <select
+                  name="estado"
+                  value={form.estado}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
+                >
+                  <option value="pendiente">Pendiente</option>
+                  <option value="pagado">Pagado</option>
+                  <option value="mora">Mora</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Fecha de Pago
+                </label>
+                <input
+                  name="fechaPago"
+                  type="date"
+                  value={form.fechaPago}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Método</label>
+                <select
+                  name="metodo"
+                  value={form.metodo}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
+                >
+                  {METODOS_PAGO.map((op) => (
+                    <option key={op.value} value={op.value}>
+                      {op.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Notas</label>
+                <textarea
+                  name="notas"
+                  rows={3}
+                  value={form.notas}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all resize-none"
+                />
+              </div>
+              <div className="md:col-span-2 flex gap-3 pt-2">
+                <AnimatedButton
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl text-sm font-medium hover:from-emerald-700 hover:to-emerald-600 shadow-lg shadow-emerald-500/25 disabled:opacity-50 transition-all"
+                >
+                  {loading ? 'Guardando...' : 'Guardar Aporte'}
+                </AnimatedButton>
+                <Link
+                  to="/aportes"
+                  className="inline-flex items-center justify-center px-6 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-white hover:text-gray-800 transition-all"
+                >
+                  Cancelar
+                </Link>
+              </div>
+            </form>
+          </GlassCard>
+        </AnimatedStaggerItem>
+      </AnimatedStaggerContainer>
     </div>
   );
 }

@@ -249,5 +249,84 @@ export function createCreditoController(
         next(error);
       }
     },
+
+    async getAmortizacion(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+        const id = String(req.params.id ?? '');
+        const result = await estadoCuentaUseCase.execute(id);
+        const { credito, pagos } = result;
+        const pagosMap = new Map(pagos.map((p) => [p.numeroCuota, p]));
+        const data = result.tablaAmortizacion.map((c, i, arr) => {
+          const saldoInicial = i === 0 ? result.credito.monto : arr[i - 1]!.saldoRestante;
+          const pago = pagosMap.get(c.numeroCuota);
+          const fechaDesembolso = new Date(credito.fechaDesembolso);
+          const fechaVencimiento = new Date(fechaDesembolso);
+          fechaVencimiento.setMonth(fechaVencimiento.getMonth() + c.numeroCuota - 1);
+          return {
+            id: String(c.numeroCuota),
+            numeroCuota: c.numeroCuota,
+            fechaVencimiento: fechaVencimiento.toISOString(),
+            saldoInicial,
+            interes: c.montoInteres,
+            cuota: c.monto,
+            amortizacion: c.montoCapital,
+            saldoFinal: c.saldoRestante,
+            estado:
+              c.numeroCuota <= credito.cuotasPagadas
+                ? 'pagado'
+                : c.numeroCuota === (pago?.numeroCuota ?? 0)
+                  ? 'pagado'
+                  : 'pendiente',
+          };
+        });
+        apiResponse.success(res, data);
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async getPagos(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+        const id = String(req.params.id ?? '');
+        const result = await estadoCuentaUseCase.execute(id);
+        const data = result.pagos.map((p) => ({
+          id: p.id,
+          fecha: (p.fechaPago as Date).toISOString(),
+          monto: p.monto,
+          metodoPago: 'Efectivo',
+          referencia: '',
+          notas: `Cuota #${p.numeroCuota}`,
+        }));
+        apiResponse.success(res, data);
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async calcularCapacidad(req: Request, res: Response, next: NextFunction): Promise<void> {
+      try {
+        const socioId = String(req.params.socioId ?? '');
+        const socio = await socioRepo.findById(socioId);
+        if (!socio) {
+          apiResponse.error(res, 404, 'Socio no encontrado');
+          return;
+        }
+        const configService = new ConfiguracionService();
+        const multiplicador = await configService.getMultiplicadorMaximoCredito();
+        const capacidadBase = socio.ahorroAcumulado.value * multiplicador;
+        const creditosActivos = await (async () => {
+          const { getPrismaClient } =
+            await import('../../infrastructure/persistence/prismaClient.js');
+          const rows = await (getPrismaClient() as any).credito.findMany({
+            where: { socioId, estado: 'activo', eliminado: false },
+          });
+          return rows.reduce((sum: number, r: any) => sum + Number(r.saldoCapital), 0);
+        })();
+        const capacidadMaxima = Math.max(0, capacidadBase - creditosActivos);
+        apiResponse.success(res, { capacidadMaxima });
+      } catch (error) {
+        next(error);
+      }
+    },
   };
 }

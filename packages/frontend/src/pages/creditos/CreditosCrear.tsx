@@ -1,404 +1,366 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  apiCrearCredito,
-  apiCalcularCredito,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle,
+  AlertCircle,
+  Calculator,
+  PieChart,
+} from 'lucide-react';
+import {
   apiListarSocios,
-  apiListarCreditos,
-  apiGetConfiguraciones,
-  type AmortizacionPreviewDTO,
+  apiCrearCredito,
+  apiCalcularCapacidad,
+  type CrearCreditoDTO,
+  type SocioDTO,
 } from '../../lib/api';
-import { ApiError } from '../../lib/api';
 import { formatCurrency } from '../../lib/utils';
+import { ApiError } from '../../lib/api';
+import { AnimatedFadeIn, AnimatedButton } from '../../components/ui';
+
+const MESES_DISTRIBUCION = [3, 6, 9, 12, 18, 24, 36] as const;
 
 export default function CreditosCrear() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState<CrearCreditoDTO>({
     socioId: '',
-    monto: '',
-    tasaMensual: '',
-    cuotas: '',
+    monto: 0,
+    tasaInteresMensual: 2,
+    numeroCuotas: 3,
     fechaDesembolso: new Date().toISOString().split('T')[0],
     proposito: '',
     notas: '',
   });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [amortizacion, setAmortizacion] = useState<AmortizacionPreviewDTO | null>(null);
-  const [showTabla, setShowTabla] = useState(false);
-  const [calculando, setCalculando] = useState(false);
+  const [showAmort, setShowAmort] = useState(false);
 
-  const { data: sociosData } = useQuery({
-    queryKey: ['socios-select', 1],
-    queryFn: () => apiListarSocios(1, 100),
+  const { data: socios } = useQuery({
+    queryKey: ['socios-credito'],
+    queryFn: () => apiListarSocios(1, 200),
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
-  ) => {
-    let value = e.target.value;
-    if (e.target.name === 'tasaMensual' && value) {
-      const num = Number(value);
-      if (!isNaN(num)) value = String(Math.round(num * 10) / 10);
-    }
-    setForm((prev) => ({ ...prev, [e.target.name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    const monto = Number(form.monto);
-    const tasaMensual = Number(form.tasaMensual);
-    const cuotas = Number(form.cuotas);
-
-    if (!form.socioId) {
-      setError('Seleccione un socio');
-      return;
-    }
-    if (!form.monto || monto <= 0) {
-      setError('El monto debe ser mayor a 0');
-      return;
-    }
-    if (!form.tasaMensual || tasaMensual <= 0 || tasaMensual > 100) {
-      setError('La tasa debe ser entre 0.01 y 100');
-      return;
-    }
-    if (!form.cuotas || cuotas < 1 || !Number.isInteger(cuotas)) {
-      setError('Debe haber al menos 1 cuota');
-      return;
-    }
-    if (monto > capacidadDisponible) {
-      setError(
-        `El monto excede la capacidad disponible. Ahorro: ${formatCurrency(socioSeleccionado!.ahorroAcumulado)} × ${multiplicador} = ${formatCurrency(maxCredito)}${deudaActiva > 0 ? ` - deuda activa ${formatCurrency(deudaActiva)}` : ''} = ${formatCurrency(capacidadDisponible)}`,
-      );
-      return;
-    }
-    if (!form.fechaDesembolso) {
-      setError('Seleccione una fecha de desembolso');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await apiCrearCredito({
-        socioId: form.socioId,
-        monto,
-        tasaMensual,
-        cuotas,
-        fechaDesembolso: form.fechaDesembolso,
-        proposito: form.proposito || null,
-        notas: form.notas || null,
-      });
-      navigate('/creditos', {
-        state: {
-          success:
-            'Crédito creado correctamente. Queda en estado pendiente hasta que un administrador lo apruebe.',
-        },
-      });
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Error al crear crédito');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const { data: configs } = useQuery({
-    queryKey: ['configuraciones'],
-    queryFn: () => apiGetConfiguraciones(),
-  });
-  const multiplicador = Number(
-    configs?.find((c) => c.clave === 'multiplicador_maximo_credito')?.valor ?? 4,
-  );
-  const tasaFromConfig = configs?.find((c) => c.clave === 'tasa_interes_mensual')?.valor;
-
-  const socioSeleccionado = sociosData?.data.find((s) => s.id === form.socioId);
-  const maxCredito = socioSeleccionado ? socioSeleccionado.ahorroAcumulado * multiplicador : 0;
-
-  const { data: creditosData } = useQuery({
-    queryKey: ['creditos-socio', form.socioId],
-    queryFn: () =>
-      apiListarCreditos({ socioId: form.socioId, estado: 'activo,pendiente', limit: 100 }),
+  const { data: capacidad } = useQuery({
+    queryKey: ['capacidad', form.socioId],
+    queryFn: () => apiCalcularCapacidad(form.socioId).then((r) => r.capacidadMaxima),
     enabled: !!form.socioId,
+    staleTime: 0,
   });
-  const deudaActiva = creditosData?.data.reduce((sum, c) => sum + c.saldoCapital, 0) ?? 0;
-  const capacidadDisponible = Math.max(0, maxCredito - deudaActiva);
 
-  useEffect(() => {
-    if (tasaFromConfig !== undefined) {
-      setForm((prev) => {
-        if (prev.tasaMensual !== tasaFromConfig) {
-          return { ...prev, tasaMensual: tasaFromConfig };
-        }
-        return prev;
-      });
-    }
-  }, [tasaFromConfig]);
+  const socioSeleccionado = socios?.data?.find((s: SocioDTO) => s.id === form.socioId);
 
-  const montoNum = Number(form.monto);
-  const tasaNum = Number(form.tasaMensual);
-  const cuotasNum = Number(form.cuotas);
-  const cuotaEstimada =
-    montoNum > 0 && tasaNum > 0 && cuotasNum > 0
-      ? (montoNum * (tasaNum / 100) * Math.pow(1 + tasaNum / 100, cuotasNum)) /
-        (Math.pow(1 + tasaNum / 100, cuotasNum) - 1)
+  const cuotaMensual =
+    form.monto > 0 && form.numeroCuotas > 0
+      ? form.monto *
+        (((form.tasaInteresMensual / 100) *
+          Math.pow(1 + form.tasaInteresMensual / 100, form.numeroCuotas)) /
+          (Math.pow(1 + form.tasaInteresMensual / 100, form.numeroCuotas) - 1))
       : 0;
 
-  useEffect(() => {
-    if (montoNum > 0 && tasaNum > 0 && cuotasNum > 0) {
-      const timer = setTimeout(async () => {
-        setCalculando(true);
-        try {
-          const data = await apiCalcularCredito(montoNum, tasaNum, cuotasNum);
-          setAmortizacion(data);
-        } catch {
-          setAmortizacion(null);
-        } finally {
-          setCalculando(false);
-        }
-      }, 300);
-      return () => clearTimeout(timer);
-    } else {
-      setAmortizacion(null);
+  const generarAmortizacion = () => {
+    if (!form.monto || !form.numeroCuotas) return [];
+    const tasaMensual = form.tasaInteresMensual / 100;
+    const cuota = cuotaMensual;
+    let saldo = form.monto;
+    const tabla: { n: number; cuota: number; interes: number; amort: number; saldo: number }[] = [];
+    for (let i = 1; i <= form.numeroCuotas; i++) {
+      const interes = saldo * tasaMensual;
+      const amort = cuota - interes;
+      saldo = i === form.numeroCuotas ? 0 : saldo - amort;
+      tabla.push({ n: i, cuota, interes, amort, saldo: Math.round(saldo * 100) / 100 });
     }
-  }, [form.monto, form.tasaMensual, form.cuotas]);
+    return tabla;
+  };
+
+  const amortizacion = form.monto > 0 ? generarAmortizacion() : [];
+
+  const crearMutation = useMutation({
+    mutationFn: (data: CrearCreditoDTO) =>
+      apiCrearCredito({
+        socioId: data.socioId,
+        monto: data.monto,
+        tasaMensual: data.tasaInteresMensual,
+        cuotas: data.numeroCuotas,
+        fechaDesembolso: data.fechaDesembolso,
+        proposito: data.proposito || null,
+        notas: data.notas || null,
+      }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['creditos'] });
+      navigate('/creditos', {
+        state: { success: `Crédito por ${formatCurrency(form.monto)} creado exitosamente` },
+      });
+    },
+  });
+
+  const totalInteres = amortizacion.reduce((acc, row) => acc + row.interes, 0);
+
+  const validar = () => {
+    if (!form.socioId) return 'Seleccione un socio';
+    if (form.monto <= 0) return 'Ingrese un monto válido';
+    if (capacidad && form.monto > capacidad) return 'El monto excede la capacidad máxima del socio';
+    return null;
+  };
+
+  const error =
+    form.socioId && !socios?.data?.find((s: SocioDTO) => s.id === form.socioId)
+      ? 'Socio no encontrado'
+      : null;
 
   return (
-    <div>
-      <Link
-        to="/creditos"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy-700 mb-4"
-      >
-        <ArrowLeft size={16} /> Volver a lista
-      </Link>
+    <div className="max-w-3xl mx-auto">
+      <AnimatedFadeIn>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-lg font-bold text-navy-800 mb-2">Nuevo Crédito</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Complete la información para registrar el préstamo
+          </p>
 
-      <div className="bg-white rounded-lg shadow p-6 max-w-2xl">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Nuevo Crédito</h2>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm mb-4">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Socio *</label>
-            <select
-              name="socioId"
-              value={form.socioId}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            >
-              <option value="">Seleccione un socio...</option>
-              {sociosData?.data.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nombre} ({s.numeroDocumento})
-                </option>
-              ))}
-            </select>
-          </div>
-          {socioSeleccionado && (
-            <div className="md:col-span-2 bg-gray-50 border border-gray-200 rounded p-3 text-sm space-y-1">
-              <p className="text-gray-600">
-                <span className="font-medium">Ahorro acumulado:</span>{' '}
-                {formatCurrency(socioSeleccionado.ahorroAcumulado)}
-                <span className="mx-2">·</span>
-                <span className="font-medium">Capacidad total:</span> {formatCurrency(maxCredito)}
-                <span className="ml-1 text-gray-400">(×{multiplicador})</span>
-              </p>
-              {deudaActiva > 0 && (
-                <p className="text-gray-600">
-                  <span className="font-medium">Deuda activa:</span>{' '}
-                  <span className="text-orange-600">{formatCurrency(deudaActiva)}</span>
-                </p>
-              )}
-              <p className="text-gray-600">
-                <span className="font-medium">Capacidad disponible:</span>{' '}
-                <span
-                  className={`font-bold ${montoNum > capacidadDisponible ? 'text-red-600' : 'text-green-700'}`}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const msg = validar();
+              if (msg) {
+                alert(msg);
+                return;
+              }
+              crearMutation.mutate(form);
+            }}
+            className="space-y-5"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-navy-700 mb-1.5">Socio</label>
+                <select
+                  value={form.socioId}
+                  onChange={(e) => setForm({ ...form, socioId: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
                 >
-                  {formatCurrency(capacidadDisponible)}
-                </span>
-              </p>
+                  <option value="">Seleccione un socio</option>
+                  {socios?.data?.map((s: SocioDTO) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre} — {s.numeroDocumento}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                  Monto solicitado
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">
+                    $
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1000}
+                    value={form.monto || ''}
+                    onChange={(e) => setForm({ ...form, monto: Number(e.target.value) })}
+                    className="w-full pl-7 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
+                  />
+                </div>
+                {capacidad && (
+                  <p
+                    className={`mt-1 text-xs flex items-center gap-1 ${form.monto > capacidad ? 'text-red-500' : 'text-emerald-600'}`}
+                  >
+                    {form.monto > capacidad ? <AlertCircle size={12} /> : <CheckCircle size={12} />}
+                    Capacidad máxima: {formatCurrency(capacidad)}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                  Tasa interés mensual (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={form.tasaInteresMensual || ''}
+                    onChange={(e) =>
+                      setForm({ ...form, tasaInteresMensual: Number(e.target.value) })
+                    }
+                    className="w-full pr-7 pl-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                    %
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                  Número de cuotas
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {MESES_DISTRIBUCION.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setForm({ ...form, numeroCuotas: m })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                        form.numeroCuotas === m
+                          ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-purple-300'
+                      }`}
+                    >
+                      {m} meses
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                  Fecha de desembolso
+                </label>
+                <input
+                  type="date"
+                  value={form.fechaDesembolso}
+                  onChange={(e) => setForm({ ...form, fechaDesembolso: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                  Propósito del crédito
+                </label>
+                <input
+                  type="text"
+                  value={form.proposito}
+                  placeholder="Ej: Capital de trabajo, mejora de vivienda..."
+                  onChange={(e) => setForm({ ...form, proposito: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                  Notas (opcional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={form.notas}
+                  placeholder="Notas internas..."
+                  onChange={(e) => setForm({ ...form, notas: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all resize-none"
+                />
+              </div>
             </div>
-          )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
-            <input
-              name="monto"
-              type="number"
-              min="1"
-              value={form.monto}
-              onChange={handleChange}
-              placeholder="0"
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tasa Mensual %
-              <span className="text-gray-400 font-normal ml-1">(desde configuración)</span>
-            </label>
-            <input
-              name="tasaMensual"
-              type="number"
-              min="0"
-              step="0.1"
-              value={form.tasaMensual}
-              readOnly
-              className="w-full px-3 py-2 border rounded-md text-sm bg-gray-100 text-gray-500 cursor-not-allowed"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Número de Cuotas *
-            </label>
-            <input
-              name="cuotas"
-              type="number"
-              min="1"
-              step="1"
-              value={form.cuotas}
-              onChange={handleChange}
-              placeholder="0"
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha Desembolso *
-            </label>
-            <input
-              name="fechaDesembolso"
-              type="date"
-              value={form.fechaDesembolso}
-              onChange={handleChange}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Propósito</label>
-            <input
-              name="proposito"
-              value={form.proposito}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
-            <textarea
-              name="notas"
-              rows={3}
-              value={form.notas}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-
-          {amortizacion && (
-            <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded p-3 text-sm space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-blue-800 font-medium">Resumen del crédito</span>
-                {calculando && <span className="text-blue-400 text-xs">Calculando...</span>}
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div>
-                  <span className="text-blue-600">Cuota fija:</span>
-                  <p className="text-blue-900 font-mono font-bold">
-                    {formatCurrency(amortizacion.cuotaFija)}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-blue-600">Total intereses:</span>
-                  <p className="text-blue-900 font-mono font-bold">
-                    {formatCurrency(amortizacion.totalIntereses)}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-blue-600">Total seguro:</span>
-                  <p className="text-blue-900 font-mono font-bold">
-                    {formatCurrency(amortizacion.totalSeguro)}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-blue-600">Total a pagar:</span>
-                  <p className="text-blue-900 font-mono font-bold">
-                    {formatCurrency(amortizacion.totalPagar)}
-                  </p>
+            {form.socioId && socioSeleccionado && (
+              <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-100 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-600/10 flex items-center justify-center shrink-0">
+                    <Calculator size={16} className="text-purple-600" />
+                  </div>
+                  <div className="flex-1 text-sm">
+                    <p className="font-semibold text-navy-800 mb-1">Resumen del crédito</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                      <div>
+                        <span className="text-gray-500">Capital</span>
+                        <p className="font-mono font-semibold text-navy-700">
+                          {formatCurrency(form.monto)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Cuota mensual</span>
+                        <p className="font-mono font-semibold text-purple-700">
+                          {formatCurrency(cuotaMensual)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Plazo</span>
+                        <p className="font-semibold text-navy-700">{form.numeroCuotas} meses</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Total intereses</span>
+                        <p className="font-mono font-semibold text-amber-600">
+                          {formatCurrency(totalInteres)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowTabla(!showTabla)}
-                className="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900 font-medium"
-              >
-                {showTabla ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                {showTabla ? 'Ocultar' : 'Ver'} tabla de amortización
-              </button>
-              {showTabla && (
-                <div className="overflow-x-auto mt-2">
-                  <table className="w-full text-xs text-gray-700">
-                    <thead>
-                      <tr className="border-b border-blue-200">
-                        <th className="text-left py-1 pr-2">#</th>
-                        <th className="text-right py-1 px-2">Cuota</th>
-                        <th className="text-right py-1 px-2">Capital</th>
-                        <th className="text-right py-1 px-2">Interés</th>
-                        <th className="text-right py-1 px-2">Seguro</th>
-                        <th className="text-right py-1 pl-2">Saldo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {amortizacion.tabla.map((row) => (
-                        <tr key={row.numero} className="border-b border-blue-100">
-                          <td className="py-1 pr-2">{row.numero}</td>
-                          <td className="text-right py-1 px-2 font-mono">
-                            {formatCurrency(row.cuota)}
-                          </td>
-                          <td className="text-right py-1 px-2 font-mono">
-                            {formatCurrency(row.capital)}
-                          </td>
-                          <td className="text-right py-1 px-2 font-mono">
-                            {formatCurrency(row.interes)}
-                          </td>
-                          <td className="text-right py-1 px-2 font-mono">
-                            {formatCurrency(row.seguro)}
-                          </td>
-                          <td className="text-right py-1 pl-2 font-mono">
-                            {formatCurrency(row.saldo)}
-                          </td>
+            )}
+
+            {amortizacion.length > 0 && (
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowAmort(!showAmort)}
+                  className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-navy-700 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <PieChart size={16} className="text-purple-600" />
+                    Tabla de amortización
+                  </div>
+                  {showAmort ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                {showAmort && (
+                  <div className="overflow-x-auto border-t border-gray-100">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-gray-50 text-gray-500">
+                          <th className="text-left p-2.5 font-semibold">N°</th>
+                          <th className="text-right p-2.5 font-semibold">Cuota</th>
+                          <th className="text-right p-2.5 font-semibold">Interés</th>
+                          <th className="text-right p-2.5 font-semibold text-emerald-600">
+                            Amortización
+                          </th>
+                          <th className="text-right p-2.5 font-semibold">Saldo</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
+                      </thead>
+                      <tbody>
+                        {amortizacion.map((row) => (
+                          <tr
+                            key={row.n}
+                            className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors"
+                          >
+                            <td className="p-2.5 font-medium text-gray-600">{row.n}</td>
+                            <td className="p-2.5 text-right font-mono">
+                              {formatCurrency(row.cuota)}
+                            </td>
+                            <td className="p-2.5 text-right font-mono text-amber-600">
+                              {formatCurrency(row.interes)}
+                            </td>
+                            <td className="p-2.5 text-right font-mono text-emerald-600">
+                              {formatCurrency(row.amort)}
+                            </td>
+                            <td className="p-2.5 text-right font-mono text-gray-700">
+                              {formatCurrency(row.saldo)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
 
-          <div className="md:col-span-2 flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-navy-700 text-white rounded-md text-sm font-medium hover:bg-navy-800 disabled:opacity-50"
-            >
-              {loading ? 'Guardando...' : 'Solicitar Crédito'}
-            </button>
-            <Link
-              to="/creditos"
-              className="px-6 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-50"
-            >
-              Cancelar
-            </Link>
-          </div>
-        </form>
-      </div>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <AnimatedButton
+                type="button"
+                onClick={() => navigate('/creditos')}
+                className="px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </AnimatedButton>
+              <AnimatedButton
+                type="submit"
+                disabled={crearMutation.isPending}
+                className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-purple-500 rounded-xl shadow-lg shadow-purple-500/25 hover:from-purple-700 hover:to-purple-600 disabled:opacity-50 transition-all"
+              >
+                {crearMutation.isPending ? 'Creando...' : 'Crear Crédito'}
+              </AnimatedButton>
+            </div>
+          </form>
+        </div>
+      </AnimatedFadeIn>
     </div>
   );
 }

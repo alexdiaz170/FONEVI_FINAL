@@ -3,9 +3,9 @@
 ## File List
 
 - `README.md`
-- `ARQUITECTURA_REFACTORACION.md`
-- `DEPLOYMENT.md`
-- `LIMPIEZA_ARQUITECTURA_HIBRIDA.md`
+- `docs/ARQUITECTURA_REFACTORACION.md`
+- `docs/DEPLOYMENT.md`
+- `docs/LIMPIEZA_ARQUITECTURA_HIBRIDA.md`
 - Other project files (see directory listing)
 
 ---

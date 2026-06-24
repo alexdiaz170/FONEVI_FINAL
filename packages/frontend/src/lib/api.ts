@@ -335,6 +335,63 @@ export interface EstadoCuentaDTO {
   totalPendiente: number;
 }
 
+export interface CrearCreditoDTO {
+  socioId: string;
+  monto: number;
+  tasaInteresMensual: number;
+  numeroCuotas: number;
+  fechaDesembolso: string;
+  proposito: string;
+  notas: string;
+}
+
+export interface AmortizacionDTO {
+  id: string;
+  numeroCuota: number;
+  fechaVencimiento: string;
+  saldoInicial: number;
+  interes: number;
+  cuota: number;
+  amortizacion: number;
+  saldoFinal: number;
+  estado: string;
+}
+
+export interface PagoCreditoDTO {
+  id: string;
+  fecha: string;
+  monto: number;
+  metodoPago: string;
+  referencia: string;
+  notas: string;
+}
+
+export async function apiGetCredito(id: string) {
+  const res = await fetchApi(`/api/creditos/${id}`, { method: 'GET' });
+  const json = await res.json();
+  return json.data.credito as CreditoDTO & {
+    tasaInteresMensual?: number;
+    nombreSocio: string;
+    cuotasRestantes: number;
+  };
+}
+
+export async function apiGetAmortizacion(id: string) {
+  const res = await fetchApi(`/api/creditos/${id}/amortizacion`, { method: 'GET' });
+  const json = await res.json();
+  return { data: json.data as AmortizacionDTO[] };
+}
+
+export async function apiGetPagosCredito(id: string) {
+  const res = await fetchApi(`/api/creditos/${id}/pagos`, { method: 'GET' });
+  const json = await res.json();
+  return json.data as PagoCreditoDTO[];
+}
+
+export async function apiCalcularCapacidad(socioId: string) {
+  return api<{ capacidadMaxima: number }>(`/api/creditos/capacidad/${socioId}`);
+}
+
 export async function apiResumenCreditos() {
   return api<ResumenCreditos>('/api/creditos/resumen');
 }
@@ -920,8 +977,26 @@ export interface DividendoDTO {
   createdAt: string;
 }
 
+export interface DividendoSocioDTO {
+  id: string;
+  socioId: string;
+  socioNombre: string;
+  monto: number;
+  pagado: boolean;
+  fechaPago: string | null;
+  createdAt: string;
+}
+
+export interface DividendoDetalleDTO extends DividendoDTO {
+  socios: DividendoSocioDTO[];
+}
+
 export async function apiListarDividendos(page = 1, limit = 10) {
   return apiPaginated<DividendoDTO>(`/api/dividendos?page=${page}&limit=${limit}`);
+}
+
+export async function apiGetDividendo(id: string) {
+  return api<DividendoDetalleDTO>(`/api/dividendos/${id}`);
 }
 
 export async function apiCrearDividendo(data: { periodo: string; montoTotal: number }) {

@@ -1,346 +1,445 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Trash2, FileSpreadsheet, FileText } from 'lucide-react';
-import { apiObtenerCredito, apiAprobarCredito, apiEliminarPagoCuota } from '../../lib/api';
+import {
+  ArrowLeft,
+  Check,
+  X,
+  Download,
+  FileText,
+  FileSpreadsheet,
+  Calendar,
+  DollarSign,
+  Percent,
+  Clock,
+  BadgeCheck,
+  CreditCard,
+  PiggyBank,
+  Users,
+} from 'lucide-react';
+import {
+  apiGetCredito,
+  apiGetAmortizacion,
+  apiGetPagosCredito,
+  apiAprobarCredito,
+  apiRechazarCredito,
+  type AmortizacionDTO,
+  type PagoCreditoDTO,
+} from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
-import { useState } from 'react';
 import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
+import { useAuthStore } from '../../stores/authStore';
+import {
+  AnimatedFadeIn,
+  AnimatedStaggerContainer,
+  AnimatedStaggerItem,
+  AnimatedTableRow,
+  AnimatedButton,
+} from '../../components/ui';
 
 export default function CreditosPerfil() {
   const { id } = useParams<{ id: string }>();
+  const usuario = useAuthStore((s) => s.usuario);
+  const esSocio = usuario?.rol === 'socio';
   const queryClient = useQueryClient();
-  const [error, setError] = useState('');
+  const [showAllAmort, setShowAllAmort] = useState(false);
 
   const {
-    data: estadoCuenta,
+    data: credito,
     isLoading,
-    error: queryError,
+    error,
   } = useQuery({
     queryKey: ['credito', id],
-    queryFn: () => apiObtenerCredito(id!),
+    queryFn: () => apiGetCredito(id!),
     enabled: !!id,
+    staleTime: 0,
+  });
+
+  const { data: amortizacion } = useQuery({
+    queryKey: ['amortizacion', id],
+    queryFn: () => apiGetAmortizacion(id!),
+    enabled: !!id,
+    staleTime: 0,
+  });
+
+  const { data: pagos } = useQuery({
+    queryKey: ['pagos-credito', id],
+    queryFn: () => apiGetPagosCredito(id!),
+    enabled: !!id,
+    staleTime: 0,
   });
 
   const aprobarMutation = useMutation({
     mutationFn: () => apiAprobarCredito(id!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['credito', id] });
-      queryClient.invalidateQueries({ queryKey: ['creditos'] });
-    },
-    onError: (err) => setError(err instanceof ApiError ? err.message : 'Error al aprobar crédito'),
-  });
-
-  const eliminarPagoMutation = useMutation({
-    mutationFn: (pagoId: string) => apiEliminarPagoCuota(id!, pagoId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['credito', id] }),
-    onError: (err) => setError(err instanceof ApiError ? err.message : 'Error al eliminar pago'),
   });
 
-  const amortizacionColumns: ExportColumn[] = [
-    { header: 'N°', key: 'numeroCuota' },
-    { header: 'Cuota', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Capital', key: 'montoCapital', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Interés', key: 'montoInteres', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Seguro', key: 'seguro', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Saldo', key: 'saldoRestante', format: (v) => formatCurrency(Number(v)) },
-  ];
+  const rechazarMutation = useMutation({
+    mutationFn: () => apiRechazarCredito(id!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['credito', id] }),
+  });
 
-  const pagosColumns: ExportColumn[] = [
+  const amortVisible = amortizacion?.data ?? [];
+  const amortDisplay = showAllAmort ? amortVisible : amortVisible.slice(0, 10);
+
+  const estadoBadge: Record<string, string> = {
+    pendiente: 'bg-amber-50 text-amber-700 border border-amber-200',
+    activo: 'bg-blue-50 text-blue-700 border border-blue-200',
+    pagado: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    cancelado: 'bg-red-50 text-red-700 border border-red-200',
+  };
+
+  const estadoPagado: Record<string, string> = {
+    pagado: 'text-emerald-600 bg-emerald-50',
+    pendiente: 'text-amber-600 bg-amber-50 border border-amber-200',
+    vencido: 'text-red-600 bg-red-50 border border-red-200',
+  };
+
+  const exportColumnsAmort: ExportColumn[] = [
     { header: 'N° Cuota', key: 'numeroCuota' },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Capital', key: 'montoCapital', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Interés', key: 'montoInteres', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Fecha', key: 'fechaPago', format: (v) => formatDate(String(v)) },
+    { header: 'Fecha Vencimiento', key: 'fechaVencimiento', format: (v) => formatDate(String(v)) },
+    { header: 'Saldo Inicial', key: 'saldoInicial', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Interés', key: 'interes', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Cuota', key: 'cuota', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Amortización', key: 'amortizacion', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Saldo Final', key: 'saldoFinal', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Estado', key: 'estado' },
+    { header: 'Fecha Pago', key: 'fechaPago', format: (v) => (v ? formatDate(String(v)) : '—') },
   ];
 
-  function handleExportAmortizacion() {
-    exportToExcel(
-      tablaAmortizacion as unknown as Record<string, unknown>[],
-      amortizacionColumns,
-      `amortizacion-${id}`,
-    );
-  }
+  const exportColumnsPagos: ExportColumn[] = [
+    { header: 'Fecha', key: 'fecha', format: (v) => formatDate(String(v)) },
+    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Método', key: 'metodoPago' },
+    { header: 'Referencia', key: 'referencia' },
+    { header: 'Notas', key: 'notas' },
+  ];
 
-  async function handleExportAmortizacionPDF() {
-    await exportToPDF(
-      tablaAmortizacion as unknown as Record<string, unknown>[],
-      amortizacionColumns,
-      `Tabla de Amortización - Crédito #${id}`,
-      `amortizacion-${id}`,
-    );
-  }
-
-  function handleExportPagos() {
-    exportToExcel(pagos as unknown as Record<string, unknown>[], pagosColumns, `pagos-${id}`);
-  }
-
-  async function handleExportPagosPDF() {
-    await exportToPDF(
-      pagos as unknown as Record<string, unknown>[],
-      pagosColumns,
-      `Pagos Realizados - Crédito #${id}`,
-      `pagos-${id}`,
-    );
-  }
-
-  if (isLoading)
+  if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 text-center text-gray-400">Cargando...</div>
-    );
-  if (queryError || !estadoCuenta)
-    return (
-      <div className="bg-white rounded-lg shadow p-8 text-center text-red-500">
-        Error: {(queryError as ApiError)?.message ?? 'Crédito no encontrado'}
+      <div className="flex items-center justify-center p-12">
+        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
-
-  const { credito, pagos, tablaAmortizacion, totalPagado, totalPendiente } = estadoCuenta;
-
-  const MESES = [
-    'Enero',
-    'Febrero',
-    'Marzo',
-    'Abril',
-    'Mayo',
-    'Junio',
-    'Julio',
-    'Agosto',
-    'Septiembre',
-    'Octubre',
-    'Noviembre',
-    'Diciembre',
-  ];
-
-  function getPeriodo(numeroCuota: number): string {
-    if (!credito.fechaDesembolso) return '—';
-    const fechaBase = new Date(credito.fechaDesembolso);
-    if (isNaN(fechaBase.getTime())) return '—';
-    fechaBase.setMonth(fechaBase.getMonth() + numeroCuota);
-    return `${MESES[fechaBase.getMonth()]} ${fechaBase.getFullYear()}`;
   }
+  if (error)
+    return <div className="p-8 text-center text-red-500">Error: {(error as ApiError).message}</div>;
+  if (!credito) return <div className="p-8 text-center text-gray-400">Crédito no encontrado</div>;
 
   return (
     <div>
-      <Link
-        to="/creditos"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy-700 mb-4"
-      >
-        <ArrowLeft size={16} /> Volver a lista
-      </Link>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm mb-4">
-          {error}
+      <AnimatedFadeIn>
+        <div className="flex items-center gap-3 mb-6">
+          <Link
+            to="/creditos"
+            className="w-9 h-9 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-white transition-all"
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <h2 className="text-lg font-bold text-navy-800">Detalle del Crédito</h2>
+            <p className="text-xs text-gray-500">ID: {credito.id}</p>
+          </div>
+          <span
+            className={`ml-auto px-3 py-1 rounded-full text-xs font-medium ${estadoBadge[credito.estado] ?? 'bg-gray-50 text-gray-600 border border-gray-200'}`}
+          >
+            {credito.estado}
+          </span>
         </div>
+      </AnimatedFadeIn>
+
+      <AnimatedStaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <AnimatedStaggerItem>
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-100 p-3.5 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center">
+                <DollarSign size={14} className="text-purple-600" />
+              </div>
+              <span className="text-xs text-gray-500">Monto solicitado</span>
+            </div>
+            <p className="text-lg font-bold text-navy-800 font-mono">
+              {formatCurrency(credito.monto)}
+            </p>
+          </div>
+        </AnimatedStaggerItem>
+        <AnimatedStaggerItem>
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-100 p-3.5 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <BadgeCheck size={14} className="text-emerald-600" />
+              </div>
+              <span className="text-xs text-gray-500">Cuota mensual</span>
+            </div>
+            <p className="text-lg font-bold text-emerald-700 font-mono">
+              {formatCurrency(credito.cuotaMensual)}
+            </p>
+          </div>
+        </AnimatedStaggerItem>
+        <AnimatedStaggerItem>
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-100 p-3.5 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Percent size={14} className="text-blue-600" />
+              </div>
+              <span className="text-xs text-gray-500">Tasa mensual</span>
+            </div>
+            <p className="text-lg font-bold text-blue-700">
+              {credito.tasaMensual ?? credito.tasaInteresMensual}%
+            </p>
+          </div>
+        </AnimatedStaggerItem>
+        <AnimatedStaggerItem>
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-100 p-3.5 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center">
+                <Clock size={14} className="text-amber-600" />
+              </div>
+              <span className="text-xs text-gray-500">Progreso</span>
+            </div>
+            <p className="text-lg font-bold text-amber-700">
+              {credito.cuotasPagadas}/{credito.cuotas} cuotas
+            </p>
+          </div>
+        </AnimatedStaggerItem>
+      </AnimatedStaggerContainer>
+
+      {credito.estado === 'pendiente' && !esSocio && (
+        <AnimatedFadeIn>
+          <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-100 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-purple-600/10 flex items-center justify-center">
+                <CreditCard size={18} className="text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-navy-800">
+                  Crédito pendiente de aprobación
+                </p>
+                <p className="text-xs text-gray-500">
+                  Revise los detalles antes de tomar una decisión
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <AnimatedButton
+                onClick={() => rechazarMutation.mutate()}
+                disabled={rechazarMutation.isPending}
+                className="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                <X size={14} /> Rechazar
+              </AnimatedButton>
+              <AnimatedButton
+                onClick={() => aprobarMutation.mutate()}
+                disabled={aprobarMutation.isPending}
+                className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+              >
+                <Check size={14} /> Aprobar
+              </AnimatedButton>
+            </div>
+          </div>
+        </AnimatedFadeIn>
       )}
 
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Estado de Cuenta</h2>
-              <p className="text-sm text-gray-500">Socio: {credito.nombreSocio || '—'}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span
-                className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
-                  credito.estado === 'pendiente'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : credito.estado === 'activo'
-                      ? 'bg-blue-100 text-blue-700'
-                      : credito.estado === 'pagado'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
-                }`}
-              >
-                {credito.estado}
-              </span>
-              {credito.estado === 'pendiente' && (
-                <button
-                  onClick={() => aprobarMutation.mutate()}
-                  disabled={aprobarMutation.isPending}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50"
-                >
-                  <Check size={16} />{' '}
-                  {aprobarMutation.isPending ? 'Aprobando...' : 'Aprobar Crédito'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <ResumenCard label="Monto Original" value={formatCurrency(credito.monto)} />
-          <ResumenCard label="Cuota Mensual" value={formatCurrency(credito.cuotaMensual)} />
-          <ResumenCard label="Saldo Capital" value={formatCurrency(credito.saldoCapital)} />
-          <ResumenCard label="Cuotas" value={`${credito.cuotasPagadas}/${credito.cuotas}`} />
-          <ResumenCard label="Total Pagado" value={formatCurrency(totalPagado)} variant="green" />
-          <ResumenCard
-            label="Total Pendiente"
-            value={formatCurrency(totalPendiente)}
-            variant="red"
-          />
-          <ResumenCard label="Tasa Mensual" value={`${credito.tasaMensual}%`} />
-          <ResumenCard label="Desembolso" value={formatDate(credito.fechaDesembolso)} />
-        </div>
-
-        <div className="p-6 border-t">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-              Tabla de Amortización
-            </h3>
+      <AnimatedFadeIn>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleExportAmortizacion}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
-              >
-                <FileSpreadsheet size={14} /> Excel
-              </button>
-              <button
-                onClick={handleExportAmortizacionPDF}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100"
-              >
-                <FileText size={14} /> PDF
-              </button>
+              <Calendar size={16} className="text-purple-600" />
+              <h3 className="text-sm font-semibold text-navy-800">Plan de amortización</h3>
+              <span className="text-xs text-gray-400">({amortVisible.length} cuotas)</span>
             </div>
+            {amortVisible.length > 0 && (
+              <div className="flex gap-2">
+                <AnimatedButton
+                  onClick={() =>
+                    exportToExcel(
+                      amortVisible as unknown as Record<string, unknown>[],
+                      exportColumnsAmort,
+                      'amortizacion',
+                    )
+                  }
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
+                >
+                  <FileSpreadsheet size={13} /> Excel
+                </AnimatedButton>
+                <AnimatedButton
+                  onClick={() =>
+                    exportToPDF(
+                      amortVisible as unknown as Record<string, unknown>[],
+                      exportColumnsAmort,
+                      'Plan de amortización',
+                      'amortizacion',
+                    )
+                  }
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
+                >
+                  <FileText size={13} /> PDF
+                </AnimatedButton>
+              </div>
+            )}
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 text-gray-600">
-                  <th className="text-left p-2 font-medium">N°</th>
-                  <th className="text-left p-2 font-medium">Periodo</th>
-                  <th className="text-right p-2 font-medium">Cuota</th>
-                  <th className="text-right p-2 font-medium">Capital</th>
-                  <th className="text-right p-2 font-medium">Interés</th>
-                  <th className="text-right p-2 font-medium">Seguro</th>
-                  <th className="text-right p-2 font-medium">Saldo</th>
-                  <th className="text-center p-2 font-medium">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tablaAmortizacion.map((cuota) => {
-                  const pagada = pagos.some((p) => p.numeroCuota === cuota.numeroCuota);
-                  return (
-                    <tr
-                      key={cuota.numeroCuota}
-                      className={`border-t ${pagada ? 'bg-green-50' : ''}`}
-                    >
-                      <td className="p-2">{cuota.numeroCuota}</td>
-                      <td className="p-2 text-gray-500 text-xs">{getPeriodo(cuota.numeroCuota)}</td>
-                      <td className="p-2 text-right font-mono">{formatCurrency(cuota.monto)}</td>
-                      <td className="p-2 text-right font-mono">
-                        {formatCurrency(cuota.montoCapital)}
-                      </td>
-                      <td className="p-2 text-right font-mono">
-                        {formatCurrency(cuota.montoInteres)}
-                      </td>
-                      <td className="p-2 text-right font-mono text-amber-600">
-                        {formatCurrency(cuota.seguro)}
-                      </td>
-                      <td className="p-2 text-right font-mono">
-                        {formatCurrency(cuota.saldoRestante)}
-                      </td>
-                      <td className="p-2 text-center">
-                        {pagada ? (
-                          <span className="text-green-600 text-xs font-medium">✓ Pagada</span>
-                        ) : (
-                          <span className="text-gray-400 text-xs">Pendiente</span>
-                        )}
-                      </td>
+          {amortDisplay.length > 0 ? (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 text-gray-500">
+                      <th className="text-center p-3 font-semibold text-xs uppercase tracking-wider">
+                        N°
+                      </th>
+                      <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">
+                        Vencimiento
+                      </th>
+                      <th className="text-right p-3 font-semibold text-xs uppercase tracking-wider">
+                        Saldo inicial
+                      </th>
+                      <th className="text-right p-3 font-semibold text-xs uppercase tracking-wider">
+                        Interés
+                      </th>
+                      <th className="text-right p-3 font-semibold text-xs uppercase tracking-wider">
+                        Cuota
+                      </th>
+                      <th className="text-right p-3 font-semibold text-xs uppercase tracking-wider text-emerald-600">
+                        Amort.
+                      </th>
+                      <th className="text-right p-3 font-semibold text-xs uppercase tracking-wider">
+                        Saldo final
+                      </th>
+                      <th className="text-center p-3 font-semibold text-xs uppercase tracking-wider">
+                        Estado
+                      </th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {amortDisplay.map((row: AmortizacionDTO, idx: number) => (
+                      <AnimatedTableRow key={row.id} index={idx}>
+                        <td className="text-center p-3 font-mono text-xs text-gray-600">
+                          {row.numeroCuota}
+                        </td>
+                        <td className="p-3 text-sm">{formatDate(row.fechaVencimiento)}</td>
+                        <td className="p-3 text-right font-mono text-sm">
+                          {formatCurrency(row.saldoInicial)}
+                        </td>
+                        <td className="p-3 text-right font-mono text-sm text-amber-600">
+                          {formatCurrency(row.interes)}
+                        </td>
+                        <td className="p-3 text-right font-mono text-sm font-semibold text-gray-800">
+                          {formatCurrency(row.cuota)}
+                        </td>
+                        <td className="p-3 text-right font-mono text-sm text-emerald-600">
+                          {formatCurrency(row.amortizacion)}
+                        </td>
+                        <td className="p-3 text-right font-mono text-sm">
+                          {formatCurrency(row.saldoFinal)}
+                        </td>
+                        <td className="p-3 text-center">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium ${estadoPagado[row.estado] ?? 'text-gray-500 bg-gray-50'}`}
+                          >
+                            {row.estado === 'pagado' && <Check size={11} />}
+                            {row.estado}
+                          </span>
+                        </td>
+                      </AnimatedTableRow>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {amortVisible.length > 10 && (
+                <div className="p-3 text-center border-t border-gray-100">
+                  <AnimatedButton
+                    onClick={() => setShowAllAmort(!showAllAmort)}
+                    className="text-xs font-medium text-purple-600 hover:text-purple-700"
+                  >
+                    {showAllAmort ? 'Mostrar menos' : `Ver todas (${amortVisible.length} cuotas)`}
+                  </AnimatedButton>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="p-8 text-center text-gray-400 text-sm">
+              No hay plan de amortización disponible
+            </div>
+          )}
         </div>
+      </AnimatedFadeIn>
 
-        {pagos.length > 0 && (
-          <div className="p-6 border-t">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-                Pagos Realizados
-              </h3>
+      {pagos && pagos.length > 0 && (
+        <AnimatedFadeIn>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <button
-                  onClick={handleExportPagos}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded hover:bg-green-100"
+                <DollarSign size={16} className="text-emerald-600" />
+                <h3 className="text-sm font-semibold text-navy-800">Pagos realizados</h3>
+                <span className="text-xs text-gray-400">({pagos.length} pagos)</span>
+              </div>
+              <div className="flex gap-2">
+                <AnimatedButton
+                  onClick={() =>
+                    exportToExcel(
+                      pagos as unknown as Record<string, unknown>[],
+                      exportColumnsPagos,
+                      'pagos-credito',
+                    )
+                  }
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
                 >
-                  <FileSpreadsheet size={14} /> Excel
-                </button>
-                <button
-                  onClick={handleExportPagosPDF}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100"
+                  <FileSpreadsheet size={13} /> Excel
+                </AnimatedButton>
+                <AnimatedButton
+                  onClick={() =>
+                    exportToPDF(
+                      pagos as unknown as Record<string, unknown>[],
+                      exportColumnsPagos,
+                      'Pagos del crédito',
+                      'pagos-credito',
+                    )
+                  }
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
                 >
-                  <FileText size={14} /> PDF
-                </button>
+                  <FileText size={13} /> PDF
+                </AnimatedButton>
               </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50 text-gray-600">
-                    <th className="text-left p-2 font-medium">N° Cuota</th>
-                    <th className="text-right p-2 font-medium">Monto</th>
-                    <th className="text-right p-2 font-medium">Capital</th>
-                    <th className="text-right p-2 font-medium">Interés</th>
-                    <th className="text-left p-2 font-medium">Fecha</th>
-                    <th className="p-2"></th>
+                  <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 text-gray-500">
+                    <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">
+                      Fecha
+                    </th>
+                    <th className="text-right p-3 font-semibold text-xs uppercase tracking-wider">
+                      Monto
+                    </th>
+                    <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">
+                      Método
+                    </th>
+                    <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">
+                      Referencia
+                    </th>
+                    <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider">
+                      Notas
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pagos.map((pago) => (
-                    <tr key={pago.id} className="border-t">
-                      <td className="p-2">{pago.numeroCuota}</td>
-                      <td className="p-2 text-right font-mono">{formatCurrency(pago.monto)}</td>
-                      <td className="p-2 text-right font-mono">
-                        {formatCurrency(pago.montoCapital)}
+                  {pagos.map((pago: PagoCreditoDTO, idx: number) => (
+                    <AnimatedTableRow key={pago.id} index={idx}>
+                      <td className="p-3 text-sm">{formatDate(pago.fecha)}</td>
+                      <td className="p-3 text-right font-mono text-sm font-semibold text-emerald-600">
+                        {formatCurrency(pago.monto)}
                       </td>
-                      <td className="p-2 text-right font-mono">
-                        {formatCurrency(pago.montoInteres)}
-                      </td>
-                      <td className="p-2">{formatDate(pago.fechaPago)}</td>
-                      <td className="p-2">
-                        <button
-                          onClick={() => eliminarPagoMutation.mutate(pago.id)}
-                          className="text-red-500 hover:text-red-700 disabled:opacity-50"
-                          disabled={eliminarPagoMutation.isPending}
-                          title="Eliminar pago"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
+                      <td className="p-3 text-sm">{pago.metodoPago ?? '—'}</td>
+                      <td className="p-3 text-sm text-gray-500">{pago.referencia ?? '—'}</td>
+                      <td className="p-3 text-sm text-gray-500">{pago.notas ?? '—'}</td>
+                    </AnimatedTableRow>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ResumenCard({
-  label,
-  value,
-  variant,
-}: {
-  label: string;
-  value: string;
-  variant?: 'green' | 'red';
-}) {
-  return (
-    <div className="bg-gray-50 rounded-lg p-3">
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
-      <p
-        className={`text-lg font-bold font-mono ${variant === 'green' ? 'text-green-600' : variant === 'red' ? 'text-red-600' : 'text-gray-900'}`}
-      >
-        {value}
-      </p>
+        </AnimatedFadeIn>
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ const socioRepo = new PrismaSocioRepository();
 const controller = createDividendoController(dividendoRepo, socioRepo);
 
 router.get('/', authenticate, controller.list.bind(controller));
+router.get('/:id', authenticate, controller.getById.bind(controller));
 router.post(
   '/',
   authenticate,

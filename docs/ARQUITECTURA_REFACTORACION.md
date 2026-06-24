@@ -263,7 +263,7 @@ PASO 4: Validar Frontend
 
 PASO 5: Documentación
   - [ ] Crear ENDPOINTS_SPEC.md con rutas nuevas
-  - [ ] Actualizar DEPLOYMENT.md con instrucciones
+  - [ ] Actualizar docs/DEPLOYMENT.md con instrucciones
   - [ ] Crear MIGRATION_CHECKLIST.md
 ```
 

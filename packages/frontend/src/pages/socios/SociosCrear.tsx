@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, UserPlus, Check, Copy, Eye, EyeOff } from 'lucide-react';
 import { apiCrearSocio } from '../../lib/api';
 import { ApiError } from '../../lib/api';
+import {
+  GlassCard,
+  AnimatedStaggerContainer,
+  AnimatedStaggerItem,
+  AnimatedButton,
+  AnimatedFadeIn,
+} from '../../components/ui';
 
 const DEPARTAMENTOS: Record<string, string[]> = {
   Amazonas: ['Leticia', 'Puerto Nariño'],
@@ -68,6 +75,8 @@ export default function SociosCrear() {
     passwordInicial: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -118,203 +127,289 @@ export default function SociosCrear() {
     }
   };
 
+  const handleCopyPassword = () => {
+    if (resultado) {
+      navigator.clipboard.writeText(resultado.passwordInicial);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   if (resultado) {
     return (
-      <div className="bg-white rounded-lg shadow p-8 max-w-md mx-auto text-center">
-        <div className="text-green-500 text-5xl mb-4">✓</div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Socio creado exitosamente</h2>
-        <p className="text-gray-600 mb-4">{resultado.socio.nombre}</p>
-        <div className="bg-yellow-50 border border-yellow-200 rounded p-4 mb-6">
-          <p className="text-sm font-medium text-yellow-800">Contraseña inicial:</p>
-          <p className="text-lg font-mono font-bold text-yellow-900">{resultado.passwordInicial}</p>
-        </div>
-        <div className="flex gap-3 justify-center">
-          <Link to="/socios" className="px-4 py-2 bg-navy-700 text-white rounded-md text-sm">
-            Volver a lista
-          </Link>
-          <button
-            onClick={() => {
-              setResultado(null);
-              setForm({
-                nombre: '',
-                tipoDocumento: 'CC',
-                numeroDocumento: '',
-                email: '',
-                telefono: '',
-                fechaIngreso: new Date().toISOString().split('T')[0],
-                cargo: '',
-                sede: '',
-                departamento: '',
-                municipio: '',
-              });
-            }}
-            className="px-4 py-2 border rounded-md text-sm"
-          >
-            Crear otro
-          </button>
-        </div>
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-green-500/5 rounded-3xl pointer-events-none" />
+        <AnimatedStaggerContainer className="relative max-w-lg mx-auto text-center">
+          <AnimatedStaggerItem>
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-green-400 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/30">
+              <Check size={36} className="text-white" />
+            </div>
+          </AnimatedStaggerItem>
+          <AnimatedStaggerItem>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Socio creado exitosamente</h2>
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-navy-100 to-navy-50 flex items-center justify-center">
+                <UserPlus size={16} className="text-navy-600" />
+              </div>
+              <p className="text-lg font-medium text-gray-700">{resultado.socio.nombre}</p>
+            </div>
+          </AnimatedStaggerItem>
+          <AnimatedStaggerItem>
+            <GlassCard className="text-left mb-6">
+              <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                <Eye size={16} className="text-amber-500" />
+                Contraseña inicial del usuario
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                  <span className="text-lg font-mono font-bold text-amber-900">
+                    {showPwd ? resultado.passwordInicial : '••••••••'}
+                  </span>
+                </div>
+                <AnimatedButton
+                  onClick={() => setShowPwd(!showPwd)}
+                  className="p-3 bg-white/80 border border-gray-200 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-white"
+                >
+                  {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                </AnimatedButton>
+                <AnimatedButton
+                  onClick={handleCopyPassword}
+                  className="p-3 bg-white/80 border border-gray-200 rounded-xl text-gray-500 hover:text-emerald-600 hover:bg-white"
+                >
+                  <Copy size={18} />
+                </AnimatedButton>
+              </div>
+              {copied && (
+                <AnimatedFadeIn>
+                  <p className="text-xs text-emerald-600 mt-2">¡Copiado al portapapeles!</p>
+                </AnimatedFadeIn>
+              )}
+            </GlassCard>
+          </AnimatedStaggerItem>
+          <AnimatedStaggerItem>
+            <div className="flex gap-3 justify-center">
+              <Link
+                to="/socios"
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-navy-600 to-navy-500 text-white rounded-xl text-sm font-medium shadow-lg shadow-navy-500/25 hover:from-navy-700 hover:to-navy-600 transition-all"
+              >
+                <ArrowLeft size={15} /> Volver a lista
+              </Link>
+              <AnimatedButton
+                onClick={() => {
+                  setResultado(null);
+                  setForm({
+                    nombre: '',
+                    tipoDocumento: 'CC',
+                    numeroDocumento: '',
+                    email: '',
+                    telefono: '',
+                    fechaIngreso: new Date().toISOString().split('T')[0],
+                    cargo: '',
+                    sede: '',
+                    departamento: '',
+                    municipio: '',
+                  });
+                }}
+                className="px-6 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-white transition-all"
+              >
+                Crear otro
+              </AnimatedButton>
+            </div>
+          </AnimatedStaggerItem>
+        </AnimatedStaggerContainer>
       </div>
     );
   }
 
   return (
-    <div>
-      <Link
-        to="/socios"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-navy-700 mb-4"
-      >
-        <ArrowLeft size={16} /> Volver a lista
-      </Link>
+    <div className="relative">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-navy-500/10 rounded-full -translate-y-1/4 translate-x-1/4 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-navy-500/10 rounded-full translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
-      <div className="bg-white rounded-lg shadow p-6 max-w-2xl">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Nuevo Socio</h2>
+      <AnimatedStaggerContainer>
+        <AnimatedStaggerItem>
+          <Link
+            to="/socios"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-navy-700 mb-4 transition-colors"
+          >
+            <ArrowLeft size={15} /> Volver a lista
+          </Link>
+        </AnimatedStaggerItem>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm mb-4">
-            {error}
-          </div>
-        )}
+        <AnimatedStaggerItem>
+          <GlassCard className="max-w-2xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-navy-500 to-blue-400 flex items-center justify-center shadow-md">
+                <UserPlus size={20} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Nuevo Socio</h2>
+                <p className="text-sm text-gray-500">Registra un nuevo miembro del fondo</p>
+              </div>
+            </div>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre completo *
-            </label>
-            <input
-              name="nombre"
-              value={form.nombre}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo Documento</label>
-            <select
-              name="tipoDocumento"
-              value={form.tipoDocumento}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            >
-              <option value="CC">Cédula</option>
-              <option value="CE">Cédula Extranjería</option>
-              <option value="NIT">NIT</option>
-              <option value="PASAPORTE">Pasaporte</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nro. Documento *</label>
-            <input
-              name="numeroDocumento"
-              value={form.numeroDocumento}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-            <input
-              name="telefono"
-              value={form.telefono}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cargo *</label>
-            <select
-              name="cargo"
-              value={form.cargo}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            >
-              <option value="">Seleccionar cargo...</option>
-              <option value="Docente">Docente</option>
-              <option value="Administrativo">Administrativo</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Ingreso</label>
-            <input
-              name="fechaIngreso"
-              type="date"
-              value={form.fechaIngreso}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm bg-gray-50"
-              readOnly
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Institución Educativa
-            </label>
-            <input
-              name="sede"
-              value={form.sede}
-              onChange={handleChange}
-              placeholder="Nombre de la institución..."
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
-            <select
-              name="departamento"
-              value={form.departamento}
-              onChange={handleDepartamentoChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-            >
-              <option value="">Seleccionar departamento...</option>
-              {depts.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Municipio</label>
-            <select
-              name="municipio"
-              value={form.municipio}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-              disabled={!form.departamento}
-            >
-              <option value="">Seleccionar municipio...</option>
-              {municipios.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="md:col-span-2 flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-navy-700 text-white rounded-md text-sm font-medium hover:bg-navy-800 disabled:opacity-50"
-            >
-              {loading ? 'Guardando...' : 'Guardar Socio'}
-            </button>
-            <Link
-              to="/socios"
-              className="px-6 py-2 border rounded-md text-sm text-gray-700 hover:bg-gray-50"
-            >
-              Cancelar
-            </Link>
-          </div>
-        </form>
-      </div>
+            {error && (
+              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Nombre completo <span className="text-red-400">*</span>
+                </label>
+                <input
+                  name="nombre"
+                  value={form.nombre}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all"
+                  placeholder="Nombres y apellidos"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Tipo Documento
+                </label>
+                <select
+                  name="tipoDocumento"
+                  value={form.tipoDocumento}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all"
+                >
+                  <option value="CC">Cédula</option>
+                  <option value="CE">Cédula Extranjería</option>
+                  <option value="NIT">NIT</option>
+                  <option value="PASAPORTE">Pasaporte</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Nro. Documento <span className="text-red-400">*</span>
+                </label>
+                <input
+                  name="numeroDocumento"
+                  value={form.numeroDocumento}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all"
+                  placeholder="Sin puntos ni guiones"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <input
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all"
+                  placeholder="correo@ejemplo.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Teléfono</label>
+                <input
+                  name="telefono"
+                  value={form.telefono}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all"
+                  placeholder="300 123 4567"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Cargo <span className="text-red-400">*</span>
+                </label>
+                <select
+                  name="cargo"
+                  value={form.cargo}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all"
+                >
+                  <option value="">Seleccionar cargo...</option>
+                  <option value="Docente">Docente</option>
+                  <option value="Administrativo">Administrativo</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Fecha Ingreso
+                </label>
+                <input
+                  name="fechaIngreso"
+                  type="date"
+                  value={form.fechaIngreso}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Institución Educativa
+                </label>
+                <input
+                  name="sede"
+                  value={form.sede}
+                  onChange={handleChange}
+                  placeholder="Nombre de la institución..."
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Departamento
+                </label>
+                <select
+                  name="departamento"
+                  value={form.departamento}
+                  onChange={handleDepartamentoChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all"
+                >
+                  <option value="">Seleccionar departamento...</option>
+                  {depts.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Municipio</label>
+                <select
+                  name="municipio"
+                  value={form.municipio}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all disabled:opacity-50"
+                  disabled={!form.departamento}
+                >
+                  <option value="">Seleccionar municipio...</option>
+                  {municipios.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="md:col-span-2 flex gap-3 pt-2">
+                <AnimatedButton
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-navy-600 to-navy-500 text-white rounded-xl text-sm font-medium hover:from-navy-700 hover:to-navy-600 shadow-lg shadow-navy-500/25 disabled:opacity-50 transition-all"
+                >
+                  {loading ? 'Guardando...' : 'Guardar Socio'}
+                </AnimatedButton>
+                <Link
+                  to="/socios"
+                  className="inline-flex items-center justify-center px-6 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-white hover:text-gray-800 transition-all"
+                >
+                  Cancelar
+                </Link>
+              </div>
+            </form>
+          </GlassCard>
+        </AnimatedStaggerItem>
+      </AnimatedStaggerContainer>
     </div>
   );
 }

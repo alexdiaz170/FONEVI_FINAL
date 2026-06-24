@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   Users,
   Wallet,
   CreditCard,
+  Calculator,
   AlertTriangle,
   ArrowLeftRight,
   Settings,
@@ -21,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { cn } from '../../lib/utils';
+import { staggerContainer, staggerItem } from '../../lib/animations';
 
 interface NavItem {
   to: string;
@@ -61,6 +64,12 @@ const navGroups: NavGroup[] = [
         to: '/creditos',
         label: 'Créditos',
         icon: CreditCard,
+        roles: ['admin', 'superadmin', 'socio'],
+      },
+      {
+        to: '/simulador-credito',
+        label: 'Simulador',
+        icon: Calculator,
         roles: ['admin', 'superadmin', 'socio'],
       },
       { to: '/mora', label: 'Mora', icon: AlertTriangle, roles: ['admin', 'superadmin'] },
@@ -114,47 +123,77 @@ export function Sidebar() {
     .filter((g) => g.items.length > 0);
 
   return (
-    <aside
+    <motion.aside
+      layout
       className={cn(
-        'bg-navy-800 text-white flex flex-col transition-all duration-300',
+        'bg-navy-800 text-white flex flex-col overflow-hidden',
         collapsed ? 'w-16' : 'w-64',
       )}
+      animate={{ width: collapsed ? 64 : 256 }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
     >
-      <div className="flex items-center justify-between p-4 border-b border-navy-600">
-        {!collapsed && <span className="text-gold-500 font-bold text-lg">FONEVI</span>}
+      <div className="flex items-center justify-between p-4 border-b border-navy-600 shrink-0">
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.span
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              className="text-gold-500 font-bold text-lg"
+            >
+              FONEVI
+            </motion.span>
+          )}
+        </AnimatePresence>
         <button onClick={() => setCollapsed(!collapsed)} className="p-1 hover:bg-navy-700 rounded">
-          {collapsed ? <Menu size={20} /> : <X size={20} />}
+          <motion.span
+            animate={{ rotate: collapsed ? 0 : 90 }}
+            transition={{ duration: 0.3 }}
+            className="block"
+          >
+            {collapsed ? <Menu size={20} /> : <X size={20} />}
+          </motion.span>
         </button>
       </div>
 
-      <nav className="flex-1 py-2 overflow-y-auto">
+      <nav className="flex-1 py-2 overflow-y-auto overflow-x-hidden">
         {visibleGroups.map((group) => (
           <div key={group.label} className="mb-2">
-            {!collapsed && (
-              <p className="px-4 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
-                {group.label}
-              </p>
-            )}
-            {group.items.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
-                    isActive
-                      ? 'bg-navy-700 text-gold-400 border-r-2 border-gold-400'
-                      : 'text-gray-300 hover:bg-navy-700 hover:text-white',
-                  )
-                }
-              >
-                <item.icon size={20} />
-                {!collapsed && <span>{item.label}</span>}
-              </NavLink>
-            ))}
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="px-4 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-widest overflow-hidden"
+                >
+                  {group.label}
+                </motion.p>
+              )}
+            </AnimatePresence>
+            <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+              {group.items.map((item) => (
+                <motion.div key={item.to} variants={staggerItem}>
+                  <NavLink
+                    to={item.to}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
+                        isActive
+                          ? 'bg-navy-700 text-gold-400 border-r-2 border-gold-400'
+                          : 'text-gray-300 hover:bg-navy-700 hover:text-white',
+                      )
+                    }
+                  >
+                    <item.icon size={20} />
+                    {!collapsed && <span>{item.label}</span>}
+                  </NavLink>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
         ))}
       </nav>
-    </aside>
+    </motion.aside>
   );
 }

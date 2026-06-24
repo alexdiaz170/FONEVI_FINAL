@@ -8,14 +8,14 @@ import {
   apiEliminarUsuario,
   ApiError,
 } from '../../lib/api';
+import { AnimatedFadeIn, AnimatedTableRow, AnimatedButton } from '../../components/ui';
 
 const roles = ['superadmin', 'admin', 'contador', 'socio'];
-
 const rolColor: Record<string, string> = {
-  superadmin: 'bg-red-100 text-red-700',
-  admin: 'bg-navy-100 text-navy-700',
-  contador: 'bg-purple-100 text-purple-700',
-  socio: 'bg-green-100 text-green-700',
+  superadmin: 'bg-red-50 text-red-700 border border-red-200',
+  admin: 'bg-slate-50 text-slate-700 border border-slate-200',
+  contador: 'bg-purple-50 text-purple-700 border border-purple-200',
+  socio: 'bg-green-50 text-green-700 border border-green-200',
 };
 
 export function GestionUsuarios() {
@@ -23,7 +23,6 @@ export function GestionUsuarios() {
   const [showCrear, setShowCrear] = useState(false);
   const [form, setForm] = useState({ nombre: '', email: '', password: '', rol: 'contador' });
   const [formError, setFormError] = useState('');
-
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     nombre: '',
@@ -53,7 +52,6 @@ export function GestionUsuarios() {
     },
     onError: (err) => setFormError(err instanceof ApiError ? err.message : 'Error al crear'),
   });
-
   const actualizarMutation = useMutation({
     mutationFn: () =>
       apiActualizarUsuario(editandoId!, {
@@ -68,18 +66,14 @@ export function GestionUsuarios() {
       setEditandoId(null);
     },
   });
-
   const eliminarMutation = useMutation({
     mutationFn: (id: string) => apiEliminarUsuario(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
   });
-
   const resetPasswordMutation = useMutation({
     mutationFn: ({ id, password }: { id: string; password: string }) =>
       apiActualizarUsuario(id, { password }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['usuarios'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
   });
 
   function iniciarEdicion(u: {
@@ -97,56 +91,56 @@ export function GestionUsuarios() {
   if (isLoading) return <div className="text-gray-400 text-center py-8">Cargando...</div>;
 
   return (
-    <div>
+    <AnimatedFadeIn>
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-500">Gestión de usuarios del sistema.</p>
-        <button
+        <AnimatedButton
           onClick={() => {
             setShowCrear(!showCrear);
             setEditandoId(null);
           }}
-          className="inline-flex items-center gap-1 px-4 py-2 bg-navy-700 text-white rounded-md text-sm font-medium hover:bg-navy-800"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-slate-700 to-slate-500 text-white rounded-xl text-sm font-medium shadow-md hover:from-slate-800 hover:to-slate-600 transition-all"
         >
           <UserPlus size={16} /> {showCrear ? 'Cancelar' : 'Nuevo Usuario'}
-        </button>
+        </AnimatedButton>
       </div>
 
       {showCrear && (
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Crear Usuario</h3>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
+          <h3 className="text-sm font-semibold text-navy-800 mb-3">Crear Usuario</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Nombre *</label>
+              <label className="block text-xs font-medium text-navy-700 mb-1">Nombre *</label>
               <input
                 value={form.nombre}
                 onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-md text-sm"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-500/30 focus:border-slate-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
+              <label className="block text-xs font-medium text-navy-700 mb-1">Email *</label>
               <input
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-md text-sm"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-500/30 focus:border-slate-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Contraseña *</label>
+              <label className="block text-xs font-medium text-navy-700 mb-1">Contraseña *</label>
               <input
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-md text-sm"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-500/30 focus:border-slate-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Rol *</label>
+              <label className="block text-xs font-medium text-navy-700 mb-1">Rol *</label>
               <select
                 value={form.rol}
                 onChange={(e) => setForm((p) => ({ ...p, rol: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-md text-sm"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-500/30 focus:border-slate-500"
               >
                 {roles.map((r) => (
                   <option key={r} value={r}>
@@ -156,172 +150,173 @@ export function GestionUsuarios() {
               </select>
             </div>
           </div>
-
           {formError && (
-            <div className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{formError}</div>
+            <div className="mt-3 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+              {formError}
+            </div>
           )}
-
           <div className="mt-3 flex gap-2">
-            <button
+            <AnimatedButton
               onClick={() => crearMutation.mutate()}
               disabled={crearMutation.isPending || !form.nombre || !form.email || !form.password}
-              className="px-4 py-2 bg-navy-700 text-white rounded-md text-sm font-medium hover:bg-navy-800 disabled:opacity-50"
+              className="px-4 py-2 bg-gradient-to-r from-slate-700 to-slate-500 text-white rounded-xl text-sm font-medium shadow-md hover:from-slate-800 hover:to-slate-600 disabled:opacity-50 transition-all"
             >
               {crearMutation.isPending ? 'Creando...' : 'Crear Usuario'}
-            </button>
+            </AnimatedButton>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
-            <tr>
-              <th className="text-left px-4 py-3">Nombre</th>
-              <th className="text-left px-4 py-3">Email</th>
-              <th className="text-center px-4 py-3">Contraseña</th>
-              <th className="text-center px-4 py-3">Rol</th>
-              <th className="text-center px-4 py-3">Estado</th>
-              <th className="text-center px-4 py-3">Acción</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {(usuarios ?? []).length === 0 && (
-              <tr>
-                <td colSpan={6} className="text-center text-gray-400 py-8">
-                  No hay usuarios registrados
-                </td>
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 text-gray-500">
+                <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                  Nombre
+                </th>
+                <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="text-center p-3.5 font-semibold text-xs uppercase tracking-wider">
+                  Rol
+                </th>
+                <th className="text-center p-3.5 font-semibold text-xs uppercase tracking-wider">
+                  Estado
+                </th>
+                <th className="text-center p-3.5 font-semibold text-xs uppercase tracking-wider">
+                  Acción
+                </th>
               </tr>
-            )}
-            {(usuarios ?? []).map((u) =>
-              editandoId === u.id ? (
-                <tr key={u.id} className="bg-yellow-50">
-                  <td className="px-4 py-3">
-                    <input
-                      value={editForm.nombre}
-                      onChange={(e) => setEditForm((p) => ({ ...p, nombre: e.target.value }))}
-                      className="w-full px-2 py-1 border rounded text-sm"
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <input
-                      value={editForm.email}
-                      onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
-                      className="w-full px-2 py-1 border rounded text-sm"
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <input
-                      type="password"
-                      value={editForm.password}
-                      onChange={(e) => setEditForm((p) => ({ ...p, password: e.target.value }))}
-                      className="w-28 px-2 py-1 border rounded text-sm"
-                      placeholder="Nueva"
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <select
-                      value={editForm.rol}
-                      onChange={(e) => setEditForm((p) => ({ ...p, rol: e.target.value }))}
-                      className="px-2 py-1 border rounded text-sm"
-                    >
-                      {roles.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <select
-                      value={editForm.estado}
-                      onChange={(e) => setEditForm((p) => ({ ...p, estado: e.target.value }))}
-                      className="px-2 py-1 border rounded text-sm"
-                    >
-                      <option value="activo">activo</option>
-                      <option value="inactivo">inactivo</option>
-                    </select>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex justify-center gap-1">
-                      <button
-                        onClick={() => actualizarMutation.mutate()}
-                        disabled={actualizarMutation.isPending}
-                        className="p-1.5 text-green-600 hover:bg-green-50 rounded"
-                        title="Guardar"
-                      >
-                        <Check size={16} />
-                      </button>
-                      <button
-                        onClick={() => setEditandoId(null)}
-                        className="p-1.5 text-gray-400 hover:bg-gray-100 rounded"
-                        title="Cancelar"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
+            </thead>
+            <tbody>
+              {(usuarios ?? []).length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center text-gray-400 py-8">
+                    No hay usuarios registrados
                   </td>
                 </tr>
-              ) : (
-                <tr key={u.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium">{u.nombre}</td>
-                  <td className="px-4 py-3 text-gray-600">{u.email}</td>
-                  <td className="px-4 py-3 text-center text-gray-400 font-mono">••••••••</td>
-                  <td className="px-4 py-3 text-center">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${rolColor[u.rol] ?? 'bg-gray-100 text-gray-600'}`}
-                    >
-                      {u.rol}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${u.estado === 'activo' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
-                    >
-                      {u.estado}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex justify-center gap-1">
-                      <button
-                        onClick={() => iniciarEdicion(u)}
-                        className="p-1.5 text-navy-600 hover:bg-navy-50 rounded"
-                        title="Editar"
+              )}
+              {(usuarios ?? []).map((u, idx) =>
+                editandoId === u.id ? (
+                  <tr key={u.id} className="bg-amber-50">
+                    <td className="p-3.5">
+                      <input
+                        value={editForm.nombre}
+                        onChange={(e) => setEditForm((p) => ({ ...p, nombre: e.target.value }))}
+                        className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-slate-500/30"
+                      />
+                    </td>
+                    <td className="p-3.5">
+                      <input
+                        value={editForm.email}
+                        onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+                        className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-slate-500/30"
+                      />
+                    </td>
+                    <td className="p-3.5 text-center">
+                      <select
+                        value={editForm.rol}
+                        onChange={(e) => setEditForm((p) => ({ ...p, rol: e.target.value }))}
+                        className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-slate-500/30"
                       >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          const pwd = prompt('Nueva contraseña para ' + u.nombre + ':');
-                          if (pwd && pwd.length >= 6)
-                            resetPasswordMutation.mutate({ id: u.id, password: pwd });
-                          else if (pwd) alert('La contraseña debe tener al menos 6 caracteres');
-                        }}
-                        disabled={resetPasswordMutation.isPending}
-                        className="p-1.5 text-amber-600 hover:bg-amber-50 rounded"
-                        title="Cambiar contraseña"
+                        {roles.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-3.5 text-center">
+                      <select
+                        value={editForm.estado}
+                        onChange={(e) => setEditForm((p) => ({ ...p, estado: e.target.value }))}
+                        className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-slate-500/30"
                       >
-                        <Key size={16} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`¿Eliminar usuario ${u.nombre}?`))
-                            eliminarMutation.mutate(u.id);
-                        }}
-                        disabled={eliminarMutation.isPending}
-                        className="p-1.5 text-red-500 hover:bg-red-50 rounded"
-                        title="Eliminar"
+                        <option value="activo">activo</option>
+                        <option value="inactivo">inactivo</option>
+                      </select>
+                    </td>
+                    <td className="p-3.5 text-center">
+                      <div className="flex justify-center gap-1">
+                        <button
+                          onClick={() => actualizarMutation.mutate()}
+                          disabled={actualizarMutation.isPending}
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"
+                          title="Guardar"
+                        >
+                          <Check size={16} />
+                        </button>
+                        <button
+                          onClick={() => setEditandoId(null)}
+                          className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"
+                          title="Cancelar"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  <AnimatedTableRow key={u.id} index={idx}>
+                    <td className="p-3.5 font-medium text-navy-800">{u.nombre}</td>
+                    <td className="p-3.5 text-gray-600">{u.email}</td>
+                    <td className="p-3.5 text-center">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${rolColor[u.rol] ?? 'bg-gray-50 text-gray-600 border border-gray-200'}`}
                       >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ),
-            )}
-          </tbody>
-        </table>
+                        {u.rol}
+                      </span>
+                    </td>
+                    <td className="p-3.5 text-center">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${u.estado === 'activo' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+                      >
+                        {u.estado}
+                      </span>
+                    </td>
+                    <td className="p-3.5 text-center">
+                      <div className="flex justify-center gap-1">
+                        <button
+                          onClick={() => iniciarEdicion(u)}
+                          className="p-1.5 text-slate-600 hover:bg-slate-50 rounded-lg"
+                          title="Editar"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            const pwd = prompt('Nueva contraseña para ' + u.nombre + ':');
+                            if (pwd && pwd.length >= 6)
+                              resetPasswordMutation.mutate({ id: u.id, password: pwd });
+                            else if (pwd) alert('La contraseña debe tener al menos 6 caracteres');
+                          }}
+                          disabled={resetPasswordMutation.isPending}
+                          className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"
+                          title="Cambiar contraseña"
+                        >
+                          <Key size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`¿Eliminar usuario ${u.nombre}?`))
+                              eliminarMutation.mutate(u.id);
+                          }}
+                          disabled={eliminarMutation.isPending}
+                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
+                          title="Eliminar"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </AnimatedTableRow>
+                ),
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </AnimatedFadeIn>
   );
 }

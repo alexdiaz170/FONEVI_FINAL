@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { FileText, BarChart3, Download } from 'lucide-react';
 import {
   apiGetReporteBalance,
   apiGetReporteCartera,
@@ -7,15 +8,19 @@ import {
   apiGetReporteEstadoCuentaSocio,
   apiListarPeriodos,
   apiListarSocios,
-  apiListarDividendos,
-  apiCrearDividendo,
-  apiDistribuirDividendo,
 } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { exportToExcel, exportToPDF, type ExportColumn } from '../lib/export';
+import { DividendosTab } from './reportes/DividendosTab';
+import {
+  AnimatedFadeIn,
+  AnimatedStaggerContainer,
+  AnimatedStaggerItem,
+  AnimatedTableRow,
+  AnimatedButton,
+} from '../components/ui';
 
 type Tab = 'balance' | 'cartera' | 'estado-cuenta' | 'flujo-caja' | 'dividendos';
-
 const tabs: { key: Tab; label: string }[] = [
   { key: 'balance', label: 'Balance General' },
   { key: 'cartera', label: 'Cartera' },
@@ -28,18 +33,29 @@ export default function ReportesPage() {
   const [activeTab, setActiveTab] = useState<Tab>('balance');
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-4">Reportes</h1>
+    <div className="relative">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full -translate-y-1/4 translate-x-1/4 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-orange-500/10 rounded-full translate-y-1/3 -translate-x-1/4 pointer-events-none" />
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+          <BarChart3 size={20} className="text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-navy-800">Reportes</h1>
+          <p className="text-sm text-gray-500">Informes financieros del fondo</p>
+        </div>
+      </div>
+
+      <div className="flex gap-1 mb-6 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 text-sm font-medium transition-colors rounded-t-md ${
+            className={`px-4 py-2.5 text-sm font-medium transition-all rounded-xl whitespace-nowrap ${
               activeTab === tab.key
-                ? 'bg-white text-navy-700 border border-b-white border-gray-200 -mb-px'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-amber-600 to-orange-500 text-white shadow-md'
+                : 'bg-white/80 backdrop-blur-sm text-gray-600 border border-gray-200 hover:bg-white hover:text-amber-600'
             }`}
           >
             {tab.label}
@@ -61,7 +77,6 @@ function BalanceGeneralTab() {
     queryKey: ['reporte-balance'],
     queryFn: apiGetReporteBalance,
   });
-
   if (isLoading) return <div className="text-gray-400 text-center py-8">Cargando...</div>;
   if (error)
     return <div className="text-red-500 text-center py-8">Error al cargar balance general</div>;
@@ -71,84 +86,92 @@ function BalanceGeneralTab() {
     { header: 'Cuenta', key: 'cuenta' },
     { header: 'Valor', key: 'valor', format: (v) => formatCurrency(Number(v)) },
   ];
-
   const rows = [
     { cuenta: 'AHORROS', valor: data.activos.ahorros },
     { cuenta: 'CRÉDITOS POR COBRAR', valor: data.activos.creditosPorCobrar },
     { cuenta: 'SOLIDARIDAD', valor: data.activos.solidaridad },
     { cuenta: 'RESERVAS', valor: data.activos.reservas },
-    { cuenta: 'TOTAL ACTIVOS', valor: data.activos.total },
+    { cuenta: 'TOTAL ACTIVOS', valor: data.activos.total, total: true },
     { cuenta: '', valor: '' },
     { cuenta: 'CAPITAL SOCIAL', valor: data.pasivos.capitalSocial },
-    { cuenta: 'TOTAL PASIVOS', valor: data.pasivos.total },
+    { cuenta: 'TOTAL PASIVOS', valor: data.pasivos.total, total: true },
     { cuenta: '', valor: '' },
     { cuenta: 'RESULTADOS ACUMULADOS', valor: data.patrimonio.resultadosAcumulados },
-    { cuenta: 'TOTAL PATRIMONIO', valor: data.patrimonio.total },
+    { cuenta: 'TOTAL PATRIMONIO', valor: data.patrimonio.total, total: true },
   ];
 
-  const handleExportExcel = () => {
-    exportToExcel(rows, columns, 'balance-general');
-  };
-
-  const handleExportPDF = () => {
-    exportToPDF(rows, columns, 'Balance General', 'balance-general');
-  };
-
   return (
-    <div>
+    <AnimatedFadeIn>
       <div className="flex gap-2 mb-4">
-        <button
-          onClick={handleExportExcel}
-          className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+        <AnimatedButton
+          onClick={() => exportToExcel(rows, columns, 'balance-general')}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
         >
-          Exportar Excel
-        </button>
-        <button
-          onClick={handleExportPDF}
-          className="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+          <Download size={14} /> Exportar Excel
+        </AnimatedButton>
+        <AnimatedButton
+          onClick={() => exportToPDF(rows, columns, 'Balance General', 'balance-general')}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
         >
-          Exportar PDF
-        </button>
+          <Download size={14} /> Exportar PDF
+        </AnimatedButton>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Total Activos</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">
-            {formatCurrency(data.activos.total)}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Total Pasivos</p>
-          <p className="text-2xl font-bold text-red-600 mt-1">
-            {formatCurrency(data.pasivos.total)}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Patrimonio</p>
-          <p className="text-2xl font-bold text-navy-700 mt-1">
-            {formatCurrency(data.patrimonio.total)}
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <AnimatedStaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <AnimatedStaggerItem>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white shadow-lg">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="relative">
+              <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+                Total Activos
+              </span>
+              <div className="text-2xl font-bold mt-1">{formatCurrency(data.activos.total)}</div>
+            </div>
+          </div>
+        </AnimatedStaggerItem>
+        <AnimatedStaggerItem>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-red-500 to-rose-600 p-4 text-white shadow-lg">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="relative">
+              <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+                Total Pasivos
+              </span>
+              <div className="text-2xl font-bold mt-1">{formatCurrency(data.pasivos.total)}</div>
+            </div>
+          </div>
+        </AnimatedStaggerItem>
+        <AnimatedStaggerItem>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-600 to-orange-500 p-4 text-white shadow-lg">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="relative">
+              <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+                Patrimonio
+              </span>
+              <div className="text-2xl font-bold mt-1">{formatCurrency(data.patrimonio.total)}</div>
+            </div>
+          </div>
+        </AnimatedStaggerItem>
+      </AnimatedStaggerContainer>
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
-            <tr>
-              <th className="text-left px-4 py-3">Cuenta</th>
-              <th className="text-right px-4 py-3">Valor</th>
+          <thead>
+            <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 text-gray-500">
+              <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                Cuenta
+              </th>
+              <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                Valor
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {rows.map((r, i) => (
               <tr
                 key={i}
-                className={`${r.cuenta.startsWith('TOTAL') ? 'bg-gray-50 font-bold' : ''} ${!r.cuenta ? 'h-2' : ''}`}
+                className={`${r.cuenta.startsWith('TOTAL') ? 'bg-gray-50 font-bold' : ''} ${!r.cuenta ? 'h-2' : ''} hover:bg-gray-50/50 transition-colors`}
               >
-                <td className="px-4 py-2">{r.cuenta || ''}</td>
+                <td className="px-4 py-2.5">{r.cuenta || ''}</td>
                 <td
-                  className={`px-4 py-2 text-right ${r.cuenta.startsWith('TOTAL') ? 'font-bold' : ''}`}
+                  className={`px-4 py-2.5 text-right ${r.cuenta.startsWith('TOTAL') ? 'font-bold text-navy-800' : ''}`}
                 >
                   {r.cuenta ? formatCurrency(r.valor) : ''}
                 </td>
@@ -157,7 +180,7 @@ function BalanceGeneralTab() {
           </tbody>
         </table>
       </div>
-    </div>
+    </AnimatedFadeIn>
   );
 }
 
@@ -166,7 +189,6 @@ function CarteraTab() {
     queryKey: ['reporte-cartera'],
     queryFn: apiGetReporteCartera,
   });
-
   if (isLoading) return <div className="text-gray-400 text-center py-8">Cargando...</div>;
   if (error) return <div className="text-red-500 text-center py-8">Error al cargar cartera</div>;
   if (!data) return null;
@@ -188,72 +210,116 @@ function CarteraTab() {
   const activos = data.filter((c) => c.estado === 'activo').length;
   const pagados = data.filter((c) => c.estado === 'pagado').length;
 
-  const handleExportExcel = () => {
-    exportToExcel(data as unknown as Record<string, unknown>[], columns, 'cartera-creditos');
-  };
-
-  const handleExportPDF = () => {
-    exportToPDF(
-      data as unknown as Record<string, unknown>[],
-      columns,
-      'Cartera de Créditos',
-      'cartera-creditos',
-    );
+  const estadoColor: Record<string, string> = {
+    activo: 'bg-blue-50 text-blue-700 border border-blue-200',
+    pagado: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    cancelado: 'bg-red-50 text-red-700 border border-red-200',
   };
 
   return (
-    <div>
+    <AnimatedFadeIn>
       <div className="flex gap-2 mb-4">
-        <button
-          onClick={handleExportExcel}
-          className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+        <AnimatedButton
+          onClick={() =>
+            exportToExcel(data as unknown as Record<string, unknown>[], columns, 'cartera-creditos')
+          }
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
         >
-          Exportar Excel
-        </button>
-        <button
-          onClick={handleExportPDF}
-          className="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+          <Download size={14} /> Exportar Excel
+        </AnimatedButton>
+        <AnimatedButton
+          onClick={() =>
+            exportToPDF(
+              data as unknown as Record<string, unknown>[],
+              columns,
+              'Cartera de Créditos',
+              'cartera-creditos',
+            )
+          }
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
         >
-          Exportar PDF
-        </button>
+          <Download size={14} /> Exportar PDF
+        </AnimatedButton>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Total Créditos</p>
-          <p className="text-xl font-bold text-navy-700 mt-1">{formatCurrency(totalMonto)}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Saldo por Cobrar</p>
-          <p className="text-xl font-bold text-orange-600 mt-1">{formatCurrency(totalSaldo)}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Total Recuperado</p>
-          <p className="text-xl font-bold text-green-600 mt-1">{formatCurrency(totalPagado)}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Activos / Pagados</p>
-          <p className="text-xl font-bold text-navy-700 mt-1">
-            {activos} / {pagados}
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
+      <AnimatedStaggerContainer className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <AnimatedStaggerItem>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-navy-600 to-navy-500 p-4 text-white shadow-lg">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="relative">
+              <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+                Total Créditos
+              </span>
+              <div className="text-xl font-bold mt-1">{formatCurrency(totalMonto)}</div>
+            </div>
+          </div>
+        </AnimatedStaggerItem>
+        <AnimatedStaggerItem>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 p-4 text-white shadow-lg">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="relative">
+              <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+                Saldo por Cobrar
+              </span>
+              <div className="text-xl font-bold mt-1">{formatCurrency(totalSaldo)}</div>
+            </div>
+          </div>
+        </AnimatedStaggerItem>
+        <AnimatedStaggerItem>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white shadow-lg">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="relative">
+              <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+                Total Recuperado
+              </span>
+              <div className="text-xl font-bold mt-1">{formatCurrency(totalPagado)}</div>
+            </div>
+          </div>
+        </AnimatedStaggerItem>
+        <AnimatedStaggerItem>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-600 to-amber-500 p-4 text-white shadow-lg">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="relative">
+              <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+                Activos / Pagados
+              </span>
+              <div className="text-xl font-bold mt-1">
+                {activos} / {pagados}
+              </div>
+            </div>
+          </div>
+        </AnimatedStaggerItem>
+      </AnimatedStaggerContainer>
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
-            <tr>
-              <th className="text-left px-4 py-3">Socio</th>
-              <th className="text-right px-4 py-3">Monto</th>
-              <th className="text-right px-4 py-3">Saldo</th>
-              <th className="text-center px-4 py-3">Cuotas</th>
-              <th className="text-center px-4 py-3">Pagadas</th>
-              <th className="text-right px-4 py-3">Cuota Mensual</th>
-              <th className="text-right px-4 py-3">Recuperado</th>
-              <th className="text-center px-4 py-3">Estado</th>
+          <thead>
+            <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 text-gray-500">
+              <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                Socio
+              </th>
+              <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                Monto
+              </th>
+              <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                Saldo
+              </th>
+              <th className="text-center p-3.5 font-semibold text-xs uppercase tracking-wider">
+                Cuotas
+              </th>
+              <th className="text-center p-3.5 font-semibold text-xs uppercase tracking-wider">
+                Pagadas
+              </th>
+              <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                Cuota Mensual
+              </th>
+              <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                Recuperado
+              </th>
+              <th className="text-center p-3.5 font-semibold text-xs uppercase tracking-wider">
+                Estado
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody>
             {data.length === 0 && (
               <tr>
                 <td colSpan={8} className="text-center text-gray-400 py-8">
@@ -261,52 +327,48 @@ function CarteraTab() {
                 </td>
               </tr>
             )}
-            {data.map((c) => (
-              <tr key={c.creditoId} className="hover:bg-gray-50">
-                <td className="px-4 py-3">{c.socioNombre}</td>
-                <td className="px-4 py-3 text-right">{formatCurrency(c.monto)}</td>
-                <td className="px-4 py-3 text-right">{formatCurrency(c.saldoCapital)}</td>
-                <td className="px-4 py-3 text-center">{c.cuotas}</td>
-                <td className="px-4 py-3 text-center">{c.cuotasPagadas}</td>
-                <td className="px-4 py-3 text-right">{formatCurrency(c.cuotaMensual)}</td>
-                <td className="px-4 py-3 text-right">{formatCurrency(c.totalPagado)}</td>
-                <td className="px-4 py-3 text-center">
+            {data.map((c, idx) => (
+              <AnimatedTableRow key={c.creditoId} index={idx}>
+                <td className="p-3.5 font-medium text-navy-800">{c.socioNombre}</td>
+                <td className="p-3.5 text-right font-mono text-sm">{formatCurrency(c.monto)}</td>
+                <td className="p-3.5 text-right font-mono text-sm text-orange-600">
+                  {formatCurrency(c.saldoCapital)}
+                </td>
+                <td className="p-3.5 text-center">{c.cuotas}</td>
+                <td className="p-3.5 text-center">{c.cuotasPagadas}</td>
+                <td className="p-3.5 text-right font-mono text-sm">
+                  {formatCurrency(c.cuotaMensual)}
+                </td>
+                <td className="p-3.5 text-right font-mono text-sm text-emerald-600">
+                  {formatCurrency(c.totalPagado)}
+                </td>
+                <td className="p-3.5 text-center">
                   <span
-                    className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                      c.estado === 'activo'
-                        ? 'bg-green-100 text-green-700'
-                        : c.estado === 'pagado'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-red-100 text-red-700'
-                    }`}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoColor[c.estado] ?? 'bg-gray-50 text-gray-600 border border-gray-200'}`}
                   >
                     {c.estado}
                   </span>
                 </td>
-              </tr>
+              </AnimatedTableRow>
             ))}
           </tbody>
         </table>
       </div>
-    </div>
+    </AnimatedFadeIn>
   );
 }
 
 function EstadoCuentaTab() {
   const [socioId, setSocioId] = useState('');
-
   const { data: socios } = useQuery({
     queryKey: ['socios-lista'],
     queryFn: () => apiListarSocios(1, 999),
   });
-
   const { data: periodos } = useQuery({
     queryKey: ['periodos'],
     queryFn: () => apiListarPeriodos(),
   });
-
   const periodoMap = new Map(periodos?.map((p) => [p.id, p.nombre]) ?? []);
-
   const { data, isLoading, error } = useQuery({
     queryKey: ['reporte-estado-cuenta', socioId],
     queryFn: () => apiGetReporteEstadoCuentaSocio(socioId),
@@ -321,7 +383,6 @@ function EstadoCuentaTab() {
     { header: 'Solidaridad', key: 'pagoSolidaridad', format: (v) => formatCurrency(Number(v)) },
     { header: 'Abono Crédito', key: 'pagoCredito', format: (v) => formatCurrency(Number(v)) },
   ];
-
   const columnsCreditos: ExportColumn[] = [
     { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
     { header: 'Saldo', key: 'saldoCapital', format: (v) => formatCurrency(Number(v)) },
@@ -330,32 +391,20 @@ function EstadoCuentaTab() {
     { header: 'Estado', key: 'estado' },
   ];
 
-  const handleExportAportesExcel = () => {
-    if (!data) return;
-    exportToExcel(
-      data.aportes as unknown as Record<string, unknown>[],
-      columnsAportes,
-      `aportes-${data.socio.nombre}`,
-    );
-  };
-
-  const handleExportCreditosExcel = () => {
-    if (!data) return;
-    exportToExcel(
-      data.creditos as unknown as Record<string, unknown>[],
-      columnsCreditos,
-      `creditos-${data.socio.nombre}`,
-    );
+  const estadoColor: Record<string, string> = {
+    pagado: 'bg-green-50 text-green-700 border border-green-200',
+    pendiente: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+    activo: 'bg-green-50 text-green-700 border border-green-200',
   };
 
   return (
-    <div>
+    <AnimatedFadeIn>
       <div className="mb-4">
-        <label className="block text-xs font-medium text-gray-700 mb-1">Seleccionar Socio</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Seleccionar Socio</label>
         <select
           value={socioId}
           onChange={(e) => setSocioId(e.target.value)}
-          className="w-full max-w-md px-3 py-2 border rounded-md text-sm"
+          className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
         >
           <option value="">Seleccione un socio...</option>
           {socios?.data.map((s) => (
@@ -365,38 +414,35 @@ function EstadoCuentaTab() {
           ))}
         </select>
       </div>
-
       {!socioId && (
         <div className="text-gray-400 text-center py-8">
           Seleccione un socio para ver su estado de cuenta
         </div>
       )}
-
       {isLoading && <div className="text-gray-400 text-center py-8">Cargando...</div>}
       {error && (
         <div className="text-red-500 text-center py-8">Error al cargar estado de cuenta</div>
       )}
-
       {data && (
         <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Datos del Socio</h3>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-4">
+            <h3 className="text-sm font-semibold text-navy-800 mb-3">Datos del Socio</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="text-gray-500">Nombre:</span>
-                <p className="font-medium">{data.socio.nombre}</p>
+                <p className="font-medium text-navy-800">{data.socio.nombre}</p>
               </div>
               <div>
                 <span className="text-gray-500">Documento:</span>
-                <p className="font-medium">{data.socio.documento}</p>
+                <p className="font-medium text-navy-800">{data.socio.documento}</p>
               </div>
               <div>
                 <span className="text-gray-500">Email:</span>
-                <p className="font-medium">{data.socio.email ?? '—'}</p>
+                <p className="font-medium text-navy-800">{data.socio.email ?? '—'}</p>
               </div>
               <div>
                 <span className="text-gray-500">Estado:</span>
-                <p className="font-medium capitalize">{data.socio.estado}</p>
+                <p className="font-medium capitalize text-navy-800">{data.socio.estado}</p>
               </div>
               <div>
                 <span className="text-gray-500">Ahorro Acumulado:</span>
@@ -406,55 +452,70 @@ function EstadoCuentaTab() {
               </div>
               <div>
                 <span className="text-gray-500">Total Aportado:</span>
-                <p className="font-medium">{formatCurrency(data.totalAportado)}</p>
+                <p className="font-medium text-navy-800">{formatCurrency(data.totalAportado)}</p>
               </div>
             </div>
           </div>
-
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-gray-700">Aportes</h3>
-              <button
-                onClick={handleExportAportesExcel}
-                className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+              <h3 className="text-sm font-semibold text-navy-800">Aportes</h3>
+              <AnimatedButton
+                onClick={() =>
+                  exportToExcel(
+                    data.aportes as unknown as Record<string, unknown>[],
+                    columnsAportes,
+                    `aportes-${data.socio.nombre}`,
+                  )
+                }
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
               >
-                Exportar Excel
-              </button>
+                <Download size={14} /> Exportar Excel
+              </AnimatedButton>
             </div>
-            <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600">
-                  <tr>
-                    <th className="text-left px-4 py-3">Período</th>
-                    <th className="text-right px-4 py-3">Monto</th>
-                    <th className="text-left px-4 py-3">Fecha</th>
-                    <th className="text-center px-4 py-3">Estado</th>
-                    <th className="text-right px-4 py-3">Solidaridad</th>
-                    <th className="text-right px-4 py-3">Abono Crédito</th>
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 text-gray-500">
+                    <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Período
+                    </th>
+                    <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Monto
+                    </th>
+                    <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Fecha
+                    </th>
+                    <th className="text-center p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Estado
+                    </th>
+                    <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Solidaridad
+                    </th>
+                    <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Abono Crédito
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {data.aportes.map((a) => (
-                    <tr key={a.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        {periodoMap.get(a.periodoId) ?? `#${a.periodoId}`}
-                      </td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(a.monto)}</td>
-                      <td className="px-4 py-3">{formatDate(a.fechaPago)}</td>
-                      <td className="px-4 py-3 text-center">
+                <tbody>
+                  {data.aportes.map((a, idx) => (
+                    <AnimatedTableRow key={a.id} index={idx}>
+                      <td className="p-3.5">{periodoMap.get(a.periodoId) ?? `#${a.periodoId}`}</td>
+                      <td className="p-3.5 text-right font-mono">{formatCurrency(a.monto)}</td>
+                      <td className="p-3.5 text-gray-600 text-xs">{formatDate(a.fechaPago)}</td>
+                      <td className="p-3.5 text-center">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                            a.estado === 'pagado'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                          }`}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoColor[a.estado] ?? 'bg-gray-50 text-gray-600 border border-gray-200'}`}
                         >
                           {a.estado}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(a.pagoSolidaridad)}</td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(a.pagoCredito)}</td>
-                    </tr>
+                      <td className="p-3.5 text-right font-mono">
+                        {formatCurrency(a.pagoSolidaridad)}
+                      </td>
+                      <td className="p-3.5 text-right font-mono">
+                        {formatCurrency(a.pagoCredito)}
+                      </td>
+                    </AnimatedTableRow>
                   ))}
                   {data.aportes.length === 0 && (
                     <tr>
@@ -467,51 +528,70 @@ function EstadoCuentaTab() {
               </table>
             </div>
           </div>
-
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-gray-700">Créditos</h3>
-              <button
-                onClick={handleExportCreditosExcel}
-                className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+              <h3 className="text-sm font-semibold text-navy-800">Créditos</h3>
+              <AnimatedButton
+                onClick={() =>
+                  exportToExcel(
+                    data.creditos as unknown as Record<string, unknown>[],
+                    columnsCreditos,
+                    `creditos-${data.socio.nombre}`,
+                  )
+                }
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
               >
-                Exportar Excel
-              </button>
+                <Download size={14} /> Exportar Excel
+              </AnimatedButton>
             </div>
-            <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600">
-                  <tr>
-                    <th className="text-right px-4 py-3">Monto</th>
-                    <th className="text-right px-4 py-3">Saldo</th>
-                    <th className="text-center px-4 py-3">Cuotas</th>
-                    <th className="text-center px-4 py-3">Pagadas</th>
-                    <th className="text-right px-4 py-3">Cuota Mensual</th>
-                    <th className="text-center px-4 py-3">Estado</th>
-                    <th className="text-left px-4 py-3">Propósito</th>
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 text-gray-500">
+                    <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Monto
+                    </th>
+                    <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Saldo
+                    </th>
+                    <th className="text-center p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Cuotas
+                    </th>
+                    <th className="text-center p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Pagadas
+                    </th>
+                    <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Cuota Mensual
+                    </th>
+                    <th className="text-center p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Estado
+                    </th>
+                    <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                      Propósito
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {data.creditos.map((c) => (
-                    <tr key={c.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-right">{formatCurrency(c.monto)}</td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(c.saldoCapital)}</td>
-                      <td className="px-4 py-3 text-center">{c.cuotas}</td>
-                      <td className="px-4 py-3 text-center">{c.cuotasPagadas}</td>
-                      <td className="px-4 py-3 text-right">{formatCurrency(c.cuotaMensual)}</td>
-                      <td className="px-4 py-3 text-center">
+                <tbody>
+                  {data.creditos.map((c, idx) => (
+                    <AnimatedTableRow key={c.id} index={idx}>
+                      <td className="p-3.5 text-right font-mono">{formatCurrency(c.monto)}</td>
+                      <td className="p-3.5 text-right font-mono text-orange-600">
+                        {formatCurrency(c.saldoCapital)}
+                      </td>
+                      <td className="p-3.5 text-center">{c.cuotas}</td>
+                      <td className="p-3.5 text-center">{c.cuotasPagadas}</td>
+                      <td className="p-3.5 text-right font-mono">
+                        {formatCurrency(c.cuotaMensual)}
+                      </td>
+                      <td className="p-3.5 text-center">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                            c.estado === 'activo'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-blue-100 text-blue-700'
-                          }`}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoColor[c.estado] ?? 'bg-gray-50 text-gray-600 border border-gray-200'}`}
                         >
                           {c.estado}
                         </span>
                       </td>
-                      <td className="px-4 py-3">{c.proposito ?? '—'}</td>
-                    </tr>
+                      <td className="p-3.5">{c.proposito ?? '—'}</td>
+                    </AnimatedTableRow>
                   ))}
                   {data.creditos.length === 0 && (
                     <tr>
@@ -526,7 +606,7 @@ function EstadoCuentaTab() {
           </div>
         </div>
       )}
-    </div>
+    </AnimatedFadeIn>
   );
 }
 
@@ -535,7 +615,6 @@ function FlujoCajaTab() {
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
   const [desde, setDesde] = useState(firstDay.toISOString().slice(0, 10));
   const [hasta, setHasta] = useState(today.toISOString().slice(0, 10));
-
   const { data, isLoading, error } = useQuery({
     queryKey: ['reporte-flujo-caja', desde, hasta],
     queryFn: () => apiGetReporteFlujoCaja(desde, hasta),
@@ -550,96 +629,124 @@ function FlujoCajaTab() {
     { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
   ];
 
-  const handleExportExcel = () => {
-    if (!data) return;
-    exportToExcel(data.movimientos as unknown as Record<string, unknown>[], columns, 'flujo-caja');
-  };
-
-  const handleExportPDF = () => {
-    if (!data) return;
-    exportToPDF(
-      data.movimientos as unknown as Record<string, unknown>[],
-      columns,
-      'Flujo de Caja',
-      'flujo-caja',
-    );
-  };
-
   return (
-    <div>
-      <div className="flex items-end gap-4 mb-4">
+    <AnimatedFadeIn>
+      <div className="flex flex-wrap items-end gap-4 mb-4">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Desde</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Desde</label>
           <input
             type="date"
             value={desde}
             onChange={(e) => setDesde(e.target.value)}
-            className="px-3 py-2 border rounded-md text-sm"
+            className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Hasta</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Hasta</label>
           <input
             type="date"
             value={hasta}
             onChange={(e) => setHasta(e.target.value)}
-            className="px-3 py-2 border rounded-md text-sm"
+            className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
           />
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={handleExportExcel}
-            className="px-3 py-2 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            Exportar Excel
-          </button>
-          <button
-            onClick={handleExportPDF}
-            className="px-3 py-2 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Exportar PDF
-          </button>
+          {data && (
+            <>
+              <AnimatedButton
+                onClick={() =>
+                  exportToExcel(
+                    data.movimientos as unknown as Record<string, unknown>[],
+                    columns,
+                    'flujo-caja',
+                  )
+                }
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
+              >
+                <Download size={14} /> Excel
+              </AnimatedButton>
+              <AnimatedButton
+                onClick={() =>
+                  exportToPDF(
+                    data.movimientos as unknown as Record<string, unknown>[],
+                    columns,
+                    'Flujo de Caja',
+                    'flujo-caja',
+                  )
+                }
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
+              >
+                <Download size={14} /> PDF
+              </AnimatedButton>
+            </>
+          )}
         </div>
       </div>
-
       {isLoading && <div className="text-gray-400 text-center py-8">Cargando...</div>}
       {error && <div className="text-red-500 text-center py-8">Error al cargar flujo de caja</div>}
-
       {data && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Ingresos</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">
-                {formatCurrency(data.ingresos)}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Egresos</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">{formatCurrency(data.egresos)}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Saldo Neto</p>
-              <p
-                className={`text-2xl font-bold mt-1 ${data.saldo >= 0 ? 'text-navy-700' : 'text-red-600'}`}
-              >
-                {formatCurrency(data.saldo)}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <AnimatedStaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <AnimatedStaggerItem>
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white shadow-lg">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+                <div className="relative">
+                  <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+                    Ingresos
+                  </span>
+                  <div className="text-2xl font-bold mt-1">{formatCurrency(data.ingresos)}</div>
+                </div>
+              </div>
+            </AnimatedStaggerItem>
+            <AnimatedStaggerItem>
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-red-500 to-rose-600 p-4 text-white shadow-lg">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+                <div className="relative">
+                  <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+                    Egresos
+                  </span>
+                  <div className="text-2xl font-bold mt-1">{formatCurrency(data.egresos)}</div>
+                </div>
+              </div>
+            </AnimatedStaggerItem>
+            <AnimatedStaggerItem>
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-600 to-orange-500 p-4 text-white shadow-lg">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+                <div className="relative">
+                  <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+                    Saldo Neto
+                  </span>
+                  <div
+                    className={`text-2xl font-bold mt-1 ${data.saldo >= 0 ? 'text-white' : 'text-white'}`}
+                  >
+                    {formatCurrency(data.saldo)}
+                  </div>
+                </div>
+              </div>
+            </AnimatedStaggerItem>
+          </AnimatedStaggerContainer>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
-                <tr>
-                  <th className="text-left px-4 py-3">Fecha</th>
-                  <th className="text-left px-4 py-3">Tipo</th>
-                  <th className="text-left px-4 py-3">Categoría</th>
-                  <th className="text-left px-4 py-3">Descripción</th>
-                  <th className="text-right px-4 py-3">Monto</th>
+              <thead>
+                <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 text-gray-500">
+                  <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                    Fecha
+                  </th>
+                  <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                    Tipo
+                  </th>
+                  <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                    Categoría
+                  </th>
+                  <th className="text-left p-3.5 font-semibold text-xs uppercase tracking-wider">
+                    Descripción
+                  </th>
+                  <th className="text-right p-3.5 font-semibold text-xs uppercase tracking-wider">
+                    Monto
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {data.movimientos.length === 0 && (
                   <tr>
                     <td colSpan={5} className="text-center text-gray-400 py-8">
@@ -647,233 +754,30 @@ function FlujoCajaTab() {
                     </td>
                   </tr>
                 )}
-                {data.movimientos.map((m) => (
-                  <tr key={`${m.fecha}-${m.descripcion}-${m.monto}`} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">{formatDate(m.fecha)}</td>
-                    <td className="px-4 py-3">
+                {data.movimientos.map((m, idx) => (
+                  <AnimatedTableRow key={`${m.fecha}-${m.descripcion}-${m.monto}`} index={idx}>
+                    <td className="p-3.5 text-gray-600 text-xs">{formatDate(m.fecha)}</td>
+                    <td className="p-3.5">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                          m.tipo === 'ingreso'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${m.tipo === 'ingreso' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
                       >
                         {m.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{m.categoria}</td>
-                    <td className="px-4 py-3">{m.descripcion}</td>
+                    <td className="p-3.5 text-gray-700">{m.categoria}</td>
+                    <td className="p-3.5 text-gray-600 max-w-[250px]">{m.descripcion}</td>
                     <td
-                      className={`px-4 py-3 text-right font-medium ${
-                        m.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'
-                      }`}
+                      className={`p-3.5 text-right font-medium font-mono ${m.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}
                     >
                       {formatCurrency(m.monto)}
                     </td>
-                  </tr>
+                  </AnimatedTableRow>
                 ))}
               </tbody>
             </table>
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-function DividendosTab() {
-  const [page, setPage] = useState(1);
-  const [showCrear, setShowCrear] = useState(false);
-  const [periodo, setPeriodo] = useState('');
-  const [montoTotal, setMontoTotal] = useState('');
-  const [distribuyendoId, setDistribuyendoId] = useState<string | null>(null);
-
-  const { data: socios } = useQuery({
-    queryKey: ['socios-lista'],
-    queryFn: () => apiListarSocios(1, 999),
-  });
-
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['dividendos', page],
-    queryFn: () => apiListarDividendos(page, 10),
-  });
-
-  const mutationCrear = async () => {
-    if (!periodo || !montoTotal) return;
-    try {
-      await apiCrearDividendo({ periodo, montoTotal: Number(montoTotal) });
-      setShowCrear(false);
-      setPeriodo('');
-      setMontoTotal('');
-      refetch();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Error al crear dividendo');
-    }
-  };
-
-  const mutationDistribuir = async (id: string) => {
-    if (!socios?.data.length) return;
-    setDistribuyendoId(id);
-    try {
-      const socioIds = socios.data.map((s) => s.id);
-      await apiDistribuirDividendo(id, socioIds);
-      refetch();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Error al distribuir dividendo');
-    } finally {
-      setDistribuyendoId(null);
-    }
-  };
-
-  const totalMonto = data?.data.reduce((s, d) => s + d.montoTotal, 0) ?? 0;
-  const distribuidos = data?.data.filter((d) => d.distribuido).length ?? 0;
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <div />
-        <button
-          onClick={() => setShowCrear(!showCrear)}
-          className="px-3 py-1.5 text-xs bg-navy-700 text-white rounded hover:bg-navy-800"
-        >
-          {showCrear ? 'Cancelar' : '+ Nuevo Dividendo'}
-        </button>
-      </div>
-
-      {showCrear && (
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Crear Dividendo</h3>
-          <div className="flex items-end gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Período</label>
-              <input
-                type="text"
-                value={periodo}
-                onChange={(e) => setPeriodo(e.target.value)}
-                placeholder="Ej: 2026-06"
-                className="px-3 py-2 border rounded-md text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Monto Total</label>
-              <input
-                type="number"
-                value={montoTotal}
-                onChange={(e) => setMontoTotal(e.target.value)}
-                placeholder="0"
-                className="px-3 py-2 border rounded-md text-sm"
-              />
-            </div>
-            <button
-              onClick={mutationCrear}
-              disabled={!periodo || !montoTotal}
-              className="px-3 py-2 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-            >
-              Guardar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {isLoading && <div className="text-gray-400 text-center py-8">Cargando...</div>}
-      {error && <div className="text-red-500 text-center py-8">Error al cargar dividendos</div>}
-
-      {data && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Total Dividendos</p>
-              <p className="text-xl font-bold text-navy-700 mt-1">{data.total}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Monto Acumulado</p>
-              <p className="text-xl font-bold text-green-600 mt-1">{formatCurrency(totalMonto)}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Distribuidos</p>
-              <p className="text-xl font-bold text-orange-600 mt-1">
-                {distribuidos} / {data.total}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
-                <tr>
-                  <th className="text-left px-4 py-3">Período</th>
-                  <th className="text-right px-4 py-3">Monto Total</th>
-                  <th className="text-left px-4 py-3">Fecha Cálculo</th>
-                  <th className="text-center px-4 py-3">Distribuido</th>
-                  <th className="text-left px-4 py-3">Fecha Pago</th>
-                  <th className="text-center px-4 py-3">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {data.data.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="text-center text-gray-400 py-8">
-                      No hay dividendos registrados
-                    </td>
-                  </tr>
-                )}
-                {data.data.map((d) => (
-                  <tr key={d.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{d.periodo}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(d.montoTotal)}</td>
-                    <td className="px-4 py-3">{formatDate(d.fechaCalculo)}</td>
-                    <td className="px-4 py-3 text-center">
-                      {d.distribuido ? (
-                        <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-                          Sí
-                        </span>
-                      ) : (
-                        <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700">
-                          No
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">{d.fechaPago ? formatDate(d.fechaPago) : '—'}</td>
-                    <td className="px-4 py-3 text-center">
-                      {!d.distribuido && (
-                        <button
-                          onClick={() => mutationDistribuir(d.id)}
-                          disabled={distribuyendoId === d.id}
-                          className="px-2 py-1 text-xs bg-navy-600 text-white rounded hover:bg-navy-700 disabled:opacity-50"
-                        >
-                          {distribuyendoId === d.id ? 'Distribuyendo...' : 'Distribuir'}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {data.totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-4">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="px-3 py-1 text-xs border rounded disabled:opacity-30"
-              >
-                Anterior
-              </button>
-              <span className="px-3 py-1 text-xs text-gray-600">
-                Página {data.page} de {data.totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
-                disabled={page >= data.totalPages}
-                className="px-3 py-1 text-xs border rounded disabled:opacity-30"
-              >
-                Siguiente
-              </button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+    </AnimatedFadeIn>
   );
 }
