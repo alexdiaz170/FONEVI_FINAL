@@ -481,7 +481,6 @@ export interface ResumenDashboard {
   aportes: { delMes: number; totalRecibido: number };
   solidaridad: { totalRecibido: number };
   movimientos: { ingresos: number; egresos: number };
-  reservas: number;
 }
 
 export interface BalanceGeneral {
@@ -489,7 +488,6 @@ export interface BalanceGeneral {
     ahorros: number;
     creditosPorCobrar: number;
     solidaridad: number;
-    reservas: number;
     total: number;
   };
   pasivos: { capitalSocial: number; total: number };

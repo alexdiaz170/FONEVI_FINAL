@@ -51,14 +51,11 @@ export class RegistrarAporteUseCase {
 
     const prisma = getPrismaClient();
 
-    const [valorSolidaridad, tasaSeguro, valorAhorroMensual, valorMinimoAporte] = await Promise.all(
-      [
-        this.configService.getValorSolidaridad(),
-        this.configService.getTasaSeguro(),
-        this.configService.getValorAhorroMensual(),
-        this.configService.getValorMinimoAporte(),
-      ],
-    );
+    const [valorSolidaridad, tasaSeguro, valorMinimoAporte] = await Promise.all([
+      this.configService.getValorSolidaridad(),
+      this.configService.getTasaSeguro(),
+      this.configService.getValorMinimoAporte(),
+    ]);
 
     if (montoTotal.value < valorMinimoAporte) {
       throw new DomainError(
@@ -118,7 +115,6 @@ export class RegistrarAporteUseCase {
         fechaPago,
         valorSolidaridad,
         tasaSeguro,
-        valorAhorroMensual,
       );
 
       const detalle = AporteDetalle.create({

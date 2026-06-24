@@ -4,9 +4,7 @@ export const FINANCIERO_KEYS = [
   'porcentaje_seguro',
   'valor_solidaridad',
   'valor_minimo_aporte',
-  'valor_ahorro_mensual',
   'multiplicador_maximo_credito',
-  'reservas',
 ];
 
 export const GENERAL_KEYS = ['nombre_institucion', 'nit_institucion', 'representante'];
@@ -40,20 +38,10 @@ export const KEY_LABELS: Record<
     type: 'currency',
     desc: 'aporte mensual mínimo requerido',
   },
-  valor_ahorro_mensual: {
-    label: 'Valor de Ahorro Mensual',
-    type: 'currency',
-    desc: 'Monto fijo destinado al ahorro en cada aporte',
-  },
   multiplicador_maximo_credito: {
     label: 'Multiplicador Máx. Crédito',
     type: 'number',
     desc: 'Veces del ahorro que se puede prestar',
-  },
-  reservas: {
-    label: 'Reservas Institucionales',
-    type: 'currency',
-    desc: 'Monto de reserva para el balance general',
   },
   nombre_institucion: {
     label: 'Nombre de la Institución',

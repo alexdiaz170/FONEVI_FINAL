@@ -12,7 +12,6 @@ export interface DashboardResumen {
   ingresos: number;
   egresos: number;
   totalAhorros: number;
-  reservas: number;
 }
 
 export interface IDashboardRepository {

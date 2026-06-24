@@ -9,7 +9,7 @@ import { apiResponse } from '../response.js';
 
 export function createReporteController() {
   const configService = new ConfiguracionService();
-  const balanceUseCase = new ObtenerBalanceUseCase(new CalculadorBalanceGeneral(), configService);
+  const balanceUseCase = new ObtenerBalanceUseCase(new CalculadorBalanceGeneral());
   const carteraUseCase = new ObtenerCarteraUseCase();
   const flujoCajaUseCase = new ObtenerFlujoCajaUseCase();
   const estadoCuentaSocioUseCase = new ObtenerEstadoCuentaSocioUseCase();

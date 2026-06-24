@@ -23,7 +23,6 @@ export function BalanceGeneralTab() {
     { cuenta: 'AHORROS', valor: data.activos.ahorros },
     { cuenta: 'CRÉDITOS POR COBRAR', valor: data.activos.creditosPorCobrar },
     { cuenta: 'SOLIDARIDAD', valor: data.activos.solidaridad },
-    { cuenta: 'RESERVAS', valor: data.activos.reservas },
     { cuenta: 'TOTAL ACTIVOS', valor: data.activos.total },
     { cuenta: '', valor: '' },
     { cuenta: 'CAPITAL SOCIAL', valor: data.pasivos.capitalSocial },

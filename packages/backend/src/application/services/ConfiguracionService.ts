@@ -22,11 +22,6 @@ export class ConfiguracionService {
     return Number(val ?? 5000);
   }
 
-  async getValorAhorroMensual(): Promise<number> {
-    const val = await this.getValor('valor_ahorro_mensual');
-    return Number(val ?? 125000);
-  }
-
   async getTasaMoraMensual(): Promise<number> {
     const val = await this.getValor('tasa_mora_mensual');
     return Number(val ?? 0);
@@ -40,10 +35,5 @@ export class ConfiguracionService {
   async getTasaInteresMensual(): Promise<number> {
     const val = await this.getValor('tasa_interes_mensual');
     return Number(val ?? 1);
-  }
-
-  async getReservas(): Promise<number> {
-    const val = await this.getValor('reservas');
-    return Number(val ?? 2500000);
   }
 }

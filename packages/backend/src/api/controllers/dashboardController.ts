@@ -9,7 +9,7 @@ import { apiResponse } from '../response.js';
 export function createDashboardController(dashboardRepo: IDashboardRepository) {
   const resumenUseCase = new ObtenerResumenDashboardUseCase(dashboardRepo);
   const configService = new ConfiguracionService();
-  const balanceUseCase = new ObtenerBalanceUseCase(new CalculadorBalanceGeneral(), configService);
+  const balanceUseCase = new ObtenerBalanceUseCase(new CalculadorBalanceGeneral());
 
   return {
     async resumen(req: Request, res: Response, next: NextFunction): Promise<void> {

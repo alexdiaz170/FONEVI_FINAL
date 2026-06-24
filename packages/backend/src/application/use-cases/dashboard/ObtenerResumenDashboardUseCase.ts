@@ -26,7 +26,6 @@ export interface ResumenDashboard {
     ingresos: number;
     egresos: number;
   };
-  reservas: number;
 }
 
 export class ObtenerResumenDashboardUseCase {
@@ -65,7 +64,6 @@ export class ObtenerResumenDashboardUseCase {
         ingresos: r.ingresos,
         egresos: r.egresos,
       },
-      reservas: r.reservas,
     };
   }
 }

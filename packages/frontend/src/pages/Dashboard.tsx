@@ -218,13 +218,6 @@ function AdminDashboard() {
       icon: HandHeart,
       group: 'fondos',
     },
-    {
-      label: 'Reservas',
-      value: formatCurrency(resumen.reservas),
-      bg: 'from-yellow-500 to-yellow-600',
-      icon: Building2,
-      group: 'fondos',
-    },
   ];
 
   return (

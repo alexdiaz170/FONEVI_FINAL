@@ -41,14 +41,12 @@ async function main() {
   console.log(`ℹ Créditos en DB: ${creditosCount}`);
 
   const configDefaults = [
-    { clave: 'reservas', valor: '2500000' },
     { clave: 'tasa_interes_mensual', valor: '1' },
     { clave: 'tasa_mora_mensual', valor: '0' },
     { clave: 'porcentaje_seguro', valor: '0.5' },
     { clave: 'valor_solidaridad', valor: '5000' },
     { clave: 'valor_minimo_aporte', valor: '125000' },
     { clave: 'multiplicador_maximo_credito', valor: '4' },
-    { clave: 'valor_ahorro_mensual', valor: '125000' },
     { clave: 'nombre_institucion', valor: 'Fondo de Empleados Docentes FONEVI' },
     { clave: 'nit_institucion', valor: '800.123.456-7' },
   ];

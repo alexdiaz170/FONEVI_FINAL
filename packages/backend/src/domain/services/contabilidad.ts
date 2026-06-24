@@ -5,7 +5,6 @@ export interface BalanceGeneral {
     ahorros: number;
     creditosPorCobrar: number;
     solidaridad: number;
-    reservas: number;
     total: number;
   };
   pasivos: {
@@ -23,15 +22,13 @@ export class CalculadorBalanceGeneral {
     totalAhorros: number,
     totalCreditosActivos: number,
     totalSolidaridad: number,
-    reservasConfig: number,
     totalAportesRecibidos: number,
   ): BalanceGeneral {
     const ahorrosM = Monto.create(totalAhorros);
     const creditosM = Monto.create(totalCreditosActivos);
     const solidaridadM = Monto.create(totalSolidaridad);
-    const reservasM = Monto.create(reservasConfig);
 
-    const activos = ahorrosM.sumar(creditosM).sumar(solidaridadM).sumar(reservasM);
+    const activos = ahorrosM.sumar(creditosM).sumar(solidaridadM);
     const pasivos = Monto.create(totalAportesRecibidos);
     const patrimonio = activos.restar(pasivos);
 
@@ -40,7 +37,6 @@ export class CalculadorBalanceGeneral {
         ahorros: ahorrosM.value,
         creditosPorCobrar: creditosM.value,
         solidaridad: solidaridadM.value,
-        reservas: reservasM.value,
         total: activos.value,
       },
       pasivos: {
