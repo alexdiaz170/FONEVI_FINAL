@@ -87,7 +87,7 @@ jest.config.local.js
 
 # ── Exportaciones generadas ──────────────────────────────────
 exports/
-reportes/
+/reportes/
 downloads/
 *.pdf
 *.xlsx
