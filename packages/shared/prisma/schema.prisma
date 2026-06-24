@@ -102,6 +102,25 @@ model AporteDetalle {
   @@map("aporte_detalles")
 }
 
+model CreditoMovimiento {
+  id                   String   @id @default(uuid())
+  creditoId            String   @map("credito_id")
+  tipo                 String
+  monto                Decimal  @db.Decimal(15, 2)
+  montoCapital         Decimal? @map("monto_capital") @db.Decimal(15, 2)
+  montoInteres         Decimal? @map("monto_interes") @db.Decimal(15, 2)
+  seguro               Decimal? @db.Decimal(15, 2)
+  saldoCapitalAnterior Decimal  @map("saldo_capital_anterior") @db.Decimal(15, 2)
+  saldoCapitalPosterior Decimal @map("saldo_capital_posterior") @db.Decimal(15, 2)
+  descripcion          String?
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  @@index([creditoId])
+  @@index([tipo])
+  @@index([createdAt])
+  @@map("credito_movimientos")
+}
+
 model Credito {
   id              String       @id @default(uuid())
   socioId         String       @map("socio_id")

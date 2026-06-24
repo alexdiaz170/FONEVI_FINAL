@@ -22,6 +22,19 @@ export class EliminarPagoCuotaUseCase {
 
       const creditoRevertido = credito.revertirPagoCuota(pago.montoCapital);
       await this.creditoRepo.update(creditoRevertido);
+
+      await prisma.creditoMovimiento.create({
+        data: {
+          creditoId: credito.id,
+          tipo: 'reversion',
+          monto: pago.monto.value,
+          montoCapital: pago.montoCapital.value,
+          montoInteres: pago.montoInteres.value,
+          saldoCapitalAnterior: Number(credito.saldoCapital.value),
+          saldoCapitalPosterior: Number(creditoRevertido.saldoCapital.value),
+          descripcion: `Reversión de pago cuota #${pago.numeroCuota}`,
+        },
+      });
     });
   }
 }

@@ -66,6 +66,20 @@ export class PagarCuotaUseCase {
 
       await this.creditoRepo.update(creditoActualizado);
 
+      await prisma.creditoMovimiento.create({
+        data: {
+          creditoId: credito.id,
+          tipo: 'pago_cuota',
+          monto: cuotaCalculada.monto.value,
+          montoCapital: cuotaCalculada.montoCapital.value,
+          montoInteres: cuotaCalculada.montoInteres.value,
+          seguro: cuotaCalculada.seguro.value,
+          saldoCapitalAnterior: Number(credito.saldoCapital.value),
+          saldoCapitalPosterior: Number(creditoActualizado.saldoCapital.value),
+          descripcion: `Pago cuota #${pagoCuota.numeroCuota}`,
+        },
+      });
+
       return saved;
     });
   }

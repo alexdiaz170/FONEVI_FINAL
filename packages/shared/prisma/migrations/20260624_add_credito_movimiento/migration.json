@@ -1,0 +1,40 @@
+{
+  "version": "5.22.0",
+  "steps": [
+    {
+      "tag": "CreateTable",
+      "table": "credito_movimientos",
+      "columns": [
+        { "name": "id", "type": "Text", "isRequired": true, "isList": false, "isId": true },
+        { "name": "credito_id", "type": "Text", "isRequired": true, "isList": false },
+        { "name": "tipo", "type": "Text", "isRequired": true, "isList": false },
+        { "name": "monto", "type": "Decimal", "isRequired": true, "isList": false },
+        { "name": "monto_capital", "type": "Decimal", "isRequired": false, "isList": false },
+        { "name": "monto_interes", "type": "Decimal", "isRequired": false, "isList": false },
+        { "name": "seguro", "type": "Decimal", "isRequired": false, "isList": false },
+        {
+          "name": "saldo_capital_anterior",
+          "type": "Decimal",
+          "isRequired": true,
+          "isList": false
+        },
+        {
+          "name": "saldo_capital_posterior",
+          "type": "Decimal",
+          "isRequired": true,
+          "isList": false
+        },
+        { "name": "descripcion", "type": "Text", "isRequired": false, "isList": false },
+        { "name": "created_at", "type": "DateTime", "isRequired": true, "isList": false }
+      ],
+      "primaryKey": { "name": "credito_movimientos_pkey", "fields": ["id"] },
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "indexes": [
+        { "name": "credito_movimientos_credito_id_idx", "fields": ["credito_id"] },
+        { "name": "credito_movimientos_tipo_idx", "fields": ["tipo"] },
+        { "name": "credito_movimientos_created_at_idx", "fields": ["created_at"] }
+      ]
+    }
+  ]
+}

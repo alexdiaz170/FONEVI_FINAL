@@ -5,6 +5,7 @@ import { ISocioRepository } from '../../../domain/repositories/ISocioRepository.
 import { ICreditoRepository } from '../../../domain/repositories/ICreditoRepository.js';
 import { DomainError, EntityNotFoundError } from '../../../domain/errors.js';
 import { ConfiguracionService } from '../../services/ConfiguracionService.js';
+import { getPrismaClient } from '../../../infrastructure/persistence/prismaClient.js';
 
 export class SolicitarCreditoUseCase {
   constructor(
@@ -65,6 +66,20 @@ export class SolicitarCreditoUseCase {
       notas: dto.notas ?? null,
     });
 
-    return await this.creditoRepo.save(credito);
+    const saved = await this.creditoRepo.save(credito);
+
+    const prisma = getPrismaClient();
+    await prisma.creditoMovimiento.create({
+      data: {
+        creditoId: saved.id,
+        tipo: 'desembolso',
+        monto: saved.monto.value,
+        saldoCapitalAnterior: 0,
+        saldoCapitalPosterior: saved.saldoCapital.value,
+        descripcion: `Desembolso de crédito a ${socio.nombre}`,
+      },
+    });
+
+    return saved;
   }
 }
