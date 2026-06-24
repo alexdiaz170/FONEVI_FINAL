@@ -1,4 +1,8 @@
 import { IDashboardRepository } from '../../../domain/repositories/IDashboardRepository.js';
+import { dashboardCache } from '../../../infrastructure/cache/SimpleCache.js';
+
+const CACHE_TTL = 20_000;
+const CACHE_KEY = 'dashboard:resumen';
 
 export interface ResumenDashboard {
   socios: {
@@ -32,13 +36,16 @@ export class ObtenerResumenDashboardUseCase {
   constructor(private readonly dashboardRepo: IDashboardRepository) {}
 
   async execute(): Promise<ResumenDashboard> {
+    const cached = dashboardCache.get<ResumenDashboard>(CACHE_KEY);
+    if (cached) return cached;
+
     const inicioMes = new Date();
     inicioMes.setDate(1);
     inicioMes.setHours(0, 0, 0, 0);
 
     const r = await this.dashboardRepo.getResumen(inicioMes);
 
-    return {
+    const result: ResumenDashboard = {
       socios: {
         activos: r.sociosActivos,
         enMora: r.sociosMora,
@@ -65,5 +72,8 @@ export class ObtenerResumenDashboardUseCase {
         egresos: r.egresos,
       },
     };
+
+    dashboardCache.set(CACHE_KEY, result, CACHE_TTL);
+    return result;
   }
 }

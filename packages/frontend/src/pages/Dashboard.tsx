@@ -87,7 +87,7 @@ function AdminDashboard() {
   } = useQuery({
     queryKey: ['dashboard-resumen'],
     queryFn: () => apiGetDashboardResumen(),
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 
   const { data: sociosRecientes } = useQuery({
@@ -522,7 +522,7 @@ function SocioDashboard() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['mi-dashboard'],
     queryFn: () => apiMiDashboard(),
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 
   const { data: notis } = useQuery({
@@ -768,7 +768,7 @@ function AportesChart() {
   const { data, isLoading } = useQuery({
     queryKey: ['aportes-chart'],
     queryFn: () => apiListarAportes({ limit: 100 }),
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 
   if (isLoading)
