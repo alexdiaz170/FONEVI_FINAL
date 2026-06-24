@@ -1,0 +1,35 @@
+{
+  "version": "5.22.0",
+  "steps": [
+    {
+      "tag": "CreateTable",
+      "table": "cierres_periodo",
+      "columns": [
+        { "name": "id", "type": "Text", "isRequired": true, "isList": false, "isId": true },
+        { "name": "periodo_id", "type": "Int", "isRequired": true, "isList": false },
+        { "name": "usuario_id", "type": "Text", "isRequired": true, "isList": false },
+        { "name": "total_recaudado", "type": "Decimal", "isRequired": true, "isList": false },
+        { "name": "total_solidaridad", "type": "Decimal", "isRequired": true, "isList": false },
+        { "name": "total_ahorro", "type": "Decimal", "isRequired": true, "isList": false },
+        {
+          "name": "total_aplicado_creditos",
+          "type": "Decimal",
+          "isRequired": true,
+          "isList": false
+        },
+        { "name": "total_socios_aportaron", "type": "Int", "isRequired": true, "isList": false },
+        { "name": "total_aportes", "type": "Int", "isRequired": true, "isList": false },
+        { "name": "fecha_cierre", "type": "DateTime", "isRequired": true, "isList": false },
+        { "name": "created_at", "type": "DateTime", "isRequired": true, "isList": false }
+      ],
+      "primaryKey": { "name": "cierres_periodo_pkey", "fields": ["id"] },
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "indexes": [
+        { "name": "cierres_periodo_periodo_id_idx", "fields": ["periodo_id"] },
+        { "name": "cierres_periodo_usuario_id_idx", "fields": ["usuario_id"] },
+        { "name": "cierres_periodo_fecha_cierre_idx", "fields": ["fecha_cierre"] }
+      ]
+    }
+  ]
+}

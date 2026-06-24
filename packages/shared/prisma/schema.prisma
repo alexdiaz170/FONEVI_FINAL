@@ -156,6 +156,25 @@ model Notificacion {
   @@map("notificaciones")
 }
 
+model CierrePeriodo {
+  id                   String   @id @default(uuid())
+  periodoId            Int      @map("periodo_id")
+  usuarioId            String   @map("usuario_id")
+  totalRecaudado       Decimal  @map("total_recaudado") @db.Decimal(15, 2)
+  totalSolidaridad     Decimal  @map("total_solidaridad") @db.Decimal(15, 2)
+  totalAhorro          Decimal  @map("total_ahorro") @db.Decimal(15, 2)
+  totalAplicadoCreditos Decimal @map("total_aplicado_creditos") @db.Decimal(15, 2)
+  totalSociosAportaron Int      @map("total_socios_aportaron")
+  totalAportes         Int      @map("total_aportes")
+  fechaCierre          DateTime @map("fecha_cierre")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  @@index([periodoId])
+  @@index([usuarioId])
+  @@index([fechaCierre])
+  @@map("cierres_periodo")
+}
+
 model Configuracion {
   clave     String   @id
   valor     String

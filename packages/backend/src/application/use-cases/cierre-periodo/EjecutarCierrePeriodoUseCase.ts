@@ -38,6 +38,17 @@ export class EjecutarCierrePeriodoUseCase {
     const totalAplicadoCreditos = aportes.reduce((s, a) => s + Number(a.pagoCredito), 0);
     const totalAhorro = totalRecaudado - totalSolidaridad - totalAplicadoCreditos;
 
+    const [totalSociosAportaron, totalAportes] = await Promise.all([
+      prisma.aporte
+        .groupBy({
+          by: ['socioId'],
+          where: { periodoId: periodoActivo.id },
+          _count: true,
+        })
+        .then((r) => r.length),
+      prisma.aporte.count({ where: { periodoId: periodoActivo.id } }),
+    ]);
+
     await prisma.$transaction(async () => {
       await prisma.movimiento.create({
         data: {
@@ -62,6 +73,20 @@ export class EjecutarCierrePeriodoUseCase {
           registroId: String(periodoActivo.id),
           detalle: `Cierre ejecutado para ${periodoActivo.nombre}. Total recaudado: $${totalRecaudado.toLocaleString()}`,
           ip: null,
+        },
+      });
+
+      await prisma.cierrePeriodo.create({
+        data: {
+          periodoId: periodoActivo.id,
+          usuarioId,
+          totalRecaudado: Math.round(totalRecaudado * 100) / 100,
+          totalSolidaridad: Math.round(totalSolidaridad * 100) / 100,
+          totalAhorro: Math.round(totalAhorro * 100) / 100,
+          totalAplicadoCreditos: Math.round(totalAplicadoCreditos * 100) / 100,
+          totalSociosAportaron,
+          totalAportes,
+          fechaCierre: new Date(),
         },
       });
     });
