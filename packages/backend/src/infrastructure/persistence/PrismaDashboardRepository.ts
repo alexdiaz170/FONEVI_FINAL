@@ -22,7 +22,7 @@ const DASHBOARD_SQL = `
     )::float8 AS "solidaridadTotal",
     COALESCE((SELECT SUM(monto::numeric) FROM movimientos WHERE tipo = 'ingreso'), 0)::float8 AS "ingresos",
     COALESCE((SELECT SUM(monto::numeric) FROM movimientos WHERE tipo = 'egreso'), 0)::float8 AS "egresos",
-    COALESCE((SELECT SUM(ahorro_acumulado::numeric) FROM socios WHERE deleted_at IS NULL), 0)::float8 AS "totalAhorros",
+    COALESCE((SELECT SUM(ahorro_acumulado::numeric) FROM socios WHERE deleted_at IS NULL), 0)::float8 AS "totalAhorros"
 `;
 
 export class PrismaDashboardRepository implements IDashboardRepository {
