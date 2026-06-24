@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run -w @fonevi/frontend build",
+  "buildCommand": "npm -w @fonevi/frontend run build:prod",
   "outputDirectory": "packages/frontend/dist",
   "framework": "vite",
-  "devCommand": "npm run -w @fonevi/frontend dev"
+  "devCommand": "npm -w @fonevi/frontend run dev"
 }
