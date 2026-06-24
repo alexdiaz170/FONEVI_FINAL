@@ -111,7 +111,7 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const usuario = useAuthStore((s) => s.usuario);
 
@@ -122,16 +122,8 @@ export function Sidebar() {
     }))
     .filter((g) => g.items.length > 0);
 
-  return (
-    <motion.aside
-      layout
-      className={cn(
-        'bg-navy-800 text-white flex flex-col overflow-hidden',
-        collapsed ? 'w-16' : 'w-64',
-      )}
-      animate={{ width: collapsed ? 64 : 256 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
-    >
+  const sidebarContent = (
+    <>
       <div className="flex items-center justify-between p-4 border-b border-navy-600 shrink-0">
         <AnimatePresence>
           {!collapsed && (
@@ -145,15 +137,29 @@ export function Sidebar() {
             </motion.span>
           )}
         </AnimatePresence>
-        <button onClick={() => setCollapsed(!collapsed)} className="p-1 hover:bg-navy-700 rounded">
-          <motion.span
-            animate={{ rotate: collapsed ? 0 : 90 }}
-            transition={{ duration: 0.3 }}
-            className="block"
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              onClose();
+              setCollapsed(false);
+            }}
+            className="p-1 hover:bg-navy-700 rounded md:hidden"
           >
-            {collapsed ? <Menu size={20} /> : <X size={20} />}
-          </motion.span>
-        </button>
+            <X size={20} />
+          </button>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-1 hover:bg-navy-700 rounded max-md:hidden"
+          >
+            <motion.span
+              animate={{ rotate: collapsed ? 0 : 90 }}
+              transition={{ duration: 0.3 }}
+              className="block"
+            >
+              {collapsed ? <Menu size={20} /> : <X size={20} />}
+            </motion.span>
+          </button>
+        </div>
       </div>
 
       <nav className="flex-1 py-2 overflow-y-auto overflow-x-hidden">
@@ -176,6 +182,7 @@ export function Sidebar() {
                 <motion.div key={item.to} variants={staggerItem}>
                   <NavLink
                     to={item.to}
+                    onClick={onClose}
                     className={({ isActive }) =>
                       cn(
                         'flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
@@ -194,6 +201,25 @@ export function Sidebar() {
           </div>
         ))}
       </nav>
-    </motion.aside>
+    </>
+  );
+
+  return (
+    <>
+      <motion.aside
+        layout
+        className={cn(
+          'bg-navy-800 text-white flex flex-col overflow-hidden shrink-0',
+          'fixed inset-y-0 left-0 z-30 md:relative',
+          'max-md:transition-transform max-md:duration-300',
+          mobileOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full',
+          collapsed ? 'w-16' : 'w-64',
+        )}
+        animate={{ width: collapsed && !mobileOpen ? 64 : 256 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+      >
+        {sidebarContent}
+      </motion.aside>
+    </>
   );
 }

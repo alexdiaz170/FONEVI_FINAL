@@ -222,12 +222,12 @@ function AdminDashboard() {
 
   return (
     <div className="relative">
-      <div className="absolute top-0 right-0 w-96 h-96 bg-navy-500/5 rounded-full -translate-y-1/3 translate-x-1/3 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-500/5 rounded-full translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+      <div className="absolute top-0 right-0 w-48 md:w-96 h-48 md:h-96 bg-navy-500/5 rounded-full -translate-y-1/3 translate-x-1/3 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-36 md:w-72 h-36 md:h-72 bg-blue-500/5 rounded-full translate-y-1/2 -translate-x-1/4 pointer-events-none" />
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-navy-800">{greeting}, Admin</h1>
+          <h1 className="text-lg md:text-2xl font-bold text-navy-800">{greeting}, Admin</h1>
           <p className="text-sm text-gray-500">
             {now.toLocaleDateString('es-CO', {
               weekday: 'long',
@@ -556,10 +556,12 @@ function SocioDashboard() {
 
   return (
     <div className="space-y-6 relative">
-      <div className="absolute top-0 right-0 w-96 h-96 bg-navy-500/5 rounded-full -translate-y-1/3 translate-x-1/3 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-500/5 rounded-full translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+      <div className="absolute top-0 right-0 w-48 md:w-96 h-48 md:h-96 bg-navy-500/5 rounded-full -translate-y-1/3 translate-x-1/3 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-36 md:w-72 h-36 md:h-72 bg-blue-500/5 rounded-full translate-y-1/2 -translate-x-1/4 pointer-events-none" />
 
-      <h1 className="text-2xl font-bold text-navy-800">Bienvenido, {data.socio.nombre}</h1>
+      <h1 className="text-lg md:text-2xl font-bold text-navy-800">
+        Bienvenido, {data.socio.nombre}
+      </h1>
 
       <AnimatedStaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <AnimatedStaggerItem className="md:col-span-2">

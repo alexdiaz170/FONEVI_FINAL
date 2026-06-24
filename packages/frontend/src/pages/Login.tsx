@@ -50,11 +50,11 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-navy-900 via-navy-800 to-navy-700 flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-96 h-96 bg-navy-600/20 rounded-full -translate-y-1/2 translate-x-1/3" />
-      <div className="absolute bottom-0 left-0 w-80 h-80 bg-navy-600/20 rounded-full translate-y-1/2 -translate-x-1/4" />
+      <div className="absolute top-0 right-0 w-48 md:w-96 h-48 md:h-96 bg-navy-600/20 rounded-full -translate-y-1/2 translate-x-1/3" />
+      <div className="absolute bottom-0 left-0 w-40 md:w-80 h-40 md:h-80 bg-navy-600/20 rounded-full translate-y-1/2 -translate-x-1/4" />
 
       <AnimatedContainer className="w-full max-w-md relative">
-        <AnimatedCard className="p-8">
+        <AnimatedCard className="p-6 md:p-8">
           <AnimatedSlideDown delay={0.1}>
             <div className="text-center mb-8">
               <div className="w-16 h-16 bg-navy-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
