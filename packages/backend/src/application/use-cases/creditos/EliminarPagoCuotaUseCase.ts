@@ -1,6 +1,7 @@
 import { ICreditoRepository } from '../../../domain/repositories/ICreditoRepository.js';
 import { IPagoCuotaRepository } from '../../../domain/repositories/IPagoCuotaRepository.js';
 import { EntityNotFoundError } from '../../../domain/errors.js';
+import { getPrismaClient } from '../../../infrastructure/persistence/prismaClient.js';
 
 export class EliminarPagoCuotaUseCase {
   constructor(
@@ -15,9 +16,12 @@ export class EliminarPagoCuotaUseCase {
     const credito = await this.creditoRepo.findById(pago.creditoId);
     if (!credito) throw new EntityNotFoundError('Credito', pago.creditoId);
 
-    await this.pagoCuotaRepo.delete(pagoId);
+    const prisma = getPrismaClient();
+    await prisma.$transaction(async () => {
+      await this.pagoCuotaRepo.delete(pagoId);
 
-    const creditoRevertido = credito.revertirPagoCuota(pago.montoCapital);
-    await this.creditoRepo.update(creditoRevertido);
+      const creditoRevertido = credito.revertirPagoCuota(pago.montoCapital);
+      await this.creditoRepo.update(creditoRevertido);
+    });
   }
 }

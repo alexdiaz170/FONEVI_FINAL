@@ -42,18 +42,20 @@ export class ActualizarAporteUseCase {
     if (dto.metodo !== undefined) actualizaciones.metodo = dto.metodo ?? null;
     if (dto.notas !== undefined) actualizaciones.notas = dto.notas ?? null;
 
-    const actualizado = aporte.actualizarDatos(
-      actualizaciones as Parameters<typeof aporte.actualizarDatos>[0],
-    );
-    const saved = await this.aporteRepo.update(actualizado);
-
     const prisma = getPrismaClient();
-    const nuevoAhorro = await this.aporteRepo.recalcularAhorroAcumulado(aporte.socioId);
-    await prisma.socio.update({
-      where: { id: aporte.socioId },
-      data: { ahorroAcumulado: nuevoAhorro.value },
-    });
+    return await prisma.$transaction(async () => {
+      const actualizado = aporte.actualizarDatos(
+        actualizaciones as Parameters<typeof aporte.actualizarDatos>[0],
+      );
+      const saved = await this.aporteRepo.update(actualizado);
 
-    return saved;
+      const nuevoAhorro = await this.aporteRepo.recalcularAhorroAcumulado(aporte.socioId);
+      await prisma.socio.update({
+        where: { id: aporte.socioId },
+        data: { ahorroAcumulado: nuevoAhorro.value },
+      });
+
+      return saved;
+    });
   }
 }

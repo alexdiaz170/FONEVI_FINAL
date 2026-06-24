@@ -4,6 +4,7 @@ import { ISolidaridadMovimientoRepository } from '../../../domain/repositories/I
 import { IMovimientoRepository } from '../../../domain/repositories/IMovimientoRepository.js';
 import { Movimiento } from '../../../domain/entities/Movimiento.js';
 import { DomainError } from '../../../domain/errors.js';
+import { getPrismaClient } from '../../../infrastructure/persistence/prismaClient.js';
 
 export class RegistrarSolidaridadUseCase {
   constructor(
@@ -41,19 +42,22 @@ export class RegistrarSolidaridadUseCase {
       beneficiario: dto.beneficiario ?? null,
     });
 
-    const solidaridadMov = await this.solidaridadRepo.save(movimiento);
+    const prisma = getPrismaClient();
+    return await prisma.$transaction(async () => {
+      const solidaridadMov = await this.solidaridadRepo.save(movimiento);
 
-    const mov = Movimiento.create({
-      tipo: dto.tipo,
-      categoria: 'Solidaridad',
-      descripcion: `[Solidaridad] ${dto.descripcion}`,
-      monto,
-      fecha,
-      socioId: dto.socioId,
+      const mov = Movimiento.create({
+        tipo: dto.tipo,
+        categoria: 'Solidaridad',
+        descripcion: `[Solidaridad] ${dto.descripcion}`,
+        monto,
+        fecha,
+        socioId: dto.socioId,
+      });
+
+      await this.movimientoRepo.save(mov);
+
+      return solidaridadMov;
     });
-
-    await this.movimientoRepo.save(mov);
-
-    return solidaridadMov;
   }
 }

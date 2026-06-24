@@ -38,30 +38,32 @@ export class EjecutarCierrePeriodoUseCase {
     const totalAplicadoCreditos = aportes.reduce((s, a) => s + Number(a.pagoCredito), 0);
     const totalAhorro = totalRecaudado - totalSolidaridad - totalAplicadoCreditos;
 
-    const movimiento = await prisma.movimiento.create({
-      data: {
-        tipo: 'ingreso',
-        categoria: 'cierre_periodo',
-        descripcion: `Cierre de período: ${periodoActivo.nombre}`,
-        monto: Math.round(totalRecaudado * 100) / 100,
-        fecha: new Date(),
-      },
-    });
+    await prisma.$transaction(async () => {
+      await prisma.movimiento.create({
+        data: {
+          tipo: 'ingreso',
+          categoria: 'cierre_periodo',
+          descripcion: `Cierre de período: ${periodoActivo.nombre}`,
+          monto: Math.round(totalRecaudado * 100) / 100,
+          fecha: new Date(),
+        },
+      });
 
-    await prisma.periodo.update({
-      where: { id: periodoActivo.id },
-      data: { activo: false },
-    });
+      await prisma.periodo.update({
+        where: { id: periodoActivo.id },
+        data: { activo: false },
+      });
 
-    await prisma.auditoria.create({
-      data: {
-        usuarioId,
-        accion: 'CIERRE_PERIODO',
-        tabla: 'periodos',
-        registroId: String(periodoActivo.id),
-        detalle: `Cierre ejecutado para ${periodoActivo.nombre}. Total recaudado: $${totalRecaudado.toLocaleString()}`,
-        ip: null,
-      },
+      await prisma.auditoria.create({
+        data: {
+          usuarioId,
+          accion: 'CIERRE_PERIODO',
+          tabla: 'periodos',
+          registroId: String(periodoActivo.id),
+          detalle: `Cierre ejecutado para ${periodoActivo.nombre}. Total recaudado: $${totalRecaudado.toLocaleString()}`,
+          ip: null,
+        },
+      });
     });
 
     return {

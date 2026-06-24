@@ -5,6 +5,7 @@ import { ICreditoRepository } from '../../../domain/repositories/ICreditoReposit
 import { IPagoCuotaRepository } from '../../../domain/repositories/IPagoCuotaRepository.js';
 import { EntityNotFoundError, DomainError } from '../../../domain/errors.js';
 import { ConfiguracionService } from '../../services/ConfiguracionService.js';
+import { getPrismaClient } from '../../../infrastructure/persistence/prismaClient.js';
 
 export class PagarCuotaUseCase {
   constructor(
@@ -53,16 +54,19 @@ export class PagarCuotaUseCase {
       fechaPago,
     });
 
-    const saved = await this.pagoCuotaRepo.save(pagoCuota);
+    const prisma = getPrismaClient();
+    return await prisma.$transaction(async () => {
+      const saved = await this.pagoCuotaRepo.save(pagoCuota);
 
-    const creditoActualizado = credito.registrarPagoCuota(
-      cuotaCalculada.montoCapital,
-      cuotaCalculada.montoInteres,
-      fechaPago,
-    );
+      const creditoActualizado = credito.registrarPagoCuota(
+        cuotaCalculada.montoCapital,
+        cuotaCalculada.montoInteres,
+        fechaPago,
+      );
 
-    await this.creditoRepo.update(creditoActualizado);
+      await this.creditoRepo.update(creditoActualizado);
 
-    return saved;
+      return saved;
+    });
   }
 }
