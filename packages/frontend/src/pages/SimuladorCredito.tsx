@@ -179,10 +179,12 @@ function SimuladorFormAdmin({
   tasaInteres: number;
   porcentajeSeguro: number;
 }) {
-  const [monto, setMonto] = useState(500000);
+  const [montoStr, setMontoStr] = useState('500000');
   const [cuotas, setCuotas] = useState(6);
   const [resultado, setResultado] = useState<AmortizacionPreviewDTO | null>(null);
   const [calculando, setCalculando] = useState(false);
+
+  const monto = Number(montoStr) || 0;
 
   useEffect(() => {
     if (monto > 0 && cuotas > 0) {
@@ -220,17 +222,16 @@ function SimuladorFormAdmin({
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-navy-700 mb-1">Monto solicitado</label>
             <input
-              type="number"
-              value={monto}
-              onChange={(e) => setMonto(Math.max(0, Number(e.target.value) || 0))}
-              min={0}
-              step={50000}
+              type="text"
+              inputMode="numeric"
+              value={montoStr}
+              onChange={(e) => setMontoStr(e.target.value.replace(/[^0-9]/g, ''))}
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500"
             />
             <input
               type="range"
               value={monto}
-              onChange={(e) => setMonto(Number(e.target.value))}
+              onChange={(e) => setMontoStr(String(Number(e.target.value)))}
               min={0}
               max={100000000}
               step={50000}
@@ -244,7 +245,7 @@ function SimuladorFormAdmin({
               onChange={(e) => setCuotas(Number(e.target.value))}
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500"
             >
-              {[3, 6, 9, 12, 18, 24, 36].map((n) => (
+              {Array.from({ length: 36 }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>
                   {n} meses
                 </option>
@@ -355,11 +356,12 @@ function SimuladorForm({
   porcentajeSeguro: number;
   deudaActiva: number;
 }) {
-  const [monto, setMonto] = useState(500000);
+  const [montoStr, setMontoStr] = useState('500000');
   const [cuotas, setCuotas] = useState(6);
   const [resultado, setResultado] = useState<AmortizacionPreviewDTO | null>(null);
   const [calculando, setCalculando] = useState(false);
 
+  const monto = Number(montoStr) || 0;
   const maxCredito = Math.round(ahorroAcumulado * multiplicador);
   const capacidadDisponible = Math.max(0, maxCredito - deudaActiva);
   const excede = monto > capacidadDisponible;
@@ -413,18 +415,16 @@ function SimuladorForm({
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-navy-700 mb-1">Monto solicitado</label>
             <input
-              type="number"
-              value={monto}
-              onChange={(e) => setMonto(Math.max(0, Number(e.target.value) || 0))}
-              min={0}
-              max={capacidadDisponible}
-              step={50000}
+              type="text"
+              inputMode="numeric"
+              value={montoStr}
+              onChange={(e) => setMontoStr(e.target.value.replace(/[^0-9]/g, ''))}
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500"
             />
             <input
               type="range"
               value={monto}
-              onChange={(e) => setMonto(Number(e.target.value))}
+              onChange={(e) => setMontoStr(String(Number(e.target.value)))}
               min={0}
               max={Math.max(capacidadDisponible, 1)}
               step={50000}
@@ -441,7 +441,7 @@ function SimuladorForm({
               onChange={(e) => setCuotas(Number(e.target.value))}
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500"
             >
-              {[3, 6, 9, 12, 18, 24, 36].map((n) => (
+              {Array.from({ length: 36 }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>
                   {n} meses
                 </option>
