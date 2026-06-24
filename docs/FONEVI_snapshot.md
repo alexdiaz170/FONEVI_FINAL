@@ -1,6 +1,7 @@
 # FONEVI Project Snapshot
 
 ## File List
+
 - `README.md`
 - `ARQUITECTURA_REFACTORACION.md`
 - `DEPLOYMENT.md`
@@ -28,6 +29,7 @@
 ## ARQUITECTURA_REFACTORACION.md
 
 # REFACTORIZACIÓN A ARQUITECTURA BACKEND-FIRST
+
 ## FONEVI — Plan de Acción Detallado
 
 **Fecha inicio:** 2026-05-18  
@@ -45,6 +47,7 @@
 ### 1. Backend - Desplegar en un servicio cloud
 
 **Opciones recomendadas:**
+
 - **Railway** (Recomendado) - https://railway.app
 - **Render** - https://render.com
 - **Vercel** - https://vercel.com
@@ -52,9 +55,11 @@
 - **DigitalOcean App Platform** - https://digitalocean.com
 
 **Pasos:**
+
 1. Sube tu código backend a GitHub
 2. Conecta el repositorio al servicio de despliegue
 3. Configura las variables de entorno:
+
 ```
 DATABASE_URL=postgresql://USUARIO:PASSWORD@HOST:PUERTO/postgres?schema=public
 JWT_SECRET=tu-jwt-secret-super-secreto
@@ -65,11 +70,13 @@ HOST=0.0.0.0
 NODE_ENV=production
 CORS_ORIGIN=https://tu-dominio.com
 ```
+
 4. Despliega y obtén la URL del backend
 
 ### 2. Frontend - Configurar URL del backend
 
 **Archivo a editar:** `js/config.js`
+
 ```javascript
 getBackendURL() {
   if (this.isProduction()) {
@@ -84,11 +91,13 @@ getBackendURL() {
   return "http://127.0.0.1:3000/api";
 }
 ```
+
 ---
 
 ## LIMPIEZA_ARQUITECTURA_HIBRIDA.md
 
 # REPORTE EXHAUSTIVO: LIMPIEZA DE ARQUITECTURA HÍBRIDA
+
 ## FONEVI — Fase 1 Ejecución
 
 **Fecha:** 2026-05-18  
@@ -102,30 +111,36 @@ getBackendURL() {
 ### ORDEN RECOMENDADO (sin dependencias cruzadas)
 
 #### FASE 1A: Eliminar Backend Sync
+
 1. Eliminar línea de `app.js` que importa sync
 2. Eliminar archivo `backend/src/routes/sync.js`
 
 #### FASE 1B: Limpiar `api.js` (elimina fallback)
+
 1. Eliminar líneas de `MODO_OFFLINE`
 2. Eliminar método `_fallback()` completo (≈300 líneas)
 
 #### FASE 1C: Eliminar Imports de `data.js` (18 archivos HTML)
+
 1. Buscar `<script src="../js/data.js"></script>` en cada página y eliminar
 2. Buscar `<script src="js/data.js"></script>` en `index.html` y eliminar
 
 #### FASE 1D: Eliminar DataSync Calls (8 páginas)
+
 1. Eliminar `await window.DataSync?.init();`
 2. Eliminar `await DataSync.sync*();` calls
 
 #### FASE 1E: Eliminar Offline UI (`index.html`)
+
 1. Eliminar offline banner CSS/JS
 2. Eliminar offline connection dot display
 
 #### FASE 1F: Eliminar `js/data.js` (archivo completo)
+
 1. Borrar `js/data.js`
 
 ---
 
-*Documento generado: 2026-05-18*
-*Etapa: Pre-limpieza exhaustiva*
-*Estado: Listo para ejecución*
+_Documento generado: 2026-05-18_
+_Etapa: Pre-limpieza exhaustiva_
+_Estado: Listo para ejecución_

@@ -1,4 +1,5 @@
 # REFACTORIZACIÓN A ARQUITECTURA BACKEND-FIRST
+
 ## FONEVI — Plan de Acción Detallado
 
 **Fecha inicio:** 2026-05-18  
@@ -60,6 +61,7 @@ Frontend (HTML/JS)
 ```
 
 **Características obligatorias:**
+
 - NO sync/all
 - NO DB local
 - NO localStorage para datos financieros
@@ -76,6 +78,7 @@ Frontend (HTML/JS)
 ### FASE 1: SETUP + ELIMINAR HÍBRIDA (ESTA SESIÓN)
 
 #### 1.1 Validar Prisma schema
+
 - [ ] Leer `backend/prisma/schema.prisma`
 - [ ] Verificar relaciones Usuario → Socio
 - [ ] Verificar que cada tabla sabe "a quién pertenece"
@@ -84,6 +87,7 @@ Frontend (HTML/JS)
 **Deliverable:** `backend/prisma/schema.prisma` validado
 
 #### 1.2 Implementar middleware de autorización
+
 **Archivo:** `backend/src/middleware/auth.js`
 
 ```javascript
@@ -100,6 +104,7 @@ module.exports.requireOwnership = (field) => (req, res, next) => { ... }
 **Deliverable:** Middleware robusto y reusable
 
 #### 1.3 Eliminar /api/sync/all
+
 - [ ] Eliminar ruta en `backend/src/routes/sync.js`
 - [ ] O cambiarla a endpoint específico (no más "sync/all" bulk)
 - [ ] Verificar que no hay imports en frontend
@@ -107,6 +112,7 @@ module.exports.requireOwnership = (field) => (req, res, next) => { ... }
 **Deliverable:** ✓ Eliminado completamente
 
 #### 1.4 Limpiar frontend (js/api.js)
+
 - [ ] Eliminar fallback mode
 - [ ] Eliminar referencias a dataSync
 - [ ] Mantener SOLO HTTP + JWT
@@ -115,6 +121,7 @@ module.exports.requireOwnership = (field) => (req, res, next) => { ... }
 **Deliverable:** `js/api.js` limpio, solo HTTP
 
 #### 1.5 Eliminar dataSync
+
 - [ ] Eliminar `window.DataSync` de `js/data.js`
 - [ ] Eliminar imports de dataSync en todas las páginas
 - [ ] Eliminar caché de sessionStorage.fonevi_last_sync
@@ -126,6 +133,7 @@ module.exports.requireOwnership = (field) => (req, res, next) => { ... }
 ### FASE 2: IMPLEMENTAR ENDPOINTS REALES (PRÓXIMA SESIÓN)
 
 #### 2.1 Endpoint: GET /api/socios (con autorización)
+
 ```javascript
 // GET /api/socios?page=1&limit=50&estado=?&buscar=?
 // Auth: ✓ JWT
@@ -142,18 +150,21 @@ Response:
 ```
 
 **Cambios necesarios:**
+
 - Agregar WHERE en Prisma query
 - Si usuario.rol === 'socio' → filtrar por id
 - Agregar búsqueda fuzzy (nombre, documento)
 - Paginación: skip + take
 
 #### 2.2 Endpoints: POST/PUT /api/socios
+
 - Validar entrada (nombre, documento, email, etc.)
 - Verificar autenticación + autorización
 - Guardar en PostgreSQL
 - Auditar cambio
 
 #### 2.3 Endpoint: GET /api/aportes (con filtro automático)
+
 ```javascript
 // GET /api/aportes?page=1&limit=50&mes=?&ano=?
 // Auth: ✓ JWT
@@ -165,6 +176,7 @@ if (req.usuario.rol === 'socio') {
 ```
 
 #### 2.4 Endpoint: GET /api/dashboard/resumen (personalizado)
+
 ```javascript
 // Response varía según rol:
 // - admin/gerente: resumen global
@@ -179,22 +191,24 @@ if (req.usuario.rol === 'socio') {
 #### 3.1 Reescribir paginas para consumir APIs
 
 **Patrón NUEVO:**
+
 ```javascript
 // pages/socios.html → pages/socios.js
 async function cargarSocios() {
   try {
     const res = await API.get('/api/socios?page=1&limit=50');
     if (!res.ok) throw new Error(res.mensaje);
-    
+
     mostrarTabla(res.datos);
     actualizarPaginacion(res.page, res.total);
-  } catch(e) {
+  } catch (e) {
     Toast.error(e.message);
   }
 }
 ```
 
 **Patrón VIEJO (a eliminar):**
+
 ```javascript
 // ❌ MALO: Usar DB local
 const socios = DB.socios;
@@ -205,6 +219,7 @@ window.DataSync.init();
 ```
 
 #### 3.2 Eliminar js/data.js completamente
+
 - Verificar que NO hay imports en ningún archivo
 - Mover datos de configuración a endpoint GET /api/configuracion
 
@@ -229,7 +244,7 @@ PASO 1: Validar Prisma
   - [ ] Leer schema.prisma
   - [ ] Verificar relaciones
   - [ ] Documentar cambios necesarios
-  
+
 PASO 2: Implementar Middleware
   - [ ] Crear requireRole middleware
   - [ ] Crear requireOwnership middleware
@@ -240,7 +255,7 @@ PASO 3: Eliminar Híbrida
   - [ ] Eliminar dataSync de js/data.js
   - [ ] Eliminar fallback en js/api.js
   - [ ] Eliminar imports de data.js
-  
+
 PASO 4: Validar Frontend
   - [ ] Verificar que API.js SOLO hace HTTP
   - [ ] Verificar que sessionStorage SOLO tiene token
@@ -257,6 +272,7 @@ PASO 5: Documentación
 ## 📁 ARCHIVOS A MODIFICAR
 
 ### Backend
+
 ```
 ✓ backend/src/app.js
   └─ Eliminar /api/sync
@@ -270,7 +286,7 @@ PASO 5: Documentación
 
 🔧 backend/src/routes/socios.js
   └─ Implementar con autorización granular
-  
+
 🔧 backend/src/routes/aportes.js
   └─ Implementar con filtro automático de usuario
 
@@ -286,6 +302,7 @@ PASO 5: Documentación
 ```
 
 ### Frontend
+
 ```
 ✓ js/config.js
   └─ Mantener (ya está bien)
@@ -335,6 +352,7 @@ PASO 5: Documentación
 ## 📚 DOCUMENTOS DE REFERENCIA
 
 Ver archivos en `/memories/session/`:
+
 - `diagnosis-and-strategy.md` — Diagnóstico detallado
 - `architecture-spec.md` — Especificación técnica completa
 
@@ -350,19 +368,19 @@ SEGURIDAD
   - [ ] ¿Hay verificación de autorización granular?
   - [ ] ¿Usuario NO puede ver datos de otros usuarios?
   - [ ] ¿Hay auditoría de cambios?
-  
+
 FUNCIONALIDAD
   - [ ] ¿GET /api/socios devuelve datos filtrados?
   - [ ] ¿POST /api/aportes guarda en PostgreSQL?
   - [ ] ¿GET /api/dashboard personaliza por rol?
   - [ ] ¿Paginación funciona?
-  
+
 FRONTEND
   - [ ] ¿API.js consume endpoints sin fallback?
   - [ ] ¿Tablas se renderizan desde respuestas API?
   - [ ] ¿Errores se muestran en UI?
   - [ ] ¿NO hay console warnings?
-  
+
 PERFORMANCE
   - [ ] ¿Queries con 10k registros < 500ms?
   - [ ] ¿Paginación reduce payload?
@@ -387,14 +405,15 @@ PERFORMANCE
 ## 📞 SOPORTE
 
 Si encuentras bloqueadores:
+
 1. Revisar este documento
 2. Revisar `architecture-spec.md`
 3. Revisar `diagnosis-and-strategy.md`
 4. Consultar stack trace en terminal
 
 **Red flags:**
+
 - Si frontend aún hace referencias a `DB.socios` ← refactorizar
 - Si ves `DataSync.init()` ← eliminar
 - Si endpoint devuelve arrays sin filtrar ← agregar WHERE
 - Si jwt.verify() NO está en middleware ← agregar
-
