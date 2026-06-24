@@ -24,7 +24,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
-package-lock.json
 yarn.lock
 
 # ── Logs ─────────────────────────────────────────────────────
@@ -119,11 +118,6 @@ Procfile.local
 
 # ── Turborepo cache ──────────────────────────────────────────
 .turbo/
-
-# ── Docker (si se agrega después) ────────────────────────────
-.dockerignore
-docker-compose.override.yml
-docker-compose.local.yml
 
 # ── Misc ─────────────────────────────────────────────────────
 .vercel

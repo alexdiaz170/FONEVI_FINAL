@@ -1,0 +1,14 @@
+node_modules
+.turbo
+dist
+.git
+.gitignore
+*.md
+.env
+.env.*
+backups
+docs
+scripts
+.turbo
+.turbo**
+coverage
