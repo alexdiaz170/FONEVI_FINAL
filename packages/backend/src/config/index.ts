@@ -13,6 +13,11 @@ export const config = {
   corsOrigin: process.env['CORS_ORIGIN'] || 'http://localhost:3000',
   jwtSecret: process.env['JWT_SECRET'] || 'dev-secret-change-in-production',
   jwtExpiresIn: process.env['JWT_EXPIRES_IN'] || '8h',
+  jwtRefreshExpiresIn: process.env['JWT_REFRESH_EXPIRES_IN'] || '7d',
+  jwtRefreshTtlMs: parseInt(
+    process.env['JWT_REFRESH_TTL_MS'] || String(7 * 24 * 60 * 60 * 1000),
+    10,
+  ),
   logLevel:
     process.env['LOG_LEVEL'] || (process.env['NODE_ENV'] === 'production' ? 'info' : 'debug'),
   isDev: process.env['NODE_ENV'] !== 'production',

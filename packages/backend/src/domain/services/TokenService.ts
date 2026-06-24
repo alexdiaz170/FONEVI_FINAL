@@ -23,7 +23,7 @@ export class TokenService {
   constructor() {
     this.secret = config.jwtSecret;
     this.accessTtl = config.jwtExpiresIn;
-    this.refreshTtl = 7 * 24 * 60 * 60 * 1000; // 7 días
+    this.refreshTtl = config.jwtRefreshTtlMs;
   }
 
   generateAccessToken(payload: Omit<TokenPayload, 'tipo'>): string {
@@ -34,7 +34,7 @@ export class TokenService {
 
   generateRefreshToken(payload: Omit<TokenPayload, 'tipo'>): string {
     return jwt.sign({ ...payload, tipo: 'refresh' as const }, this.secret, {
-      expiresIn: '7d',
+      expiresIn: config.jwtRefreshExpiresIn,
     } as jwt.SignOptions);
   }
 
