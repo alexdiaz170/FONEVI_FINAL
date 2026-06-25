@@ -30,9 +30,7 @@ export function createCierrePeriodoController() {
 
     async ejecutar(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const usuarioId = (req as unknown as Record<string, unknown>).usuarioId
-          ? String((req as unknown as Record<string, unknown>).usuarioId)
-          : 'sistema';
+        const usuarioId = req.usuario?.id ?? 'sistema';
         const result = await ejecutarUseCase.execute(usuarioId);
         apiResponse.success(res, result);
       } catch (error) {
