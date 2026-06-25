@@ -215,7 +215,7 @@ Se propone un plan estructurado en 4 fases secuenciales para llevar a FONEVI a u
 
 ---
 
-## 6. Estado de Remediación (24 Jun 2026)
+## 6. Estado de Remediación (25 Jun 2026)
 
 A continuación se detalla el estado de cada hallazgo tras la sesión de remediación quirúrgica.
 
@@ -247,23 +247,26 @@ A continuación se detalla el estado de cada hallazgo tras la sesión de remedia
 
 ### 🟢 Prioridad P3 — Baja
 
-| ID   | Hallazgo                   | Estado       |
-| ---- | -------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P3-1 | Exportaciones backend      | ✅ Resuelto  | Nuevo endpoint `GET /api/exportar/:tipo/:formato` (dashboard, balance-general, cartera en xlsx/pdf). Backend genera archivos con `xlsx` y `pdfkit`. Dashboard usa `downloadExport()` que descarga del backend. |
-| P3-2 | Mejoras visuales dashboard | ⏳ Pendiente |
+| ID   | Hallazgo                   | Estado      |
+| ---- | -------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P3-1 | Exportaciones backend      | ✅ Resuelto | Endpoint `GET /api/exportar/:tipo/:formato` con 12 tipos: dashboard, balance-general, cartera, solidaridad, acuerdos-pago, socios, creditos, aportes, movimientos, flujo-caja, estado-cuenta, pagos-credito. Backend genera Excel/PDF con `xlsx` y `pdfkit`. Las 14 páginas del frontend migradas a `downloadExport()` (excepto mora y amortización que no tienen modelo backend). |
+| P3-2 | Mejoras visuales dashboard | ✅ Resuelto | Instalado `recharts` en frontend. AdminDashboard: dona cartera (PieChart activos/pagados/cancelados) + dona socios (PieChart activos/mora/retirados). SocioDashboard: dona progreso crédito + BarChart aportes por período.                                                                                                                                                        |
 
 ### Hallazgos adicionales resueltos
 
-| Hallazgo                                           | Detalle                                                                                                                                                                                                             |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Token TTL hardcodeado                              | Movido a `config/index.ts` con vars `JWT_REFRESH_EXPIRES_IN` y `JWT_REFRESH_TTL_MS`.                                                                                                                                |
-| Transaccionalidad multi-write (RT-04)              | 6 use cases envueltos en `prisma.$transaction`: `RegistrarSolidaridadUseCase`, `PagarCuotaUseCase`, `EliminarPagoCuotaUseCase`, `ActualizarAporteUseCase`, `EliminarAporteUseCase`, `EjecutarCierrePeriodoUseCase`. |
-| Eliminación de `reservas` y `valor_ahorro_mensual` | Eliminados del seed, servicios y frontend. Eran valores hardcodeados que ya no aplican al modelo de negocio actual.                                                                                                 |
-| Sidebar responsive                                 | Drawer overlay en mobile (<768px) con hamburguesa + backdrop.                                                                                                                                                       |
-| Topbar responsive                                  | Fecha oculta en mobile, iconos compactos.                                                                                                                                                                           |
-| Simulador crédito                                  | Input monto editable (type text + inputMode numeric), plazo 1-36 meses.                                                                                                                                             |
-| Rate-limit + trust proxy                           | `app.set('trust proxy', 1)` + SQL trailing comma fix (dashboard 500).                                                                                                                                               |
-| Columnas faltantes notificaciones                  | `referencia_id` y `referencia_tipo` agregadas manualmente a DB.                                                                                                                                                     |
+| Hallazgo                                           | Detalle                                                                                                                                                                                                                     |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Token TTL hardcodeado                              | Movido a `config/index.ts` con vars `JWT_REFRESH_EXPIRES_IN` y `JWT_REFRESH_TTL_MS`.                                                                                                                                        |
+| Transaccionalidad multi-write (RT-04)              | 6 use cases envueltos en `prisma.$transaction`: `RegistrarSolidaridadUseCase`, `PagarCuotaUseCase`, `EliminarPagoCuotaUseCase`, `ActualizarAporteUseCase`, `EliminarAporteUseCase`, `EjecutarCierrePeriodoUseCase`.         |
+| Eliminación de `reservas` y `valor_ahorro_mensual` | Eliminados del seed, servicios y frontend. Eran valores hardcodeados que ya no aplican al modelo de negocio actual.                                                                                                         |
+| Sidebar responsive                                 | Drawer overlay en mobile (<768px) con hamburguesa + backdrop.                                                                                                                                                               |
+| Topbar responsive                                  | Fecha oculta en mobile, iconos compactos.                                                                                                                                                                                   |
+| Simulador crédito                                  | Input monto editable (type text + inputMode numeric), plazo 1-36 meses.                                                                                                                                                     |
+| Rate-limit + trust proxy                           | `app.set('trust proxy', 1)` + SQL trailing comma fix (dashboard 500).                                                                                                                                                       |
+| Columnas faltantes notificaciones                  | `referencia_id` y `referencia_tipo` agregadas manualmente a DB.                                                                                                                                                             |
+| ExportService multi-tipo                           | 9 nuevas funciones de exportación agregadas (solidaridad, socios, creditos, aportes, movimientos, flujo-caja, estado-cuenta, acuerdos-pago, pagos-credito). Soporte query params: `socioId`, `creditoId`, `desde`, `hasta`. |
+| Gráficos dashboard (P3-2)                          | `recharts` instalado. Dona Cartera y Dona Socios en AdminDashboard. Dona progreso crédito y BarChart aportes en SocioDashboard.                                                                                             |
+| Polling dashboard reducido                         | `refetchInterval` de 30s → 60s en AdminDashboard, SocioDashboard y AportesChart.                                                                                                                                            |
 
 ---
 
