@@ -248,8 +248,8 @@ A continuación se detalla el estado de cada hallazgo tras la sesión de remedia
 ### 🟢 Prioridad P3 — Baja
 
 | ID   | Hallazgo                   | Estado       |
-| ---- | -------------------------- | ------------ |
-| P3-1 | Exportaciones backend      | ⏳ Pendiente |
+| ---- | -------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P3-1 | Exportaciones backend      | ✅ Resuelto  | Nuevo endpoint `GET /api/exportar/:tipo/:formato` (dashboard, balance-general, cartera en xlsx/pdf). Backend genera archivos con `xlsx` y `pdfkit`. Dashboard usa `downloadExport()` que descarga del backend. |
 | P3-2 | Mejoras visuales dashboard | ⏳ Pendiente |
 
 ### Hallazgos adicionales resueltos
