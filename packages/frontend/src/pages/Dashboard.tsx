@@ -34,7 +34,7 @@ import {
 } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
 import { useAuthStore } from '../stores/authStore';
-import { exportToExcel, exportToPDF, type ExportColumn } from '../lib/export';
+import { downloadExport } from '../lib/api';
 import {
   AnimatedStaggerContainer,
   AnimatedStaggerItem,
@@ -239,27 +239,13 @@ function AdminDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <AnimatedButton
-            onClick={() => {
-              const data = cards.map((c) => ({
-                label: c.label,
-                value: c.value,
-                detail: c.sub ?? '',
-              }));
-              exportToExcel(data, exportColumns, 'dashboard');
-            }}
+            onClick={() => downloadExport('dashboard', 'xlsx')}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100"
           >
             <FileSpreadsheet size={14} /> Excel
           </AnimatedButton>
           <AnimatedButton
-            onClick={() => {
-              const data = cards.map((c) => ({
-                label: c.label,
-                value: c.value,
-                detail: c.sub ?? '',
-              }));
-              exportToPDF(data, exportColumns, 'Dashboard - Resumen General', 'dashboard');
-            }}
+            onClick={() => downloadExport('dashboard', 'pdf')}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100"
           >
             <FileText size={14} /> PDF

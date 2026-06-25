@@ -1069,6 +1069,24 @@ export async function apiWhatsAppEnviar(data: {
   });
 }
 
+export async function downloadExport(tipo: string, formato: 'xlsx' | 'pdf'): Promise<void> {
+  const token = useAuthStore.getState().token;
+  const res = await fetch(`/api/exportar/${tipo}/${formato}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ mensaje: 'Error al descargar' }));
+    throw new Error(err.mensaje ?? 'Error al descargar');
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${tipo}.${formato}`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function apiWhatsAppLogs(
   params: { estado?: string; numero?: string; page?: number; limit?: number } = {},
 ) {

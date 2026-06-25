@@ -28,6 +28,7 @@ import cierrePeriodoRouter from './api/routes/cierrePeriodo.js';
 import whatsappRouter from './api/routes/whatsapp.js';
 import usuariosRouter from './api/routes/usuarios.js';
 import backupRouter from './api/routes/backup.js';
+import exportarRouter from './api/routes/exportar.js';
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use('/api/cierre-periodo', cierrePeriodoRouter);
 app.use('/api/whatsapp', whatsappRouter);
 app.use('/api/usuarios', usuariosRouter);
 app.use('/api/backup', backupRouter);
+app.use('/api/exportar', exportarRouter);
 
 // ─── Frontend build (SPA) ──────────────────────────────────
 const publicDir = resolve(__dirname, '..', 'public');
