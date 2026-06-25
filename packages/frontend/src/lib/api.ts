@@ -1069,9 +1069,14 @@ export async function apiWhatsAppEnviar(data: {
   });
 }
 
-export async function downloadExport(tipo: string, formato: 'xlsx' | 'pdf'): Promise<void> {
+export async function downloadExport(
+  tipo: string,
+  formato: 'xlsx' | 'pdf',
+  params?: Record<string, string>,
+): Promise<void> {
   const token = useAuthStore.getState().token;
-  const res = await fetch(`/api/exportar/${tipo}/${formato}`, {
+  const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+  const res = await fetch(`/api/exportar/${tipo}/${formato}${qs}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) {

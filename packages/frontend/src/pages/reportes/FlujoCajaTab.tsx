@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiGetReporteFlujoCaja } from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
-import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
+import { downloadExport } from '../../lib/api';
 
 export function FlujoCajaTab() {
   const today = new Date();
@@ -15,14 +15,6 @@ export function FlujoCajaTab() {
     queryFn: () => apiGetReporteFlujoCaja(desde, hasta),
     enabled: !!desde && !!hasta,
   });
-
-  const columns: ExportColumn[] = [
-    { header: 'Fecha', key: 'fecha', format: (v) => formatDate(v as string) },
-    { header: 'Tipo', key: 'tipo' },
-    { header: 'Categoría', key: 'categoria' },
-    { header: 'Descripción', key: 'descripcion' },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-  ];
 
   return (
     <div>
@@ -49,26 +41,13 @@ export function FlujoCajaTab() {
           {data && (
             <>
               <button
-                onClick={() =>
-                  exportToExcel(
-                    data.movimientos as unknown as Record<string, unknown>[],
-                    columns,
-                    'flujo-caja',
-                  )
-                }
+                onClick={() => downloadExport('flujo-caja', 'xlsx')}
                 className="px-3 py-2 text-xs bg-green-600 text-white rounded hover:bg-green-700"
               >
                 Exportar Excel
               </button>
               <button
-                onClick={() =>
-                  exportToPDF(
-                    data.movimientos as unknown as Record<string, unknown>[],
-                    columns,
-                    'Flujo de Caja',
-                    'flujo-caja',
-                  )
-                }
+                onClick={() => downloadExport('flujo-caja', 'pdf')}
                 className="px-3 py-2 text-xs bg-red-600 text-white rounded hover:bg-red-700"
               >
                 Exportar PDF

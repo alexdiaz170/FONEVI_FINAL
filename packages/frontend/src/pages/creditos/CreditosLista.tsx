@@ -24,7 +24,7 @@ import {
 } from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
-import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
+import { downloadExport } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
 import {
   AnimatedStaggerContainer,
@@ -103,35 +103,6 @@ export default function CreditosLista() {
         (c.nombreSocio ?? '').toLowerCase().includes(search.toLowerCase()) ||
         (c.socioId ?? '').toLowerCase().includes(search.toLowerCase()),
     ) ?? [];
-
-  const exportColumns: ExportColumn[] = [
-    { header: 'Socio', key: 'nombreSocio' },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Tasa Mensual', key: 'tasaMensual', format: (v) => `${Number(v)}%` },
-    { header: 'Cuotas', key: 'cuotas', format: (v) => String(v) },
-    { header: 'Cuotas Pagadas', key: 'cuotasPagadas', format: (v) => String(v) },
-    { header: 'Saldo Capital', key: 'saldoCapital', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Estado', key: 'estado' },
-    {
-      header: 'Fecha Desembolso',
-      key: 'fechaDesembolso',
-      format: (v) => (v ? formatDate(String(v)) : '—'),
-    },
-    { header: 'Propósito', key: 'proposito' },
-  ];
-
-  const handleExportExcel = () => {
-    exportToExcel(filteredData as unknown as Record<string, unknown>[], exportColumns, 'creditos');
-  };
-
-  const handleExportPDF = () => {
-    exportToPDF(
-      filteredData as unknown as Record<string, unknown>[],
-      exportColumns,
-      'Listado de Créditos',
-      'creditos',
-    );
-  };
 
   const estadoColor: Record<string, string> = {
     pendiente: 'bg-amber-50 text-amber-700 border border-amber-200',
@@ -225,13 +196,13 @@ export default function CreditosLista() {
               {filteredData.length > 0 && (
                 <div className="flex items-center gap-2">
                   <AnimatedButton
-                    onClick={handleExportExcel}
+                    onClick={() => downloadExport('creditos', 'xlsx')}
                     className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100"
                   >
                     <FileSpreadsheet size={14} /> Excel
                   </AnimatedButton>
                   <AnimatedButton
-                    onClick={handleExportPDF}
+                    onClick={() => downloadExport('creditos', 'pdf')}
                     className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100"
                   >
                     <FileText size={14} /> PDF

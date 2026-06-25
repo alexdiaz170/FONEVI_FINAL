@@ -8,7 +8,7 @@ import {
   ApiError,
 } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
-import { exportToExcel, exportToPDF, type ExportColumn } from '../lib/export';
+import { downloadExport } from '../lib/api';
 import {
   AnimatedStaggerContainer,
   AnimatedStaggerItem,
@@ -58,14 +58,6 @@ export default function SolidaridadPage() {
   const totalEgresos =
     allData?.data.filter((m) => m.tipo === 'egreso').reduce((s, m) => s + m.monto, 0) ?? 0;
   const saldoActual = totalIngresos - totalEgresos;
-
-  const exportColumns: ExportColumn[] = [
-    { header: 'Fecha', key: 'fecha', format: (v) => formatDate(String(v)) },
-    { header: 'Tipo', key: 'tipo' },
-    { header: 'Descripción', key: 'descripcion' },
-    { header: 'Beneficiario', key: 'beneficiario' },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-  ];
 
   return (
     <div className="relative">
@@ -166,26 +158,13 @@ export default function SolidaridadPage() {
             {data && data.data.length > 0 && (
               <>
                 <AnimatedButton
-                  onClick={() =>
-                    exportToExcel(
-                      data.data as unknown as Record<string, unknown>[],
-                      exportColumns,
-                      'solidaridad',
-                    )
-                  }
+                  onClick={() => downloadExport('solidaridad', 'xlsx')}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
                 >
                   <FileSpreadsheet size={14} /> Excel
                 </AnimatedButton>
                 <AnimatedButton
-                  onClick={() =>
-                    exportToPDF(
-                      data.data as unknown as Record<string, unknown>[],
-                      exportColumns,
-                      'Fondo de Solidaridad',
-                      'solidaridad',
-                    )
-                  }
+                  onClick={() => downloadExport('solidaridad', 'pdf')}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
                 >
                   <FileText size={14} /> PDF

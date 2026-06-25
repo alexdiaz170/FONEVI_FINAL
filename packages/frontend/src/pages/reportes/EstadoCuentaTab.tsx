@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiGetReporteEstadoCuentaSocio, apiListarPeriodos, apiListarSocios } from '../../lib/api';
+import {
+  apiGetReporteEstadoCuentaSocio,
+  apiListarPeriodos,
+  apiListarSocios,
+  downloadExport,
+} from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
-import { exportToExcel, type ExportColumn } from '../../lib/export';
 
 export function EstadoCuentaTab() {
   const [socioId, setSocioId] = useState('');
@@ -24,23 +28,6 @@ export function EstadoCuentaTab() {
     queryFn: () => apiGetReporteEstadoCuentaSocio(socioId),
     enabled: !!socioId,
   });
-
-  const columnsAportes: ExportColumn[] = [
-    { header: 'Período', key: 'periodoId', format: (v) => periodoMap.get(Number(v)) ?? String(v) },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Fecha Pago', key: 'fechaPago', format: (v) => formatDate(v as string) },
-    { header: 'Estado', key: 'estado' },
-    { header: 'Solidaridad', key: 'pagoSolidaridad', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Abono Crédito', key: 'pagoCredito', format: (v) => formatCurrency(Number(v)) },
-  ];
-
-  const columnsCreditos: ExportColumn[] = [
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Saldo', key: 'saldoCapital', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Cuotas', key: 'cuotas' },
-    { header: 'Pagadas', key: 'cuotasPagadas' },
-    { header: 'Estado', key: 'estado' },
-  ];
 
   return (
     <div>
@@ -110,11 +97,7 @@ export function EstadoCuentaTab() {
               <h3 className="text-sm font-semibold text-gray-700">Aportes</h3>
               <button
                 onClick={() =>
-                  exportToExcel(
-                    data.aportes as unknown as Record<string, unknown>[],
-                    columnsAportes,
-                    `aportes-${data.socio.nombre}`,
-                  )
+                  downloadExport('estado-cuenta', 'xlsx', { socioId: String(socioId) })
                 }
                 className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
               >
@@ -169,11 +152,7 @@ export function EstadoCuentaTab() {
               <h3 className="text-sm font-semibold text-gray-700">Créditos</h3>
               <button
                 onClick={() =>
-                  exportToExcel(
-                    data.creditos as unknown as Record<string, unknown>[],
-                    columnsCreditos,
-                    `creditos-${data.socio.nombre}`,
-                  )
+                  downloadExport('estado-cuenta', 'xlsx', { socioId: String(socioId) })
                 }
                 className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
               >

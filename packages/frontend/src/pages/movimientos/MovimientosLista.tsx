@@ -10,10 +10,8 @@ import {
   FileSpreadsheet,
   FileText,
 } from 'lucide-react';
-import { apiListarMovimientos, type MovimientoDTO } from '../../lib/api';
+import { apiListarMovimientos, ApiError, downloadExport, type MovimientoDTO } from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
-import { ApiError } from '../../lib/api';
-import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
 import { AnimatedFadeIn, AnimatedTableRow, AnimatedButton } from '../../components/ui';
 
 export default function MovimientosLista() {
@@ -41,15 +39,6 @@ export default function MovimientosLista() {
   const movimientosList = data?.data ?? [];
   const categorias = [...new Set(data?.data?.map((m) => m.categoria) ?? [])];
 
-  const exportColumns: ExportColumn[] = [
-    { header: 'Fecha', key: 'fecha', format: (v) => (v ? formatDate(String(v)) : '—') },
-    { header: 'Tipo', key: 'tipo' },
-    { header: 'Categoría', key: 'categoria' },
-    { header: 'Socio', key: 'socioNombre' },
-    { header: 'Descripción', key: 'descripcion' },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-  ];
-
   return (
     <AnimatedFadeIn>
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100">
@@ -71,26 +60,13 @@ export default function MovimientosLista() {
             {movimientosList.length > 0 && (
               <div className="flex gap-2 shrink-0">
                 <AnimatedButton
-                  onClick={() =>
-                    exportToExcel(
-                      movimientosList as unknown as Record<string, unknown>[],
-                      exportColumns,
-                      'movimientos',
-                    )
-                  }
+                  onClick={() => downloadExport('movimientos', 'xlsx')}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
                 >
                   <FileSpreadsheet size={14} /> Excel
                 </AnimatedButton>
                 <AnimatedButton
-                  onClick={() =>
-                    exportToPDF(
-                      movimientosList as unknown as Record<string, unknown>[],
-                      exportColumns,
-                      'Listado de Movimientos',
-                      'movimientos',
-                    )
-                  }
+                  onClick={() => downloadExport('movimientos', 'pdf')}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
                 >
                   <FileText size={14} /> PDF

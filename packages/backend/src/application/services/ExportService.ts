@@ -182,6 +182,324 @@ export class ExportService {
     };
   }
 
+  async exportSolidaridad(): Promise<{
+    data: Record<string, unknown>[];
+    columns: Column[];
+    title: string;
+  }> {
+    const prisma = getPrismaClient();
+    const items = await prisma.solidaridadMovimiento.findMany({
+      orderBy: { fecha: 'desc' },
+    });
+
+    return {
+      title: 'Fondo de Solidaridad',
+      columns: [
+        { header: 'Fecha', key: 'fecha' },
+        { header: 'Tipo', key: 'tipo' },
+        { header: 'Descripción', key: 'descripcion' },
+        { header: 'Beneficiario', key: 'beneficiario' },
+        { header: 'Monto', key: 'monto', format: (v) => `$${Number(v).toLocaleString('es-CO')}` },
+      ],
+      data: items.map((m) => ({
+        fecha: m.fecha ? new Date(m.fecha).toLocaleDateString('es-CO') : '',
+        tipo: m.tipo,
+        descripcion: m.descripcion ?? '',
+        beneficiario: m.beneficiario ?? '',
+        monto: Number(m.monto),
+      })),
+    };
+  }
+
+  async exportAcuerdosPago(): Promise<{
+    data: Record<string, unknown>[];
+    columns: Column[];
+    title: string;
+  }> {
+    const prisma = getPrismaClient();
+    const acuerdos = await prisma.acuerdoPago.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      title: 'Acuerdos de Pago',
+      columns: [
+        { header: 'Socio ID', key: 'socioId' },
+        {
+          header: 'Monto Total',
+          key: 'montoTotal',
+          format: (v) => `$${Number(v).toLocaleString('es-CO')}`,
+        },
+        {
+          header: 'Cuota',
+          key: 'montoCuota',
+          format: (v) => `$${Number(v).toLocaleString('es-CO')}`,
+        },
+        { header: 'Cuotas', key: 'cuotas' },
+        { header: 'Estado', key: 'estado' },
+        { header: 'Inicio', key: 'fechaInicio' },
+      ],
+      data: acuerdos.map((a) => ({
+        socioId: a.socioId,
+        montoTotal: Number(a.montoTotal),
+        montoCuota: Number(a.montoCuota),
+        cuotas: a.cuotas,
+        estado: a.estado,
+        fechaInicio: a.fechaInicio ? new Date(a.fechaInicio).toLocaleDateString('es-CO') : '',
+      })),
+    };
+  }
+
+  async exportSocios(): Promise<{
+    data: Record<string, unknown>[];
+    columns: Column[];
+    title: string;
+  }> {
+    const prisma = getPrismaClient();
+    const socios = await prisma.socio.findMany({
+      where: { deletedAt: null },
+      orderBy: { nombre: 'asc' },
+    });
+
+    return {
+      title: 'Listado de Socios',
+      columns: [
+        { header: 'Código', key: 'codigoSocio' },
+        { header: 'Nombre', key: 'nombre' },
+        { header: 'Documento', key: 'numeroDocumento' },
+        { header: 'Email', key: 'email' },
+        { header: 'Teléfono', key: 'telefono' },
+        { header: 'Estado', key: 'estado' },
+        {
+          header: 'Ahorro',
+          key: 'ahorroAcumulado',
+          format: (v) => `$${Number(v).toLocaleString('es-CO')}`,
+        },
+        { header: 'Cargo', key: 'cargo' },
+        { header: 'Sede', key: 'sede' },
+        { header: 'Ingreso', key: 'fechaIngreso' },
+      ],
+      data: socios.map((s) => ({
+        codigoSocio: s.codigo ?? '',
+        nombre: s.nombre,
+        numeroDocumento: s.documento ?? '',
+        email: s.email ?? '',
+        telefono: s.telefono ?? '',
+        estado: s.estado,
+        ahorroAcumulado: Number(s.ahorroAcumulado),
+        cargo: s.cargo ?? '',
+        sede: s.sede ?? '',
+        fechaIngreso: s.fechaIngreso ? new Date(s.fechaIngreso).toLocaleDateString('es-CO') : '—',
+      })),
+    };
+  }
+
+  async exportCreditos(): Promise<{
+    data: Record<string, unknown>[];
+    columns: Column[];
+    title: string;
+  }> {
+    const prisma = getPrismaClient();
+    const creditos = await prisma.credito.findMany({
+      where: { deletedAt: null },
+      include: { socio: { select: { nombre: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      title: 'Listado de Créditos',
+      columns: [
+        { header: 'Socio', key: 'nombreSocio' },
+        { header: 'Monto', key: 'monto', format: (v) => `$${Number(v).toLocaleString('es-CO')}` },
+        { header: 'Tasa %', key: 'tasaMensual', format: (v) => `${Number(v)}%` },
+        { header: 'Cuotas', key: 'cuotas' },
+        { header: 'Pagadas', key: 'cuotasPagadas' },
+        {
+          header: 'Saldo',
+          key: 'saldoCapital',
+          format: (v) => `$${Number(v).toLocaleString('es-CO')}`,
+        },
+        { header: 'Estado', key: 'estado' },
+        { header: 'Desembolso', key: 'fechaDesembolso' },
+        { header: 'Propósito', key: 'proposito' },
+      ],
+      data: creditos.map((c) => ({
+        nombreSocio: c.socio?.nombre ?? 'N/A',
+        monto: Number(c.monto),
+        tasaMensual: Number(c.tasaMensual ?? 0),
+        cuotas: String(c.cuotas),
+        cuotasPagadas: String(c.cuotasPagadas ?? 0),
+        saldoCapital: Number(c.saldoCapital ?? 0),
+        estado: c.estado,
+        fechaDesembolso: c.fechaDesembolso
+          ? new Date(c.fechaDesembolso).toLocaleDateString('es-CO')
+          : '—',
+        proposito: c.proposito ?? '',
+      })),
+    };
+  }
+
+  async exportAportes(): Promise<{
+    data: Record<string, unknown>[];
+    columns: Column[];
+    title: string;
+  }> {
+    const prisma = getPrismaClient();
+    const aportes = await prisma.aporte.findMany({
+      include: { socio: { select: { id: true } }, periodo: { select: { nombre: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      title: 'Listado de Aportes',
+      columns: [
+        { header: 'Socio ID', key: 'socioId' },
+        { header: 'Periodo', key: 'periodoNombre' },
+        { header: 'Monto', key: 'monto', format: (v) => `$${Number(v).toLocaleString('es-CO')}` },
+        { header: 'Fecha', key: 'fechaPago' },
+        { header: 'Estado', key: 'estado' },
+        { header: 'Método', key: 'metodo' },
+        { header: 'Notas', key: 'notas' },
+        {
+          header: 'Solidaridad',
+          key: 'pagoSolidaridad',
+          format: (v) => `$${Number(v).toLocaleString('es-CO')}`,
+        },
+        {
+          header: 'Abono Crédito',
+          key: 'pagoCredito',
+          format: (v) => `$${Number(v).toLocaleString('es-CO')}`,
+        },
+      ],
+      data: aportes.map((a) => ({
+        socioId: a.socioId,
+        periodoNombre: a.periodo?.nombre ?? String(a.periodoId),
+        monto: Number(a.monto),
+        fechaPago: a.fechaPago ? new Date(a.fechaPago).toLocaleDateString('es-CO') : '—',
+        estado: a.estado,
+        metodo: a.metodo ?? '',
+        notas: a.notas ?? '',
+        pagoSolidaridad: Number(a.pagoSolidaridad ?? 0),
+        pagoCredito: Number(a.pagoCredito ?? 0),
+      })),
+    };
+  }
+
+  async exportMovimientos(): Promise<{
+    data: Record<string, unknown>[];
+    columns: Column[];
+    title: string;
+  }> {
+    const prisma = getPrismaClient();
+    const movimientos = await prisma.movimiento.findMany({
+      orderBy: { fecha: 'desc' },
+    });
+
+    return {
+      title: 'Listado de Movimientos',
+      columns: [
+        { header: 'Fecha', key: 'fecha' },
+        { header: 'Tipo', key: 'tipo' },
+        { header: 'Categoría', key: 'categoria' },
+        { header: 'Socio', key: 'socioNombre' },
+        { header: 'Descripción', key: 'descripcion' },
+        { header: 'Monto', key: 'monto', format: (v) => `$${Number(v).toLocaleString('es-CO')}` },
+      ],
+      data: movimientos.map((m) => ({
+        fecha: m.fecha ? new Date(m.fecha).toLocaleDateString('es-CO') : '—',
+        tipo: m.tipo,
+        categoria: m.categoria ?? '',
+        socioNombre: m.socioId ?? '',
+        descripcion: m.descripcion ?? '',
+        monto: Number(m.monto),
+      })),
+    };
+  }
+
+  async exportFlujoCaja(
+    desde?: string,
+    hasta?: string,
+  ): Promise<{
+    data: Record<string, unknown>[];
+    columns: Column[];
+    title: string;
+  }> {
+    const prisma = getPrismaClient();
+    const where: Record<string, unknown> = {};
+    if (desde || hasta) {
+      where.fecha = {};
+      if (desde) (where.fecha as Record<string, unknown>).gte = new Date(desde);
+      if (hasta) (where.fecha as Record<string, unknown>).lte = new Date(hasta);
+    }
+    const movimientos = await prisma.movimiento.findMany({
+      where,
+      orderBy: { fecha: 'desc' },
+    });
+
+    return {
+      title: 'Flujo de Caja',
+      columns: [
+        { header: 'Fecha', key: 'fecha' },
+        { header: 'Tipo', key: 'tipo' },
+        { header: 'Categoría', key: 'categoria' },
+        { header: 'Descripción', key: 'descripcion' },
+        { header: 'Monto', key: 'monto', format: (v) => `$${Number(v).toLocaleString('es-CO')}` },
+      ],
+      data: movimientos.map((m) => ({
+        fecha: m.fecha ? new Date(m.fecha).toLocaleDateString('es-CO') : '',
+        tipo: m.tipo,
+        categoria: m.categoria ?? '',
+        descripcion: m.descripcion ?? '',
+        monto: Number(m.monto),
+      })),
+    };
+  }
+
+  async exportEstadoCuenta(socioId: string): Promise<{
+    data: Record<string, unknown>[];
+    columns: Column[];
+    title: string;
+  }> {
+    const prisma = getPrismaClient();
+    const [socio, aportes, creditos] = await Promise.all([
+      prisma.socio.findUnique({ where: { id: socioId } }),
+      prisma.aporte.findMany({
+        where: { socioId },
+        include: { periodo: { select: { nombre: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.credito.findMany({
+        where: { socioId },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const rows: Record<string, unknown>[] = [];
+    rows.push({ indicador: '--- APORTES ---', valor: '' });
+    for (const a of aportes) {
+      rows.push({
+        indicador: a.periodo?.nombre ?? String(a.periodoId),
+        valor: `$${Number(a.monto).toLocaleString('es-CO')}`,
+      });
+    }
+    rows.push({ indicador: '--- CRÉDITOS ---', valor: '' });
+    for (const c of creditos) {
+      rows.push({
+        indicador: `$${Number(c.monto).toLocaleString('es-CO')} (saldo: $${Number(c.saldoCapital ?? 0).toLocaleString('es-CO')})`,
+        valor: `${c.cuotas} cuotas, ${c.cuotasPagadas} pagadas - ${c.estado}`,
+      });
+    }
+
+    return {
+      title: `Estado de Cuenta - ${socio?.nombre ?? socioId}`,
+      columns: [
+        { header: 'Concepto', key: 'indicador' },
+        { header: 'Detalle', key: 'valor' },
+      ],
+      data: rows,
+    };
+  }
+
   async exportCartera(): Promise<{
     data: Record<string, unknown>[];
     columns: Column[];
@@ -211,6 +529,44 @@ export class ExportService {
         cuotas: c.cuotas,
         pagadas: c.cuotasPagadas,
         estado: c.estado,
+      })),
+    };
+  }
+
+  async exportPagosCredito(creditoId: string): Promise<{
+    data: Record<string, unknown>[];
+    columns: Column[];
+    title: string;
+  }> {
+    const prisma = getPrismaClient();
+    const pagos = await prisma.pagoCuota.findMany({
+      where: { creditoId },
+      orderBy: { fechaPago: 'desc' },
+    });
+
+    return {
+      title: `Pagos - Crédito #${creditoId}`,
+      columns: [
+        { header: 'Fecha', key: 'fecha' },
+        { header: 'N° Cuota', key: 'numeroCuota' },
+        { header: 'Monto', key: 'monto', format: (v) => `$${Number(v).toLocaleString('es-CO')}` },
+        {
+          header: 'Capital',
+          key: 'montoCapital',
+          format: (v) => `$${Number(v).toLocaleString('es-CO')}`,
+        },
+        {
+          header: 'Interés',
+          key: 'montoInteres',
+          format: (v) => `$${Number(v).toLocaleString('es-CO')}`,
+        },
+      ],
+      data: pagos.map((p) => ({
+        fecha: p.fechaPago ? new Date(p.fechaPago).toLocaleDateString('es-CO') : '',
+        numeroCuota: p.numeroCuota,
+        monto: Number(p.monto),
+        montoCapital: Number(p.montoCapital),
+        montoInteres: Number(p.montoInteres),
       })),
     };
   }

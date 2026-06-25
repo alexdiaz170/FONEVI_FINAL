@@ -18,12 +18,15 @@ import {
   BadgeCheck,
   Banknote,
 } from 'lucide-react';
-import { apiObtenerSocio, apiGetReporteEstadoCuentaSocio } from '../../lib/api';
+import {
+  apiObtenerSocio,
+  apiGetReporteEstadoCuentaSocio,
+  apiActualizarSocio,
+  ApiError,
+  downloadExport,
+} from '../../lib/api';
 import { formatDate, formatCurrency } from '../../lib/utils';
-import { ApiError } from '../../lib/api';
 import { useState } from 'react';
-import { apiActualizarSocio } from '../../lib/api';
-import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
 import {
   AnimatedStaggerContainer,
   AnimatedStaggerItem,
@@ -58,71 +61,24 @@ export default function SociosPerfil() {
     enabled: !!id,
   });
 
-  const aportesColumns: ExportColumn[] = [
-    { header: 'Periodo', key: 'periodoNombre' },
-    { header: 'Tipo', key: 'tipoOperacion' },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Solidaridad', key: 'pagoSolidaridad', format: (v) => formatCurrency(Number(v)) },
-    { header: 'A Crédito', key: 'pagoCredito', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Ahorro', key: 'ahorro', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Fecha', key: 'fechaPago', format: (v) => formatDate(String(v)) },
-    { header: 'Estado', key: 'estado' },
-  ];
-
-  const creditosColumns: ExportColumn[] = [
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Saldo', key: 'saldoCapital', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Cuotas', key: 'cuotas' },
-    { header: 'Cuotas Pagadas', key: 'cuotasPagadas' },
-    { header: 'Estado', key: 'estado' },
-  ];
-
   function handleExportAportes() {
     if (!reporte?.aportes?.length) return;
-    exportToExcel(
-      reporte.aportes as unknown as Record<string, unknown>[],
-      aportesColumns,
-      `aportes-${id}`,
-    );
+    downloadExport('estado-cuenta', 'xlsx', { socioId: String(id) });
   }
 
-  async function handleExportAportesPDF() {
+  function handleExportAportesPDF() {
     if (!reporte?.aportes?.length) return;
-    await exportToPDF(
-      reporte.aportes as unknown as Record<string, unknown>[],
-      aportesColumns,
-      `Aportes - ${socio?.nombre ?? 'Socio'}`,
-      `aportes-${id}`,
-    );
+    downloadExport('estado-cuenta', 'pdf', { socioId: String(id) });
   }
 
   function handleExportCreditos() {
     if (!reporte?.creditos?.length) return;
-    const data = reporte.creditos.map((c) => ({
-      monto: c.monto,
-      saldoCapital: c.saldoCapital,
-      cuotas: c.cuotas,
-      cuotasPagadas: c.cuotasPagadas,
-      estado: c.estado,
-    }));
-    exportToExcel(data as unknown as Record<string, unknown>[], creditosColumns, `creditos-${id}`);
+    downloadExport('estado-cuenta', 'xlsx', { socioId: String(id) });
   }
 
-  async function handleExportCreditosPDF() {
+  function handleExportCreditosPDF() {
     if (!reporte?.creditos?.length) return;
-    const data = reporte.creditos.map((c) => ({
-      monto: c.monto,
-      saldoCapital: c.saldoCapital,
-      cuotas: c.cuotas,
-      cuotasPagadas: c.cuotasPagadas,
-      estado: c.estado,
-    }));
-    await exportToPDF(
-      data as unknown as Record<string, unknown>[],
-      creditosColumns,
-      `Créditos - ${socio?.nombre ?? 'Socio'}`,
-      `creditos-${id}`,
-    );
+    downloadExport('estado-cuenta', 'pdf', { socioId: String(id) });
   }
 
   const creditosActivos = reporte?.creditos?.filter((c) => c.estado === 'activo') ?? [];

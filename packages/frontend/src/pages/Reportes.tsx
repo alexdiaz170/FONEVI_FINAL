@@ -10,7 +10,7 @@ import {
   apiListarSocios,
 } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/utils';
-import { exportToExcel, exportToPDF, type ExportColumn } from '../lib/export';
+import { downloadExport } from '../lib/api';
 import { DividendosTab } from './reportes/DividendosTab';
 import {
   AnimatedFadeIn,
@@ -82,10 +82,6 @@ function BalanceGeneralTab() {
     return <div className="text-red-500 text-center py-8">Error al cargar balance general</div>;
   if (!data) return null;
 
-  const columns: ExportColumn[] = [
-    { header: 'Cuenta', key: 'cuenta' },
-    { header: 'Valor', key: 'valor', format: (v) => formatCurrency(Number(v)) },
-  ];
   const rows = [
     { cuenta: 'AHORROS', valor: data.activos.ahorros },
     { cuenta: 'CRÉDITOS POR COBRAR', valor: data.activos.creditosPorCobrar },
@@ -103,13 +99,13 @@ function BalanceGeneralTab() {
     <AnimatedFadeIn>
       <div className="flex gap-2 mb-4">
         <AnimatedButton
-          onClick={() => exportToExcel(rows, columns, 'balance-general')}
+          onClick={() => downloadExport('balance-general', 'xlsx')}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
         >
           <Download size={14} /> Exportar Excel
         </AnimatedButton>
         <AnimatedButton
-          onClick={() => exportToPDF(rows, columns, 'Balance General', 'balance-general')}
+          onClick={() => downloadExport('balance-general', 'pdf')}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
         >
           <Download size={14} /> Exportar PDF
@@ -192,17 +188,6 @@ function CarteraTab() {
   if (error) return <div className="text-red-500 text-center py-8">Error al cargar cartera</div>;
   if (!data) return null;
 
-  const columns: ExportColumn[] = [
-    { header: 'Socio', key: 'socioNombre' },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Saldo Capital', key: 'saldoCapital', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Cuotas', key: 'cuotas' },
-    { header: 'Pagadas', key: 'cuotasPagadas' },
-    { header: 'Cuota Mensual', key: 'cuotaMensual', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Total Pagado', key: 'totalPagado', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Estado', key: 'estado' },
-  ];
-
   const totalMonto = data.reduce((s, c) => s + c.monto, 0);
   const totalSaldo = data.reduce((s, c) => s + c.saldoCapital, 0);
   const totalPagado = data.reduce((s, c) => s + c.totalPagado, 0);
@@ -219,22 +204,13 @@ function CarteraTab() {
     <AnimatedFadeIn>
       <div className="flex gap-2 mb-4">
         <AnimatedButton
-          onClick={() =>
-            exportToExcel(data as unknown as Record<string, unknown>[], columns, 'cartera-creditos')
-          }
+          onClick={() => downloadExport('cartera', 'xlsx')}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
         >
           <Download size={14} /> Exportar Excel
         </AnimatedButton>
         <AnimatedButton
-          onClick={() =>
-            exportToPDF(
-              data as unknown as Record<string, unknown>[],
-              columns,
-              'Cartera de Créditos',
-              'cartera-creditos',
-            )
-          }
+          onClick={() => downloadExport('cartera', 'pdf')}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
         >
           <Download size={14} /> Exportar PDF
@@ -374,22 +350,6 @@ function EstadoCuentaTab() {
     enabled: !!socioId,
   });
 
-  const columnsAportes: ExportColumn[] = [
-    { header: 'Período', key: 'periodoId', format: (v) => periodoMap.get(Number(v)) ?? String(v) },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Fecha Pago', key: 'fechaPago', format: (v) => formatDate(v as string) },
-    { header: 'Estado', key: 'estado' },
-    { header: 'Solidaridad', key: 'pagoSolidaridad', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Abono Crédito', key: 'pagoCredito', format: (v) => formatCurrency(Number(v)) },
-  ];
-  const columnsCreditos: ExportColumn[] = [
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Saldo', key: 'saldoCapital', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Cuotas', key: 'cuotas' },
-    { header: 'Pagadas', key: 'cuotasPagadas' },
-    { header: 'Estado', key: 'estado' },
-  ];
-
   const estadoColor: Record<string, string> = {
     pagado: 'bg-green-50 text-green-700 border border-green-200',
     pendiente: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
@@ -459,13 +419,7 @@ function EstadoCuentaTab() {
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-navy-800">Aportes</h3>
               <AnimatedButton
-                onClick={() =>
-                  exportToExcel(
-                    data.aportes as unknown as Record<string, unknown>[],
-                    columnsAportes,
-                    `aportes-${data.socio.nombre}`,
-                  )
-                }
+                onClick={() => downloadExport('estado-cuenta', 'xlsx')}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
               >
                 <Download size={14} /> Exportar Excel
@@ -531,13 +485,7 @@ function EstadoCuentaTab() {
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-navy-800">Créditos</h3>
               <AnimatedButton
-                onClick={() =>
-                  exportToExcel(
-                    data.creditos as unknown as Record<string, unknown>[],
-                    columnsCreditos,
-                    `creditos-${data.socio.nombre}`,
-                  )
-                }
+                onClick={() => downloadExport('estado-cuenta', 'xlsx')}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
               >
                 <Download size={14} /> Exportar Excel
@@ -620,14 +568,6 @@ function FlujoCajaTab() {
     enabled: !!desde && !!hasta,
   });
 
-  const columns: ExportColumn[] = [
-    { header: 'Fecha', key: 'fecha', format: (v) => formatDate(v as string) },
-    { header: 'Tipo', key: 'tipo' },
-    { header: 'Categoría', key: 'categoria' },
-    { header: 'Descripción', key: 'descripcion' },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-  ];
-
   return (
     <AnimatedFadeIn>
       <div className="flex flex-wrap items-end gap-4 mb-4">
@@ -653,26 +593,13 @@ function FlujoCajaTab() {
           {data && (
             <>
               <AnimatedButton
-                onClick={() =>
-                  exportToExcel(
-                    data.movimientos as unknown as Record<string, unknown>[],
-                    columns,
-                    'flujo-caja',
-                  )
-                }
+                onClick={() => downloadExport('flujo-caja', 'xlsx')}
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
               >
                 <Download size={14} /> Excel
               </AnimatedButton>
               <AnimatedButton
-                onClick={() =>
-                  exportToPDF(
-                    data.movimientos as unknown as Record<string, unknown>[],
-                    columns,
-                    'Flujo de Caja',
-                    'flujo-caja',
-                  )
-                }
+                onClick={() => downloadExport('flujo-caja', 'pdf')}
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
               >
                 <Download size={14} /> PDF

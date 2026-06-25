@@ -23,8 +23,7 @@ import {
   type PeriodoDTO,
 } from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
-import { ApiError } from '../../lib/api';
-import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
+import { ApiError, downloadExport } from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { useAuthStore } from '../../stores/authStore';
 import {
@@ -81,34 +80,9 @@ export default function AportesLista() {
   const pendientes = aportesList.filter((a) => a.estado === 'pendiente').length;
   const enMora = aportesList.filter((a) => a.estado === 'mora' || a.estado === 'vencido').length;
 
-  const exportColumns: ExportColumn[] = [
-    { header: 'Socio ID', key: 'socioId' },
-    { header: 'Periodo', key: 'periodoId', format: (v) => String(periodoMap.get(Number(v)) ?? v) },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Fecha Pago', key: 'fechaPago', format: (v) => (v ? formatDate(String(v)) : '—') },
-    { header: 'Estado', key: 'estado' },
-    { header: 'Método', key: 'metodo' },
-    { header: 'Notas', key: 'notas' },
-    {
-      header: 'Pago Solidaridad',
-      key: 'pagoSolidaridad',
-      format: (v) => formatCurrency(Number(v)),
-    },
-    { header: 'Pago Crédito', key: 'pagoCredito', format: (v) => formatCurrency(Number(v)) },
-  ];
+  const handleExportExcel = () => downloadExport('aportes', 'xlsx');
 
-  const handleExportExcel = () => {
-    exportToExcel(aportesList as unknown as Record<string, unknown>[], exportColumns, 'aportes');
-  };
-
-  const handleExportPDF = () => {
-    exportToPDF(
-      aportesList as unknown as Record<string, unknown>[],
-      exportColumns,
-      'Listado de Aportes',
-      'aportes',
-    );
-  };
+  const handleExportPDF = () => downloadExport('aportes', 'pdf');
 
   const estadoColor: Record<string, string> = {
     pagado: 'bg-emerald-50 text-emerald-700 border border-emerald-200',

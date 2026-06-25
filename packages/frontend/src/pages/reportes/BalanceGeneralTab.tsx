@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiGetReporteBalance } from '../../lib/api';
 import { formatCurrency } from '../../lib/utils';
-import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
+import { downloadExport } from '../../lib/api';
 
 export function BalanceGeneralTab() {
   const { data, isLoading, error } = useQuery({
@@ -13,11 +13,6 @@ export function BalanceGeneralTab() {
   if (error)
     return <div className="text-red-500 text-center py-8">Error al cargar balance general</div>;
   if (!data) return null;
-
-  const columns: ExportColumn[] = [
-    { header: 'Cuenta', key: 'cuenta' },
-    { header: 'Valor', key: 'valor', format: (v) => formatCurrency(Number(v)) },
-  ];
 
   const rows = [
     { cuenta: 'AHORROS', valor: data.activos.ahorros },
@@ -36,13 +31,13 @@ export function BalanceGeneralTab() {
     <div>
       <div className="flex gap-2 mb-4">
         <button
-          onClick={() => exportToExcel(rows, columns, 'balance-general')}
+          onClick={() => downloadExport('balance-general', 'xlsx')}
           className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
         >
           Exportar Excel
         </button>
         <button
-          onClick={() => exportToPDF(rows, columns, 'Balance General', 'balance-general')}
+          onClick={() => downloadExport('balance-general', 'pdf')}
           className="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700"
         >
           Exportar PDF

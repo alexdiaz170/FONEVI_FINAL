@@ -17,7 +17,7 @@ import {
 import { apiListarSocios, apiEliminarSocio, type SocioDTO } from '../../lib/api';
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
-import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
+import { downloadExport } from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import {
   AnimatedStaggerContainer,
@@ -88,41 +88,6 @@ export default function SociosLista() {
 
   const sociosList = data?.data ?? [];
 
-  const exportColumns: ExportColumn[] = [
-    { header: 'Código', key: 'codigoSocio' },
-    { header: 'Nombre', key: 'nombre' },
-    { header: 'Documento', key: 'numeroDocumento' },
-    { header: 'Email', key: 'email' },
-    { header: 'Teléfono', key: 'telefono' },
-    { header: 'Estado', key: 'estado' },
-    {
-      header: 'Ahorro Acumulado',
-      key: 'ahorroAcumulado',
-      format: (v) => formatCurrency(Number(v)),
-    },
-    { header: 'Cargo', key: 'cargo' },
-    { header: 'Sede', key: 'sede' },
-    {
-      header: 'Fecha Ingreso',
-      key: 'fechaIngreso',
-      format: (v) => (v ? formatDate(String(v)) : '—'),
-    },
-  ];
-
-  const handleExportExcel = () => {
-    exportToExcel(sociosList as unknown as Record<string, unknown>[], exportColumns, 'socios');
-  };
-
-  const handleExportPDF = () => {
-    const pdfColumns = exportColumns.filter((c) => c.key !== 'ahorroAcumulado');
-    exportToPDF(
-      sociosList as unknown as Record<string, unknown>[],
-      pdfColumns,
-      'Listado de Socios',
-      'socios',
-    );
-  };
-
   const total = data?.total ?? 0;
   const activos = sociosList.filter((s) => s.estado === 'activo').length;
   const enMora = sociosList.filter((s) => s.estado === 'mora').length;
@@ -174,13 +139,13 @@ export default function SociosLista() {
             {sociosList.length > 0 && (
               <div className="flex items-center gap-2">
                 <AnimatedButton
-                  onClick={handleExportExcel}
+                  onClick={() => downloadExport('socios', 'xlsx')}
                   className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100"
                 >
                   <FileSpreadsheet size={14} /> Excel
                 </AnimatedButton>
                 <AnimatedButton
-                  onClick={handleExportPDF}
+                  onClick={() => downloadExport('socios', 'pdf')}
                   className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100"
                 >
                   <FileText size={14} /> PDF

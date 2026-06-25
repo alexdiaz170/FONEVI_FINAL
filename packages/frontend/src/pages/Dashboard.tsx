@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -43,6 +42,19 @@ import {
   AnimatedButton,
   AnimatedTableRow,
 } from '../components/ui';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from 'recharts';
 
 export default function DashboardPage() {
   const usuario = useAuthStore((s) => s.usuario);
@@ -145,11 +157,6 @@ function AdminDashboard() {
     );
   }
 
-  const exportColumns: ExportColumn[] = [
-    { header: 'Indicador', key: 'label' },
-    { header: 'Valor', key: 'value' },
-    { header: 'Detalle', key: 'detail' },
-  ];
   const cards = [
     {
       label: 'Socios Activos',
@@ -379,6 +386,83 @@ function AdminDashboard() {
             </div>
           </AnimatedFadeIn>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <AnimatedFadeIn>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-4">
+            <h2 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
+              <CreditCard size={16} className="text-purple-500" /> Cartera
+            </h2>
+            {resumen.creditos.total > 0 ? (
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Activos', value: resumen.creditos.activos },
+                        { name: 'Pagados', value: resumen.creditos.pagados },
+                        { name: 'Cancelados', value: resumen.creditos.cancelados ?? 0 },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      dataKey="value"
+                    >
+                      <Cell fill="#7c3aed" />
+                      <Cell fill="#10b981" />
+                      <Cell fill="#6b7280" />
+                    </Pie>
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-gray-400 text-sm text-center py-8">Sin datos</p>
+            )}
+          </div>
+        </AnimatedFadeIn>
+        <AnimatedFadeIn>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-4">
+            <h2 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
+              <Users size={16} className="text-blue-500" /> Socios
+            </h2>
+            {resumen.socios.total > 0 ? (
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Activos', value: resumen.socios.activos },
+                        { name: 'En Mora', value: resumen.socios.enMora },
+                        {
+                          name: 'Retirados',
+                          value:
+                            resumen.socios.total - resumen.socios.activos - resumen.socios.enMora,
+                        },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      dataKey="value"
+                    >
+                      <Cell fill="#3b82f6" />
+                      <Cell fill="#ef4444" />
+                      <Cell fill="#9ca3af" />
+                    </Pie>
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-gray-400 text-sm text-center py-8">Sin datos</p>
+            )}
+          </div>
+        </AnimatedFadeIn>
       </div>
 
       <AnimatedFadeIn>
@@ -643,26 +727,66 @@ function SocioDashboard() {
           {creditosActivos.length === 0 ? (
             <p className="text-gray-400 text-sm text-center py-8">No tienes créditos activos</p>
           ) : (
-            <div className="divide-y divide-gray-100">
-              {creditosActivos.map((c) => (
-                <div
-                  key={c.id}
-                  className="px-5 py-3.5 flex justify-between items-center hover:bg-gray-50/50 transition-colors"
-                >
-                  <div>
-                    <p className="font-medium text-navy-800">{formatCurrency(c.monto)}</p>
-                    <p className="text-xs text-gray-500">
-                      {c.cuotasPagadas}/{c.cuotas} cuotas · Cuota: {formatCurrency(c.cuotaMensual)}
-                    </p>
+            <div>
+              {creditosActivos.map((c) => {
+                const pagadas = c.cuotasPagadas ?? 0;
+                const total = c.cuotas;
+                const pendientes = total - pagadas;
+                const progress = total > 0 ? (pagadas / total) * 100 : 0;
+                return (
+                  <div
+                    key={c.id}
+                    className="px-5 py-3.5 flex justify-between items-center hover:bg-gray-50/50 transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium text-navy-800">{formatCurrency(c.monto)}</p>
+                      <p className="text-xs text-gray-500">
+                        {pagadas}/{total} cuotas · Cuota: {formatCurrency(c.cuotaMensual)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-mono text-sm font-semibold text-amber-600">
+                        {formatCurrency(c.saldoCapital)}
+                      </p>
+                      <p className="text-xs text-gray-400">saldo pendiente</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono text-sm font-semibold text-amber-600">
-                      {formatCurrency(c.saldoCapital)}
-                    </p>
-                    <p className="text-xs text-gray-400">saldo pendiente</p>
-                  </div>
+                );
+              })}
+              <div className="px-5 py-4 border-t border-gray-100">
+                <p className="text-xs text-gray-500 mb-2">Progreso de pagos</p>
+                <div className="h-28">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          {
+                            name: 'Pagadas',
+                            value: creditosActivos.reduce((s, c) => s + (c.cuotasPagadas ?? 0), 0),
+                          },
+                          {
+                            name: 'Pendientes',
+                            value: creditosActivos.reduce(
+                              (s, c) => s + c.cuotas - (c.cuotasPagadas ?? 0),
+                              0,
+                            ),
+                          },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={50}
+                        dataKey="value"
+                      >
+                        <Cell fill="#10b981" />
+                        <Cell fill="#f59e0b" />
+                      </Pie>
+                      <Tooltip />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
+              </div>
             </div>
           )}
         </CardPanel>
@@ -796,7 +920,11 @@ function AportesChart() {
       porPeriodo.set(a.periodoId, (porPeriodo.get(a.periodoId) ?? 0) + a.monto);
   }
   const periodos = [...porPeriodo.entries()].sort(([a], [b]) => a - b).slice(-6);
-  const maxValor = Math.max(...periodos.map(([, v]) => v), 1);
+
+  const chartData = periodos.map(([pid, valor]) => ({
+    periodo: `#${pid}`,
+    monto: valor,
+  }));
 
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100">
@@ -805,20 +933,16 @@ function AportesChart() {
         <h2 className="font-semibold text-navy-800">Historial de Aportes</h2>
       </div>
       <div className="p-5">
-        <div className="flex items-end gap-2" style={{ height: 120 }}>
-          {periodos.map(([periodoId, valor]) => (
-            <div
-              key={periodoId}
-              className="flex-1 flex flex-col items-center gap-1 h-full justify-end"
-            >
-              <span className="text-[10px] font-mono text-gray-500">{formatCurrency(valor)}</span>
-              <div
-                className="w-full bg-gradient-to-t from-teal-500 to-teal-300 rounded-t"
-                style={{ height: `${Math.max(4, (valor / maxValor) * 80)}px` }}
-              />
-              <span className="text-[10px] text-gray-400">#{periodoId}</span>
-            </div>
-          ))}
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="periodo" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Bar dataKey="monto" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

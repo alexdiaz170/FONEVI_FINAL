@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiGetReporteCartera } from '../../lib/api';
 import { formatCurrency } from '../../lib/utils';
-import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
+import { downloadExport } from '../../lib/api';
 
 export function CarteraTab() {
   const { data, isLoading, error } = useQuery({
@@ -13,17 +13,6 @@ export function CarteraTab() {
   if (error) return <div className="text-red-500 text-center py-8">Error al cargar cartera</div>;
   if (!data) return null;
 
-  const columns: ExportColumn[] = [
-    { header: 'Socio', key: 'socioNombre' },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Saldo Capital', key: 'saldoCapital', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Cuotas', key: 'cuotas' },
-    { header: 'Pagadas', key: 'cuotasPagadas' },
-    { header: 'Cuota Mensual', key: 'cuotaMensual', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Total Pagado', key: 'totalPagado', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Estado', key: 'estado' },
-  ];
-
   const totalMonto = data.reduce((s, c) => s + c.monto, 0);
   const totalSaldo = data.reduce((s, c) => s + c.saldoCapital, 0);
   const totalPagado = data.reduce((s, c) => s + c.totalPagado, 0);
@@ -34,22 +23,13 @@ export function CarteraTab() {
     <div>
       <div className="flex gap-2 mb-4">
         <button
-          onClick={() =>
-            exportToExcel(data as unknown as Record<string, unknown>[], columns, 'cartera-creditos')
-          }
+          onClick={() => downloadExport('cartera', 'xlsx')}
           className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
         >
           Exportar Excel
         </button>
         <button
-          onClick={() =>
-            exportToPDF(
-              data as unknown as Record<string, unknown>[],
-              columns,
-              'Cartera de Créditos',
-              'cartera-creditos',
-            )
-          }
+          onClick={() => downloadExport('cartera', 'pdf')}
           className="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700"
         >
           Exportar PDF

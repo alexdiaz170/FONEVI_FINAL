@@ -21,6 +21,7 @@ import {
   type AcuerdoPagoDTO,
 } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
+import { downloadExport } from '../lib/api';
 import { exportToExcel, exportToPDF, type ExportColumn } from '../lib/export';
 import {
   AnimatedStaggerContainer,
@@ -62,27 +63,6 @@ export default function MoraPage() {
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : 'Error al crear acuerdo'),
   });
-
-  const moraExportColumns: ExportColumn[] = [
-    { header: 'Socio', key: 'socioNombre' },
-    { header: 'Aportes Vencidos', key: 'aportesVencidos' },
-    { header: 'Total Adeudado', key: 'totalAdeudado', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Días Mora', key: 'diasMora' },
-    { header: 'Interés Mora', key: 'interesMora', format: (v) => formatCurrency(Number(v)) },
-  ];
-
-  const acuerdoExportColumns: ExportColumn[] = [
-    { header: 'Socio ID', key: 'socioId' },
-    { header: 'Monto Total', key: 'montoTotal', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Cuota', key: 'montoCuota', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Cuotas', key: 'cuotas' },
-    { header: 'Estado', key: 'estado' },
-    {
-      header: 'Inicio',
-      key: 'fechaInicio',
-      format: (v) => (v ? new Date(String(v)).toLocaleDateString() : '—'),
-    },
-  ];
 
   const kpis = useMemo(() => {
     if (!moraList || moraList.length === 0) return null;
@@ -221,26 +201,38 @@ export default function MoraPage() {
             {moraList && moraList.length > 0 && (
               <div className="p-3 border-b border-gray-100 flex gap-2">
                 <AnimatedButton
-                  onClick={() =>
+                  onClick={() => {
+                    const columns: ExportColumn[] = [
+                      { header: 'Socio', key: 'socioNombre' },
+                      { header: 'Días Mora', key: 'diasMora' },
+                      { header: 'Adeudado', key: 'totalAdeudado' },
+                      { header: 'Interés', key: 'interesMora' },
+                    ];
                     exportToExcel(
                       moraList as unknown as Record<string, unknown>[],
-                      moraExportColumns,
+                      columns,
                       'socios-en-mora',
-                    )
-                  }
+                    );
+                  }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100"
                 >
                   <FileSpreadsheet size={14} /> Excel
                 </AnimatedButton>
                 <AnimatedButton
-                  onClick={() =>
+                  onClick={() => {
+                    const columns: ExportColumn[] = [
+                      { header: 'Socio', key: 'socioNombre' },
+                      { header: 'Días Mora', key: 'diasMora' },
+                      { header: 'Adeudado', key: 'totalAdeudado' },
+                      { header: 'Interés', key: 'interesMora' },
+                    ];
                     exportToPDF(
                       moraList as unknown as Record<string, unknown>[],
-                      moraExportColumns,
+                      columns,
                       'Socios en Mora',
                       'socios-en-mora',
-                    )
-                  }
+                    );
+                  }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100"
                 >
                   <FileText size={14} /> PDF
@@ -332,26 +324,13 @@ export default function MoraPage() {
             {acuerdosData && acuerdosData.data.length > 0 && (
               <div className="p-3 border-b border-gray-100 flex gap-2">
                 <AnimatedButton
-                  onClick={() =>
-                    exportToExcel(
-                      acuerdosData.data as unknown as Record<string, unknown>[],
-                      acuerdoExportColumns,
-                      'acuerdos-de-pago',
-                    )
-                  }
+                  onClick={() => downloadExport('acuerdos-pago', 'xlsx')}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100"
                 >
                   <FileSpreadsheet size={14} /> Excel
                 </AnimatedButton>
                 <AnimatedButton
-                  onClick={() =>
-                    exportToPDF(
-                      acuerdosData.data as unknown as Record<string, unknown>[],
-                      acuerdoExportColumns,
-                      'Acuerdos de Pago',
-                      'acuerdos-de-pago',
-                    )
-                  }
+                  onClick={() => downloadExport('acuerdos-pago', 'pdf')}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100"
                 >
                   <FileText size={14} /> PDF

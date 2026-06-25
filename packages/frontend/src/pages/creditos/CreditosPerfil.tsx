@@ -28,6 +28,7 @@ import {
 } from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { ApiError } from '../../lib/api';
+import { downloadExport } from '../../lib/api';
 import { exportToExcel, exportToPDF, type ExportColumn } from '../../lib/export';
 import { useAuthStore } from '../../stores/authStore';
 import {
@@ -98,22 +99,14 @@ export default function CreditosPerfil() {
 
   const exportColumnsAmort: ExportColumn[] = [
     { header: 'N° Cuota', key: 'numeroCuota' },
-    { header: 'Fecha Vencimiento', key: 'fechaVencimiento', format: (v) => formatDate(String(v)) },
-    { header: 'Saldo Inicial', key: 'saldoInicial', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Interés', key: 'interes', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Cuota', key: 'cuota', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Amortización', key: 'amortizacion', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Saldo Final', key: 'saldoFinal', format: (v) => formatCurrency(Number(v)) },
+    { header: 'Fecha Vencimiento', key: 'fechaVencimiento' },
+    { header: 'Saldo Inicial', key: 'saldoInicial' },
+    { header: 'Interés', key: 'interes' },
+    { header: 'Cuota', key: 'cuota' },
+    { header: 'Amortización', key: 'amortizacion' },
+    { header: 'Saldo Final', key: 'saldoFinal' },
     { header: 'Estado', key: 'estado' },
-    { header: 'Fecha Pago', key: 'fechaPago', format: (v) => (v ? formatDate(String(v)) : '—') },
-  ];
-
-  const exportColumnsPagos: ExportColumn[] = [
-    { header: 'Fecha', key: 'fecha', format: (v) => formatDate(String(v)) },
-    { header: 'Monto', key: 'monto', format: (v) => formatCurrency(Number(v)) },
-    { header: 'Método', key: 'metodoPago' },
-    { header: 'Referencia', key: 'referencia' },
-    { header: 'Notas', key: 'notas' },
+    { header: 'Fecha Pago', key: 'fechaPago' },
   ];
 
   if (isLoading) {
@@ -252,11 +245,7 @@ export default function CreditosPerfil() {
               <div className="flex gap-2">
                 <AnimatedButton
                   onClick={() =>
-                    exportToExcel(
-                      amortVisible as unknown as Record<string, unknown>[],
-                      exportColumnsAmort,
-                      'amortizacion',
-                    )
+                    exportToExcel(amortVisible, exportColumnsAmort, `amortizacion-${id}`)
                   }
                   className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
                 >
@@ -264,12 +253,7 @@ export default function CreditosPerfil() {
                 </AnimatedButton>
                 <AnimatedButton
                   onClick={() =>
-                    exportToPDF(
-                      amortVisible as unknown as Record<string, unknown>[],
-                      exportColumnsAmort,
-                      'Plan de amortización',
-                      'amortizacion',
-                    )
+                    exportToPDF(amortVisible, exportColumnsAmort, `amortizacion-${id}`)
                   }
                   className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
                 >
@@ -375,26 +359,13 @@ export default function CreditosPerfil() {
               </div>
               <div className="flex gap-2">
                 <AnimatedButton
-                  onClick={() =>
-                    exportToExcel(
-                      pagos as unknown as Record<string, unknown>[],
-                      exportColumnsPagos,
-                      'pagos-credito',
-                    )
-                  }
+                  onClick={() => downloadExport('pagos-credito', 'xlsx', { creditoId: id! })}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100"
                 >
                   <FileSpreadsheet size={13} /> Excel
                 </AnimatedButton>
                 <AnimatedButton
-                  onClick={() =>
-                    exportToPDF(
-                      pagos as unknown as Record<string, unknown>[],
-                      exportColumnsPagos,
-                      'Pagos del crédito',
-                      'pagos-credito',
-                    )
-                  }
+                  onClick={() => downloadExport('pagos-credito', 'pdf', { creditoId: id! })}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
                 >
                   <FileText size={13} /> PDF
