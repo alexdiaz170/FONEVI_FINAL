@@ -215,7 +215,59 @@ Se propone un plan estructurado en 4 fases secuenciales para llevar a FONEVI a u
 
 ---
 
-## 6. Conclusión y Veredicto
+## 6. Estado de Remediación (24 Jun 2026)
+
+A continuación se detalla el estado de cada hallazgo tras la sesión de remediación quirúrgica.
+
+### 🔴 Prioridad P0 — Críticos
+
+| ID   | Hallazgo                  | Estado      | Detalle del cambio                                                                                                                                                                                                                               |
+| ---- | ------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P0-1 | Valores hardcodeados      | ✅ Resuelto | Todos los parámetros financieros (`tasa_interes_mensual`, `porcentaje_seguro`, `valor_solidaridad`, `valor_minimo_aporte`, `multiplicador_maximo_credito`) migrados a tabla `configuracion` con seed. `ConfiguracionService` centraliza lectura. |
+| P0-2 | Cierre mensual atómico    | ✅ Resuelto | Endpoint único `POST /api/cierre-periodo/ejecutar` con transacción SQL (`$transaction`), validación de período activo, registro de metadata en `cierres_periodo`, y auditoría.                                                                   |
+| P0-3 | Bloqueo períodos cerrados | ✅ Resuelto | `RegistrarAporteUseCase`, `ActualizarAporteUseCase`, `EliminarAporteUseCase` validan `periodo.activo` antes de mutar.                                                                                                                            |
+| P0-4 | Seguridad solidaridad     | ✅ Resuelto | `RegistrarSolidaridadUseCase` valida saldo disponible antes de egresos. Ruta requiere `authorize('admin', 'superadmin')`.                                                                                                                        |
+
+### 🟡 Prioridad P1 — Alta
+
+| ID   | Hallazgo                                            | Estado          | Detalle del cambio                                                                                                                                                                                                     |
+| ---- | --------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1-1 | Ledger aportes (`aporte_detalle`)                   | ✅ Preexistente | Tabla `aporte_detalles` ya existente en esquema, creada antes de esta sesión.                                                                                                                                          |
+| P1-2 | Ledger créditos (`credito_movimiento`)              | ✅ Resuelto     | Nueva tabla `credito_movimientos` creada. `SolicitarCreditoUseCase` registra `desembolso`, `PagarCuotaUseCase` registra `pago_cuota`, `EliminarPagoCuotaUseCase` registra `reversion`. Todos dentro de `$transaction`. |
+| P1-3 | Metadata cierre (`cierre_periodo`)                  | ✅ Resuelto     | Nueva tabla `cierres_periodo` con quién ejecutó el cierre, fecha, saldos consolidados (`totalRecaudado`, `totalSolidaridad`, `totalAhorro`, `totalAplicadoCreditos`, `totalSociosAportaron`, `totalAportes`).          |
+| P1-4 | Historial configuración (`configuracion_historial`) | ✅ Resuelto     | Nueva tabla `configuracion_historial` registra `valorAnterior`, `valorNuevo` y `usuarioId` en cada actualización. `ActualizarConfigUseCase` modificado para inyectar `usuarioId`.                                      |
+
+### 🔵 Prioridad P2 — Media
+
+| ID   | Hallazgo                  | Estado          | Detalle del cambio                                                                                                         |
+| ---- | ------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| P2-1 | Caché dashboard / polling | ✅ Resuelto     | `SimpleCache` in-memory con TTL 20s en `ObtenerResumenDashboardUseCase`. Polling frontend reducido de 30s → 60s.           |
+| P2-2 | Normalización APIs        | ✅ Preexistente | Middleware `apiResponse` (`success`, `error`, `paginated`) y `errorHandler` ya implementados en toda la API.               |
+| P2-3 | Soft-delete               | ✅ Preexistente | Modelos `Socio` y `Credito` ya tienen `deletedAt` y métodos `softDelete`. Consultas filtran `deletedAt: null` por defecto. |
+
+### 🟢 Prioridad P3 — Baja
+
+| ID   | Hallazgo                   | Estado       |
+| ---- | -------------------------- | ------------ |
+| P3-1 | Exportaciones backend      | ⏳ Pendiente |
+| P3-2 | Mejoras visuales dashboard | ⏳ Pendiente |
+
+### Hallazgos adicionales resueltos
+
+| Hallazgo                                           | Detalle                                                                                                                                                                                                             |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Token TTL hardcodeado                              | Movido a `config/index.ts` con vars `JWT_REFRESH_EXPIRES_IN` y `JWT_REFRESH_TTL_MS`.                                                                                                                                |
+| Transaccionalidad multi-write (RT-04)              | 6 use cases envueltos en `prisma.$transaction`: `RegistrarSolidaridadUseCase`, `PagarCuotaUseCase`, `EliminarPagoCuotaUseCase`, `ActualizarAporteUseCase`, `EliminarAporteUseCase`, `EjecutarCierrePeriodoUseCase`. |
+| Eliminación de `reservas` y `valor_ahorro_mensual` | Eliminados del seed, servicios y frontend. Eran valores hardcodeados que ya no aplican al modelo de negocio actual.                                                                                                 |
+| Sidebar responsive                                 | Drawer overlay en mobile (<768px) con hamburguesa + backdrop.                                                                                                                                                       |
+| Topbar responsive                                  | Fecha oculta en mobile, iconos compactos.                                                                                                                                                                           |
+| Simulador crédito                                  | Input monto editable (type text + inputMode numeric), plazo 1-36 meses.                                                                                                                                             |
+| Rate-limit + trust proxy                           | `app.set('trust proxy', 1)` + SQL trailing comma fix (dashboard 500).                                                                                                                                               |
+| Columnas faltantes notificaciones                  | `referencia_id` y `referencia_tipo` agregadas manualmente a DB.                                                                                                                                                     |
+
+---
+
+## 7. Conclusión y Veredicto
 
 El sistema **FONEVI** cuenta con una base de lógica de negocio valiosa y un diseño de interfaz inicial adecuado para los usuarios del fondo de empleados. Sin embargo, **la falta de controles estrictos en el backend, la ausencia de transacciones en operaciones monetarias críticas y la distribución de reglas de negocio en el frontend hacen que su despliegue en producción represente un riesgo operativo y financiero inaceptable.**
 
