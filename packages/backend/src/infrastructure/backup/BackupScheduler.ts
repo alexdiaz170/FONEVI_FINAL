@@ -1,128 +1,32 @@
 import cron from 'node-cron';
-import { writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync, statSync } from 'fs';
-import { join } from 'path';
+import { existsSync, mkdirSync, readdirSync, unlinkSync, statSync, readFileSync } from 'fs';
+import { join, basename } from 'path';
 import { config } from '../../config/index.js';
-import { getPrismaClient, disconnectPrisma } from '../persistence/prismaClient.js';
 import { logger } from '../logging/logger.js';
+import { generateBackupStream } from './BackupService.js';
+import { getStorage } from '../storage/StorageFactory.js';
 
 async function generateBackup(): Promise<string> {
-  const prisma = getPrismaClient();
-
-  const [
-    usuarios,
-    socios,
-    periodos,
-    aportes,
-    aporteDetalles,
-    creditos,
-    pagoCuotas,
-    notificaciones,
-    configuraciones,
-    movimientos,
-    solidaridadMovimientos,
-    auditorias,
-    waLogs,
-    acuerdosPago,
-    dividendos,
-    dividendosSocios,
-  ] = await Promise.all([
-    prisma.usuario.findMany(),
-    prisma.socio.findMany(),
-    prisma.periodo.findMany(),
-    prisma.aporte.findMany(),
-    prisma.aporteDetalle.findMany(),
-    prisma.credito.findMany(),
-    prisma.pagoCuota.findMany(),
-    prisma.notificacion.findMany(),
-    prisma.configuracion.findMany(),
-    prisma.movimiento.findMany(),
-    prisma.solidaridadMovimiento.findMany(),
-    prisma.auditoria.findMany(),
-    prisma.waLog.findMany(),
-    prisma.acuerdoPago.findMany(),
-    prisma.dividendo.findMany(),
-    prisma.dividendoSocio.findMany(),
-  ]);
-
-  const backup = {
-    metadata: {
-      fecha: new Date().toISOString(),
-      version: '1.0',
-      totalRegistros: {
-        usuarios: usuarios.length,
-        socios: socios.length,
-        periodos: periodos.length,
-        aportes: aportes.length,
-        aporteDetalles: aporteDetalles.length,
-        creditos: creditos.length,
-        pagoCuotas: pagoCuotas.length,
-        notificaciones: notificaciones.length,
-        configuraciones: configuraciones.length,
-        movimientos: movimientos.length,
-        solidaridadMovimientos: solidaridadMovimientos.length,
-        auditorias: auditorias.length,
-        waLogs: waLogs.length,
-        acuerdosPago: acuerdosPago.length,
-        dividendos: dividendos.length,
-        dividendosSocios: dividendosSocios.length,
-      },
-    },
-    data: {
-      usuarios,
-      socios,
-      periodos,
-      aportes,
-      aporteDetalles,
-      creditos,
-      pagoCuotas,
-      notificaciones,
-      configuraciones,
-      movimientos,
-      solidaridadMovimientos,
-      auditorias,
-      waLogs,
-      acuerdosPago,
-      dividendos,
-      dividendosSocios,
-    },
-  };
-
   if (!existsSync(config.backupDir)) {
     mkdirSync(config.backupDir, { recursive: true });
   }
 
   const filename = `fonevi-backup-${new Date().toISOString().slice(0, 10)}.json`;
   const filepath = join(config.backupDir, filename);
-  writeFileSync(filepath, JSON.stringify(backup, null, 2));
+
+  await generateBackupStream(filepath);
   return filepath;
 }
 
 async function uploadBackup(filepath: string): Promise<void> {
-  if (!config.backupUploadUrl) return;
-
   try {
-    const { readFileSync } = await import('fs');
-    const body = readFileSync(filepath, 'utf-8');
-    const response = await fetch(config.backupUploadUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(config.backupUploadToken
-          ? { Authorization: `Bearer ${config.backupUploadToken}` }
-          : {}),
-      },
-      body,
-    });
-    if (!response.ok) {
-      logger.error('Error al subir backup a almacenamiento externo', {
-        status: response.status,
-        url: config.backupUploadUrl,
-      });
-    } else {
-      logger.info('Backup subido a almacenamiento externo');
-    }
+    const storage = getStorage();
+    const content = readFileSync(filepath, 'utf-8');
+    const key = `backups/${basename(filepath)}`;
+    const url = await storage.upload(key, content, 'application/json');
+    logger.info(`Backup subido a storage remoto: ${url}`);
   } catch (err) {
-    logger.error('Error al subir backup', { error: String(err) });
+    logger.error('Error al subir backup al storage', { error: String(err) });
   }
 }
 

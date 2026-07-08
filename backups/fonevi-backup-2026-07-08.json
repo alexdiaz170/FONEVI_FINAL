@@ -1,0 +1,279 @@
+{
+  "metadata": {
+    "fecha": "2026-07-08T15:43:22.691Z",
+    "version": "1.1",
+    "totalRegistros": {
+      "usuarios": 2,
+      "socios": 1,
+      "periodos": 12,
+      "aportes": 1,
+      "aporteDetalles": 1,
+      "creditos": 0,
+      "pagoCuotas": 0,
+      "notificaciones": 0,
+      "configuraciones": 14,
+      "movimientos": 1,
+      "solidaridadMovimientos": 1,
+      "auditorias": 0,
+      "waLogs": 0,
+      "acuerdosPago": 0,
+      "dividendos": 0,
+      "dividendosSocios": 0
+    }
+  },
+  "data": {
+    "usuarios": [
+      {
+        "id": "d02bfc7b-8183-4d45-b034-f5c0a74b6964",
+        "nombre": "Alexander Díaz",
+        "email": "admin@fonevi.edu.co",
+        "password": "$2b$12$J1UBisau.2XSM3bxjAH1sOTTHVZd5mDTUAu6uy8B5A3Dx6rW9zwu2",
+        "rol": "superadmin",
+        "estado": "activo",
+        "avatar": "CM",
+        "createdAt": "2026-05-15T04:36:16.988Z",
+        "updatedAt": "2026-06-23T00:45:29.456Z"
+      },
+      {
+        "id": "fff22036-ca01-4845-96a3-1439f972d63c",
+        "nombre": "Gerardo Martinez Meneses",
+        "email": "gerardo@gmail.com",
+        "password": "$2b$12$pDaCXpD2M7aI0V.a2uOAIeBBA/ZUxF/4pK15UspWu41w2TFSVcUFK",
+        "rol": "socio",
+        "estado": "activo",
+        "avatar": null,
+        "createdAt": "2026-06-23T00:56:12.834Z",
+        "updatedAt": "2026-06-23T00:56:12.834Z"
+      }
+    ],
+    "socios": [
+      {
+        "id": "c0475a9e-bf39-43e9-b387-5fa940f37756",
+        "codigo": "SOC-0001",
+        "nombre": "Gerardo Martinez Meneses",
+        "documento": "CC-15815646",
+        "email": "gerardo@gmail.com",
+        "telefono": "3168529541",
+        "fechaIngreso": "2026-06-23T00:00:00.000Z",
+        "aporteMensual": "0",
+        "ahorroAcumulado": "125000",
+        "estado": "activo",
+        "cargo": "Docente",
+        "sede": "I.E.D.R",
+        "departamento": "Nariño",
+        "municipio": "La Unión",
+        "deletedAt": null,
+        "createdAt": "2026-06-23T00:56:10.084Z",
+        "updatedAt": "2026-06-23T00:59:49.369Z",
+        "password": null,
+        "accesoActivo": true,
+        "ultimoLogin": null,
+        "codigo_socio": "SOC-0001"
+      }
+    ],
+    "periodos": [
+      {
+        "id": 1,
+        "nombre": "Enero 2026",
+        "anio": 2026,
+        "mes": 1,
+        "activo": false,
+        "createdAt": "2026-05-15T04:36:21.000Z"
+      },
+      {
+        "id": 2,
+        "nombre": "Febrero 2026",
+        "anio": 2026,
+        "mes": 2,
+        "activo": false,
+        "createdAt": "2026-05-15T04:36:21.293Z"
+      },
+      {
+        "id": 3,
+        "nombre": "Marzo 2026",
+        "anio": 2026,
+        "mes": 3,
+        "activo": false,
+        "createdAt": "2026-05-15T04:36:21.455Z"
+      },
+      {
+        "id": 4,
+        "nombre": "Abril 2026",
+        "anio": 2026,
+        "mes": 4,
+        "activo": false,
+        "createdAt": "2026-05-15T04:36:21.601Z"
+      },
+      {
+        "id": 5,
+        "nombre": "Mayo 2026",
+        "anio": 2026,
+        "mes": 5,
+        "activo": false,
+        "createdAt": "2026-05-15T04:36:21.751Z"
+      },
+      {
+        "id": 6,
+        "nombre": "Junio 2026",
+        "anio": 2026,
+        "mes": 6,
+        "activo": true,
+        "createdAt": "2026-05-15T04:36:21.901Z"
+      },
+      {
+        "id": 7,
+        "nombre": "Julio 2026",
+        "anio": 2026,
+        "mes": 7,
+        "activo": false,
+        "createdAt": "2026-05-15T04:36:22.047Z"
+      },
+      {
+        "id": 8,
+        "nombre": "Agosto 2026",
+        "anio": 2026,
+        "mes": 8,
+        "activo": false,
+        "createdAt": "2026-05-15T04:36:22.202Z"
+      },
+      {
+        "id": 9,
+        "nombre": "Septiembre 2026",
+        "anio": 2026,
+        "mes": 9,
+        "activo": false,
+        "createdAt": "2026-05-15T04:36:22.348Z"
+      },
+      {
+        "id": 10,
+        "nombre": "Octubre 2026",
+        "anio": 2026,
+        "mes": 10,
+        "activo": false,
+        "createdAt": "2026-05-15T04:36:22.506Z"
+      },
+      {
+        "id": 11,
+        "nombre": "Noviembre 2026",
+        "anio": 2026,
+        "mes": 11,
+        "activo": false,
+        "createdAt": "2026-05-15T04:36:22.654Z"
+      },
+      {
+        "id": 12,
+        "nombre": "Diciembre 2026",
+        "anio": 2026,
+        "mes": 12,
+        "activo": false,
+        "createdAt": "2026-05-15T04:36:22.810Z"
+      }
+    ],
+    "aportes": [
+      {
+        "id": "bd618791-8bc2-4d37-8cfe-12384d1dfda8",
+        "socioId": "c0475a9e-bf39-43e9-b387-5fa940f37756",
+        "periodoId": 6,
+        "monto": "130000",
+        "fechaPago": "2026-06-22T05:00:00.000Z",
+        "estado": "pagado",
+        "metodo": "transferencia",
+        "notas": "Pago de Junio",
+        "createdAt": "2026-06-23T00:59:36.978Z",
+        "updatedAt": "2026-06-23T00:59:36.978Z",
+        "pagoSolidaridad": "5000",
+        "pagoCredito": "0"
+      }
+    ],
+    "aporteDetalles": [
+      {
+        "id": "6123252c-3603-45d2-8e1e-088756761305",
+        "aporteId": "bd618791-8bc2-4d37-8cfe-12384d1dfda8",
+        "solidaridad": "5000",
+        "interes": "0",
+        "seguro": "0",
+        "capital": "0",
+        "ahorro": "125000"
+      }
+    ],
+    "creditos": [],
+    "pagoCuotas": [],
+    "notificaciones": [],
+    "configuraciones": [
+      {
+        "clave": "aporte_ingreso_nuevo_socio",
+        "valor": "82000",
+        "updatedAt": "2026-06-10T06:05:28.945Z"
+      },
+      {
+        "clave": "destino_intereses",
+        "valor": "fondo_utilidades",
+        "updatedAt": "2026-06-12T23:44:48.744Z"
+      },
+      { "clave": "meses_minimos_credito", "valor": "3", "updatedAt": "2026-06-12T22:21:17.216Z" },
+      {
+        "clave": "multiplicador_maximo_credito",
+        "valor": "4",
+        "updatedAt": "2026-06-19T15:37:34.035Z"
+      },
+      {
+        "clave": "nit_institucion",
+        "valor": "800.123.456-7",
+        "updatedAt": "2026-06-19T15:37:34.324Z"
+      },
+      {
+        "clave": "nombre_institucion",
+        "valor": "Fondo de Empleados Docentes FONEVI",
+        "updatedAt": "2026-06-19T15:37:34.180Z"
+      },
+      {
+        "clave": "permite_multiples_creditos",
+        "valor": "true",
+        "updatedAt": "2026-06-12T23:44:48.383Z"
+      },
+      { "clave": "porcentaje_seguro", "valor": "0.5", "updatedAt": "2026-06-19T15:37:33.600Z" },
+      {
+        "clave": "representante",
+        "valor": "Alexander Diaz",
+        "updatedAt": "2026-06-18T15:08:56.675Z"
+      },
+      { "clave": "reservas", "valor": "0", "updatedAt": "2026-06-20T16:13:54.830Z" },
+      { "clave": "tasa_interes_mensual", "valor": "1", "updatedAt": "2026-06-22T18:06:45.920Z" },
+      { "clave": "tasa_mora_mensual", "valor": "0", "updatedAt": "2026-06-19T15:37:33.456Z" },
+      {
+        "clave": "valor_minimo_aporte",
+        "valor": "125000",
+        "updatedAt": "2026-06-19T15:37:33.891Z"
+      },
+      { "clave": "valor_solidaridad", "valor": "5000", "updatedAt": "2026-06-19T15:37:33.746Z" }
+    ],
+    "movimientos": [
+      {
+        "id": "3ba2210e-d346-475a-b69e-d1f1ef87f9cb",
+        "socioId": "c0475a9e-bf39-43e9-b387-5fa940f37756",
+        "tipo": "ingreso",
+        "categoria": "Cuota Normal",
+        "descripcion": "Junio 2026",
+        "monto": "130000",
+        "fecha": "2026-06-23T00:59:39.373Z",
+        "createdAt": "2026-06-23T00:59:39.390Z"
+      }
+    ],
+    "solidaridadMovimientos": [
+      {
+        "id": "b8ce8481-22aa-4fee-963e-35eb6fae6c82",
+        "tipo": "ingreso",
+        "descripcion": "Aporte solidaridad",
+        "monto": "5000",
+        "fecha": "2026-06-23T00:59:42.270Z",
+        "beneficiario": "Gerardo Martinez Meneses",
+        "createdAt": "2026-06-23T00:59:42.286Z"
+      }
+    ],
+    "auditorias": [],
+    "waLogs": [],
+    "acuerdosPago": [],
+    "dividendos": [],
+    "dividendosSocios": []
+  }
+}

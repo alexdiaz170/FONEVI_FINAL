@@ -121,24 +121,48 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 // ─── Inicio del servidor ───────────────────────────────────
 export async function startServer(port = config.port) {
+  const isWorker = config.processType === 'worker';
+  const isWeb = config.processType === 'web' || config.processType === 'hybrid';
+  const isHybrid = config.processType === 'hybrid';
+
   return new Promise<{ app: express.Application; server: ReturnType<typeof app.listen> }>(
     async (resolve, reject) => {
       try {
-        // Inicializar colas y workers
-        const waLogRepo = new PrismaWaLogRepository();
-        const processor = createWhatsAppProcessor(waLogRepo);
-        await initWorker(
-          'whatsapp',
-          processor as unknown as (payload: Record<string, unknown>) => Promise<void>,
-        );
-
-        const server = app.listen(port, () => {
-          logger.info(`Servidor iniciado en puerto ${port} (${config.env})`);
-          httpServer = server;
+        // 1. Inicializar colas y workers (si es worker o hybrid)
+        if (isWorker || isHybrid) {
+          const waLogRepo = new PrismaWaLogRepository();
+          const processor = createWhatsAppProcessor(waLogRepo);
+          await initWorker(
+            'whatsapp',
+            processor as unknown as (payload: Record<string, unknown>) => Promise<void>,
+          );
           startBackupScheduler();
-          resolve({ app, server });
-        });
-        server.on('error', reject);
+          logger.info('Procesos de background (Worker y Scheduler) inicializados');
+        }
+
+        // 2. Levantar servidor HTTP (si es web o hybrid)
+        if (isWeb) {
+          const server = app.listen(port, () => {
+            logger.info(
+              `Servidor HTTP iniciado en puerto ${port} (${config.env}) [Modo: ${config.processType}]`,
+            );
+            httpServer = server;
+            resolve({ app, server });
+          });
+          server.on('error', reject);
+        } else {
+          logger.info(
+            `Aplicación iniciada en modo solo Worker [Modo: ${config.processType}] (Sin servidor HTTP)`,
+          );
+          const dummyServer = {
+            close: (cb?: (err?: Error) => void) => {
+              if (cb) cb();
+              return dummyServer;
+            },
+            listen: () => dummyServer,
+          } as unknown as ReturnType<typeof app.listen>;
+          resolve({ app, server: dummyServer });
+        }
       } catch (err) {
         reject(err);
       }
