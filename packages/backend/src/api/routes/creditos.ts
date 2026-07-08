@@ -4,6 +4,11 @@ import { PrismaCreditoRepository } from '../../infrastructure/persistence/Prisma
 import { PrismaPagoCuotaRepository } from '../../infrastructure/persistence/PrismaPagoCuotaRepository.js';
 import { createCreditoController } from '../controllers/creditoController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import {
+  solicitarCreditoSchema,
+  pagarCuotaSchema,
+} from '../../application/use-cases/creditos/creditoSchemas.js';
 
 const router = Router();
 
@@ -20,6 +25,7 @@ router.post(
   '/',
   authenticate,
   authorize('admin', 'superadmin'),
+  validate(solicitarCreditoSchema),
   creditoController.create.bind(creditoController),
 );
 router.post(
@@ -45,7 +51,12 @@ router.get(
   creditoController.getAmortizacion.bind(creditoController),
 );
 router.get('/:id/pagos', authenticate, creditoController.getPagos.bind(creditoController));
-router.post('/:id/pagar', authenticate, creditoController.pagarCuota.bind(creditoController));
+router.post(
+  '/:id/pagar',
+  authenticate,
+  validate(pagarCuotaSchema),
+  creditoController.pagarCuota.bind(creditoController),
+);
 router.delete(
   '/:id/pagos/:pagoId',
   authenticate,

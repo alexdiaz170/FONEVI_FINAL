@@ -61,7 +61,7 @@ export function ConfiguracionGeneral() {
                         value={valorEdit}
                         onChange={(e) => setValorEdit(e.target.value)}
                         className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-slate-500/30"
-                        autoFocus
+                        aria-label={meta.label}
                       />
                       <AnimatedButton
                         onClick={() =>
@@ -73,6 +73,7 @@ export function ConfiguracionGeneral() {
                         <Save size={16} />
                       </AnimatedButton>
                       <button
+                        type="button"
                         onClick={() => setEditando(null)}
                         className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"
                       >
@@ -83,6 +84,7 @@ export function ConfiguracionGeneral() {
                     <>
                       <span className="flex-1 font-medium text-navy-800">{cfg.valor}</span>
                       <button
+                        type="button"
                         onClick={() => {
                           setEditando(cfg.clave);
                           setValorEdit(cfg.valor);

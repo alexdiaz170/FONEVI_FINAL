@@ -1,5 +1,6 @@
 import { ICreditoRepository } from '../../../domain/repositories/ICreditoRepository.js';
 import { EntityNotFoundError, DomainError } from '../../../domain/errors.js';
+import { getPrismaClient } from '../../../infrastructure/persistence/prismaClient.js';
 
 export class RechazarCreditoUseCase {
   constructor(private readonly creditoRepo: ICreditoRepository) {}
@@ -13,6 +14,20 @@ export class RechazarCreditoUseCase {
     }
 
     const cancelado = credito.cancelar();
-    await this.creditoRepo.update(cancelado);
+
+    const prisma = getPrismaClient();
+    await prisma.$transaction(async () => {
+      await this.creditoRepo.update(cancelado);
+      await prisma.creditoMovimiento.create({
+        data: {
+          creditoId: credito.id,
+          tipo: 'cancelacion',
+          monto: credito.monto.value,
+          saldoCapitalAnterior: Number(credito.saldoCapital.value),
+          saldoCapitalPosterior: Number(cancelado.saldoCapital.value),
+          descripcion: 'Crédito rechazado',
+        },
+      });
+    });
   }
 }

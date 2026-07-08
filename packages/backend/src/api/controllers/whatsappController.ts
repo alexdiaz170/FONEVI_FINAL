@@ -3,24 +3,21 @@ import { IWaLogRepository } from '../../domain/repositories/IWaLogRepository.js'
 import { EnviarWhatsAppUseCase } from '../../application/use-cases/whatsapp/EnviarWhatsAppUseCase.js';
 import { ListarLogsWhatsAppUseCase } from '../../application/use-cases/whatsapp/ListarLogsWhatsAppUseCase.js';
 import { VerEstadoWhatsAppUseCase } from '../../application/use-cases/whatsapp/VerEstadoWhatsAppUseCase.js';
-import { enviarWhatsAppSchema, listarLogsSchema } from '../../application/dto/whatsapp.dto.js';
+import { listarLogsSchema } from '../../application/dto/whatsapp.dto.js';
 import { apiResponse } from '../response.js';
-import { ValidationError } from '../../application/errors.js';
+import type { Queue } from 'bullmq';
 
-export function createWhatsAppController(waLogRepo: IWaLogRepository) {
-  const enviarUseCase = new EnviarWhatsAppUseCase(waLogRepo);
+export function createWhatsAppController(waLogRepo: IWaLogRepository, queue: Queue | null = null) {
+  const enviarUseCase = new EnviarWhatsAppUseCase(waLogRepo, queue);
   const listarLogsUseCase = new ListarLogsWhatsAppUseCase(waLogRepo);
   const verEstadoUseCase = new VerEstadoWhatsAppUseCase();
 
   return {
     async enviar(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = enviarWhatsAppSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-        const result = await enviarUseCase.execute(parsed.data);
-        apiResponse.success(res, result, result.success ? 200 : 502);
+        const result = await enviarUseCase.execute(req.body);
+        const statusCode = 'encolado' in result ? 200 : result.success ? 200 : 502;
+        apiResponse.success(res, result, statusCode);
       } catch (error) {
         next(error);
       }

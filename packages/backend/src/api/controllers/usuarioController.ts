@@ -6,7 +6,7 @@ import { apiResponse } from '../response.js';
 import { z } from 'zod';
 import { ValidationError } from '../../application/errors.js';
 
-const crearUsuarioSchema = z.object({
+export const crearUsuarioSchema = z.object({
   nombre: z.string().min(2, 'Nombre debe tener al menos 2 caracteres').max(200),
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Contraseña debe tener al menos 6 caracteres'),
@@ -46,15 +46,8 @@ export function createUsuarioController(usuarioRepo: IUsuarioRepository) {
 
     async create(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = crearUsuarioSchema.safeParse(req.body);
-        if (!parsed.success)
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        const usuario = await registerUseCase.execute({
-          nombre: parsed.data.nombre,
-          email: parsed.data.email,
-          password: parsed.data.password,
-          rol: parsed.data.rol,
-        });
+        const { nombre, email, password, rol } = req.body;
+        const usuario = await registerUseCase.execute({ nombre, email, password, rol });
         apiResponse.created(res, {
           id: usuario.id,
           nombre: usuario.nombre,

@@ -50,6 +50,7 @@ export default function ReportesPage() {
       <div className="flex gap-1 mb-6 overflow-x-auto">
         {tabs.map((tab) => (
           <button
+            type="button"
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2.5 text-sm font-medium transition-all rounded-xl whitespace-nowrap ${
@@ -179,6 +180,18 @@ function BalanceGeneralTab() {
   );
 }
 
+const estadoColorCartera: Record<string, string> = {
+  activo: 'bg-blue-50 text-blue-700 border border-blue-200',
+  pagado: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  cancelado: 'bg-red-50 text-red-700 border border-red-200',
+};
+
+const estadoColorEstadoCuenta: Record<string, string> = {
+  pagado: 'bg-green-50 text-green-700 border border-green-200',
+  pendiente: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+  activo: 'bg-green-50 text-green-700 border border-green-200',
+};
+
 function CarteraTab() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['reporte-cartera'],
@@ -193,12 +206,6 @@ function CarteraTab() {
   const totalPagado = data.reduce((s, c) => s + c.totalPagado, 0);
   const activos = data.filter((c) => c.estado === 'activo').length;
   const pagados = data.filter((c) => c.estado === 'pagado').length;
-
-  const estadoColor: Record<string, string> = {
-    activo: 'bg-blue-50 text-blue-700 border border-blue-200',
-    pagado: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-    cancelado: 'bg-red-50 text-red-700 border border-red-200',
-  };
 
   return (
     <AnimatedFadeIn>
@@ -319,7 +326,7 @@ function CarteraTab() {
                 </td>
                 <td className="p-3.5 text-center">
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoColor[c.estado] ?? 'bg-gray-50 text-gray-600 border border-gray-200'}`}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoColorCartera[c.estado] ?? 'bg-gray-50 text-gray-600 border border-gray-200'}`}
                   >
                     {c.estado}
                   </span>
@@ -350,17 +357,14 @@ function EstadoCuentaTab() {
     enabled: !!socioId,
   });
 
-  const estadoColor: Record<string, string> = {
-    pagado: 'bg-green-50 text-green-700 border border-green-200',
-    pendiente: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
-    activo: 'bg-green-50 text-green-700 border border-green-200',
-  };
-
   return (
     <AnimatedFadeIn>
       <div className="mb-4">
-        <label className="block text-xs font-medium text-gray-600 mb-1">Seleccionar Socio</label>
+        <label htmlFor="socio-select" className="block text-xs font-medium text-gray-600 mb-1">
+          Seleccionar Socio
+        </label>
         <select
+          id="socio-select"
           value={socioId}
           onChange={(e) => setSocioId(e.target.value)}
           className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
@@ -457,7 +461,7 @@ function EstadoCuentaTab() {
                       <td className="p-3.5 text-gray-600 text-xs">{formatDate(a.fechaPago)}</td>
                       <td className="p-3.5 text-center">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoColor[a.estado] ?? 'bg-gray-50 text-gray-600 border border-gray-200'}`}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoColorEstadoCuenta[a.estado] ?? 'bg-gray-50 text-gray-600 border border-gray-200'}`}
                         >
                           {a.estado}
                         </span>
@@ -532,7 +536,7 @@ function EstadoCuentaTab() {
                       </td>
                       <td className="p-3.5 text-center">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoColor[c.estado] ?? 'bg-gray-50 text-gray-600 border border-gray-200'}`}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoColorCartera[c.estado] ?? 'bg-gray-50 text-gray-600 border border-gray-200'}`}
                         >
                           {c.estado}
                         </span>
@@ -560,8 +564,8 @@ function EstadoCuentaTab() {
 function FlujoCajaTab() {
   const today = new Date();
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-  const [desde, setDesde] = useState(firstDay.toISOString().slice(0, 10));
-  const [hasta, setHasta] = useState(today.toISOString().slice(0, 10));
+  const [desde, setDesde] = useState(() => firstDay.toISOString().slice(0, 10));
+  const [hasta, setHasta] = useState(() => today.toISOString().slice(0, 10));
   const { data, isLoading, error } = useQuery({
     queryKey: ['reporte-flujo-caja', desde, hasta],
     queryFn: () => apiGetReporteFlujoCaja(desde, hasta),
@@ -572,8 +576,11 @@ function FlujoCajaTab() {
     <AnimatedFadeIn>
       <div className="flex flex-wrap items-end gap-4 mb-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Desde</label>
+          <label htmlFor="flujo-desde" className="block text-xs font-medium text-gray-600 mb-1">
+            Desde
+          </label>
           <input
+            id="flujo-desde"
             type="date"
             value={desde}
             onChange={(e) => setDesde(e.target.value)}
@@ -581,8 +588,11 @@ function FlujoCajaTab() {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Hasta</label>
+          <label htmlFor="flujo-hasta" className="block text-xs font-medium text-gray-600 mb-1">
+            Hasta
+          </label>
           <input
+            id="flujo-hasta"
             type="date"
             value={hasta}
             onChange={(e) => setHasta(e.target.value)}

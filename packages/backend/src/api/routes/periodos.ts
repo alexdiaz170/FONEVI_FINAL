@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { PrismaPeriodoRepository } from '../../infrastructure/persistence/PrismaPeriodoRepository.js';
-import { createPeriodoController } from '../controllers/periodoController.js';
+import { createPeriodoController, crearPeriodoSchema } from '../controllers/periodoController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
 
 const router = Router();
 const periodoRepo = new PrismaPeriodoRepository();
@@ -13,6 +14,7 @@ router.post(
   '/',
   authenticate,
   authorize('admin', 'superadmin'),
+  validate(crearPeriodoSchema),
   controller.create.bind(controller),
 );
 router.post(

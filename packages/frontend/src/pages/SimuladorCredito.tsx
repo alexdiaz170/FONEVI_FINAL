@@ -220,8 +220,14 @@ function SimuladorFormAdmin({
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-navy-700 mb-1">Monto solicitado</label>
+            <label
+              htmlFor="monto-solicitado"
+              className="block text-sm font-medium text-navy-700 mb-1"
+            >
+              Monto solicitado
+            </label>
             <input
+              id="monto-solicitado"
               type="text"
               inputMode="numeric"
               value={montoStr}
@@ -230,6 +236,7 @@ function SimuladorFormAdmin({
             />
             <input
               type="range"
+              aria-label="Seleccionar monto"
               value={monto}
               onChange={(e) => setMontoStr(String(Number(e.target.value)))}
               min={0}
@@ -239,8 +246,11 @@ function SimuladorFormAdmin({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Plazo (meses)</label>
+            <label htmlFor="plazo-meses" className="block text-sm font-medium text-navy-700 mb-1">
+              Plazo (meses)
+            </label>
             <select
+              id="plazo-meses"
               value={cuotas}
               onChange={(e) => setCuotas(Number(e.target.value))}
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500"
@@ -253,8 +263,13 @@ function SimuladorFormAdmin({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Tasa mensual</label>
-            <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-navy-600">
+            <label htmlFor="tasa-mensual" className="block text-sm font-medium text-navy-700 mb-1">
+              Tasa mensual
+            </label>
+            <div
+              id="tasa-mensual"
+              className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-navy-600"
+            >
               {tasaInteres}%
             </div>
           </div>
@@ -381,7 +396,7 @@ function SimuladorForm({
       }, 300);
       return () => clearTimeout(timer);
     } else setResultado(null);
-  }, [monto, cuotas, tasaInteres]);
+  }, [monto, cuotas, tasaInteres, capacidadDisponible]);
 
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100">
@@ -413,8 +428,14 @@ function SimuladorForm({
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-navy-700 mb-1">Monto solicitado</label>
+            <label
+              htmlFor="monto-solicitado-2"
+              className="block text-sm font-medium text-navy-700 mb-1"
+            >
+              Monto solicitado
+            </label>
             <input
+              id="monto-solicitado-2"
               type="text"
               inputMode="numeric"
               value={montoStr}
@@ -423,6 +444,7 @@ function SimuladorForm({
             />
             <input
               type="range"
+              aria-label="Seleccionar monto"
               value={monto}
               onChange={(e) => setMontoStr(String(Number(e.target.value)))}
               min={0}
@@ -435,8 +457,11 @@ function SimuladorForm({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Plazo (meses)</label>
+            <label htmlFor="plazo-meses-2" className="block text-sm font-medium text-navy-700 mb-1">
+              Plazo (meses)
+            </label>
             <select
+              id="plazo-meses-2"
               value={cuotas}
               onChange={(e) => setCuotas(Number(e.target.value))}
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500"
@@ -449,8 +474,16 @@ function SimuladorForm({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Tasa mensual</label>
-            <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-navy-600">
+            <label
+              htmlFor="tasa-mensual-2"
+              className="block text-sm font-medium text-navy-700 mb-1"
+            >
+              Tasa mensual
+            </label>
+            <div
+              id="tasa-mensual-2"
+              className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-navy-600"
+            >
               {tasaInteres}%
             </div>
           </div>

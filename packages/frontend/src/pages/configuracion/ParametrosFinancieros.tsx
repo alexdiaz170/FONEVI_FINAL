@@ -72,7 +72,7 @@ export function ParametrosFinancieros() {
                         value={valorEdit}
                         onChange={(e) => setValorEdit(e.target.value)}
                         className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-sm font-mono outline-none focus:ring-2 focus:ring-slate-500/30 focus:border-slate-500"
-                        autoFocus
+                        aria-label={meta.label}
                       />
                       <AnimatedButton
                         onClick={() =>
@@ -84,6 +84,7 @@ export function ParametrosFinancieros() {
                         <Save size={16} />
                       </AnimatedButton>
                       <button
+                        type="button"
                         onClick={() => setEditando(null)}
                         className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"
                       >
@@ -96,6 +97,7 @@ export function ParametrosFinancieros() {
                         {displayValue}
                       </span>
                       <button
+                        type="button"
                         onClick={() => {
                           setEditando(cfg.clave);
                           setValorEdit(cfg.valor);

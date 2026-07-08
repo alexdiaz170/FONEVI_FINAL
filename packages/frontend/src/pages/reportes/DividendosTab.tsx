@@ -116,8 +116,14 @@ export function DividendosTab() {
             <h3 className="text-sm font-semibold text-navy-800 mb-3">Crear Dividendo</h3>
             <div className="flex items-end gap-4">
               <div>
-                <label className="block text-xs font-medium text-navy-700 mb-1">Período</label>
+                <label
+                  htmlFor="dividendo-periodo"
+                  className="block text-xs font-medium text-navy-700 mb-1"
+                >
+                  Período
+                </label>
                 <input
+                  id="dividendo-periodo"
                   type="text"
                   value={periodo}
                   onChange={(e) => setPeriodo(e.target.value)}
@@ -126,8 +132,14 @@ export function DividendosTab() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-navy-700 mb-1">Monto Total</label>
+                <label
+                  htmlFor="dividendo-monto"
+                  className="block text-xs font-medium text-navy-700 mb-1"
+                >
+                  Monto Total
+                </label>
                 <input
+                  id="dividendo-monto"
                   type="number"
                   value={montoTotal}
                   onChange={(e) => setMontoTotal(e.target.value)}

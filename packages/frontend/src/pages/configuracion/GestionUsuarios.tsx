@@ -110,16 +110,28 @@ export function GestionUsuarios() {
           <h3 className="text-sm font-semibold text-navy-800 mb-3">Crear Usuario</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-navy-700 mb-1">Nombre *</label>
+              <label
+                htmlFor="usuario-nombre"
+                className="block text-xs font-medium text-navy-700 mb-1"
+              >
+                Nombre *
+              </label>
               <input
+                id="usuario-nombre"
                 value={form.nombre}
                 onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-500/30 focus:border-slate-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-navy-700 mb-1">Email *</label>
+              <label
+                htmlFor="usuario-email"
+                className="block text-xs font-medium text-navy-700 mb-1"
+              >
+                Email *
+              </label>
               <input
+                id="usuario-email"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
@@ -127,8 +139,14 @@ export function GestionUsuarios() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-navy-700 mb-1">Contraseña *</label>
+              <label
+                htmlFor="usuario-password"
+                className="block text-xs font-medium text-navy-700 mb-1"
+              >
+                Contraseña *
+              </label>
               <input
+                id="usuario-password"
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
@@ -136,8 +154,11 @@ export function GestionUsuarios() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-navy-700 mb-1">Rol *</label>
+              <label htmlFor="usuario-rol" className="block text-xs font-medium text-navy-700 mb-1">
+                Rol *
+              </label>
               <select
+                id="usuario-rol"
                 value={form.rol}
                 onChange={(e) => setForm((p) => ({ ...p, rol: e.target.value }))}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-500/30 focus:border-slate-500"
@@ -205,6 +226,7 @@ export function GestionUsuarios() {
                         value={editForm.nombre}
                         onChange={(e) => setEditForm((p) => ({ ...p, nombre: e.target.value }))}
                         className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-slate-500/30"
+                        aria-label="Nombre"
                       />
                     </td>
                     <td className="p-3.5">
@@ -212,6 +234,7 @@ export function GestionUsuarios() {
                         value={editForm.email}
                         onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
                         className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-slate-500/30"
+                        aria-label="Email"
                       />
                     </td>
                     <td className="p-3.5 text-center">
@@ -240,6 +263,7 @@ export function GestionUsuarios() {
                     <td className="p-3.5 text-center">
                       <div className="flex justify-center gap-1">
                         <button
+                          type="button"
                           onClick={() => actualizarMutation.mutate()}
                           disabled={actualizarMutation.isPending}
                           className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"
@@ -248,6 +272,7 @@ export function GestionUsuarios() {
                           <Check size={16} />
                         </button>
                         <button
+                          type="button"
                           onClick={() => setEditandoId(null)}
                           className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"
                           title="Cancelar"
@@ -278,6 +303,7 @@ export function GestionUsuarios() {
                     <td className="p-3.5 text-center">
                       <div className="flex justify-center gap-1">
                         <button
+                          type="button"
                           onClick={() => iniciarEdicion(u)}
                           className="p-1.5 text-slate-600 hover:bg-slate-50 rounded-lg"
                           title="Editar"
@@ -285,6 +311,7 @@ export function GestionUsuarios() {
                           <Pencil size={16} />
                         </button>
                         <button
+                          type="button"
                           onClick={() => {
                             const pwd = prompt('Nueva contraseña para ' + u.nombre + ':');
                             if (pwd && pwd.length >= 6)
@@ -298,6 +325,7 @@ export function GestionUsuarios() {
                           <Key size={16} />
                         </button>
                         <button
+                          type="button"
                           onClick={() => {
                             if (confirm(`¿Eliminar usuario ${u.nombre}?`))
                               eliminarMutation.mutate(u.id);

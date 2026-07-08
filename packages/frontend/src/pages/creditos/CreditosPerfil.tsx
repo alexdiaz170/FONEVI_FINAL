@@ -39,6 +39,31 @@ import {
   AnimatedButton,
 } from '../../components/ui';
 
+const estadoBadge: Record<string, string> = {
+  pendiente: 'bg-amber-50 text-amber-700 border border-amber-200',
+  activo: 'bg-blue-50 text-blue-700 border border-blue-200',
+  pagado: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  cancelado: 'bg-red-50 text-red-700 border border-red-200',
+};
+
+const estadoPagado: Record<string, string> = {
+  pagado: 'text-emerald-600 bg-emerald-50',
+  pendiente: 'text-amber-600 bg-amber-50 border border-amber-200',
+  vencido: 'text-red-600 bg-red-50 border border-red-200',
+};
+
+const exportColumnsAmort: ExportColumn[] = [
+  { header: 'N° Cuota', key: 'numeroCuota' },
+  { header: 'Fecha Vencimiento', key: 'fechaVencimiento' },
+  { header: 'Saldo Inicial', key: 'saldoInicial' },
+  { header: 'Interés', key: 'interes' },
+  { header: 'Cuota', key: 'cuota' },
+  { header: 'Amortización', key: 'amortizacion' },
+  { header: 'Saldo Final', key: 'saldoFinal' },
+  { header: 'Estado', key: 'estado' },
+  { header: 'Fecha Pago', key: 'fechaPago' },
+];
+
 export default function CreditosPerfil() {
   const { id } = useParams<{ id: string }>();
   const usuario = useAuthStore((s) => s.usuario);
@@ -83,31 +108,6 @@ export default function CreditosPerfil() {
 
   const amortVisible = amortizacion?.data ?? [];
   const amortDisplay = showAllAmort ? amortVisible : amortVisible.slice(0, 10);
-
-  const estadoBadge: Record<string, string> = {
-    pendiente: 'bg-amber-50 text-amber-700 border border-amber-200',
-    activo: 'bg-blue-50 text-blue-700 border border-blue-200',
-    pagado: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-    cancelado: 'bg-red-50 text-red-700 border border-red-200',
-  };
-
-  const estadoPagado: Record<string, string> = {
-    pagado: 'text-emerald-600 bg-emerald-50',
-    pendiente: 'text-amber-600 bg-amber-50 border border-amber-200',
-    vencido: 'text-red-600 bg-red-50 border border-red-200',
-  };
-
-  const exportColumnsAmort: ExportColumn[] = [
-    { header: 'N° Cuota', key: 'numeroCuota' },
-    { header: 'Fecha Vencimiento', key: 'fechaVencimiento' },
-    { header: 'Saldo Inicial', key: 'saldoInicial' },
-    { header: 'Interés', key: 'interes' },
-    { header: 'Cuota', key: 'cuota' },
-    { header: 'Amortización', key: 'amortizacion' },
-    { header: 'Saldo Final', key: 'saldoFinal' },
-    { header: 'Estado', key: 'estado' },
-    { header: 'Fecha Pago', key: 'fechaPago' },
-  ];
 
   if (isLoading) {
     return (

@@ -4,6 +4,8 @@ import { PrismaAporteRepository } from '../../infrastructure/persistence/PrismaA
 import { PrismaUsuarioRepository } from '../../infrastructure/persistence/PrismaUsuarioRepository.js';
 import { createSocioController } from '../controllers/socioController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { crearSocioSchema, actualizarSocioSchema } from '../../application/dto/socio.dto.js';
 
 const router = Router();
 const socioRepo = new PrismaSocioRepository();
@@ -28,12 +30,14 @@ router.post(
   '/',
   authenticate,
   authorize('admin', 'superadmin'),
+  validate(crearSocioSchema),
   socioController.create.bind(socioController),
 );
 router.put(
   '/:id',
   authenticate,
   authorize('admin', 'superadmin'),
+  validate(actualizarSocioSchema),
   socioController.update.bind(socioController),
 );
 router.delete(

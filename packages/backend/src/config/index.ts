@@ -24,4 +24,11 @@ export const config = {
   isProd: process.env['NODE_ENV'] === 'production',
   whatsappApiUrl: process.env['WHATSAPP_API_URL'] || '',
   whatsappToken: process.env['WHATSAPP_TOKEN'] || '',
+  backupCronSchedule: process.env['BACKUP_CRON_SCHEDULE'] || '0 3 * * *',
+  backupDir: process.env['BACKUP_DIR'] || resolve(__dirname, '..', '..', '..', '..', 'backups'),
+  backupRetentionDays: parseInt(process.env['BACKUP_RETENTION_DAYS'] || '30', 10),
+  backupUploadUrl: process.env['BACKUP_UPLOAD_URL'] || '',
+  backupUploadToken: process.env['BACKUP_UPLOAD_TOKEN'] || '',
+  redisUrl: process.env['REDIS_URL'] || '',
+  redisKeyPrefix: process.env['REDIS_KEY_PREFIX'] || 'fonevi:',
 };

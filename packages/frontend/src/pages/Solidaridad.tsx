@@ -117,6 +117,7 @@ export default function SolidaridadPage() {
           <div className="flex gap-1.5">
             {(['todos', 'ingreso', 'egreso'] as const).map((t) => (
               <button
+                type="button"
                 key={t}
                 onClick={() => {
                   setTipoFilter(t);
@@ -141,7 +142,7 @@ export default function SolidaridadPage() {
               setPage(1);
             }}
             className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-pink-500/30"
-            title="Desde"
+            aria-label="Desde"
           />
           <span className="text-gray-400 text-sm">a</span>
           <input
@@ -152,7 +153,7 @@ export default function SolidaridadPage() {
               setPage(1);
             }}
             className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-pink-500/30"
-            title="Hasta"
+            aria-label="Hasta"
           />
           <div className="ml-auto flex gap-2">
             {data && data.data.length > 0 && (
@@ -340,8 +341,11 @@ function SolidaridadForm({ onSuccess }: { onSuccess: () => void }) {
       className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-4 mb-4 grid grid-cols-1 md:grid-cols-2 gap-3"
     >
       <div>
-        <label className="block text-xs font-medium text-navy-700 mb-1">Tipo</label>
+        <label htmlFor="solidaridad-tipo" className="block text-xs font-medium text-navy-700 mb-1">
+          Tipo
+        </label>
         <select
+          id="solidaridad-tipo"
           value={form.tipo}
           onChange={(e) =>
             setForm((p) => ({
@@ -357,8 +361,11 @@ function SolidaridadForm({ onSuccess }: { onSuccess: () => void }) {
         </select>
       </div>
       <div>
-        <label className="block text-xs font-medium text-navy-700 mb-1">Monto *</label>
+        <label htmlFor="solidaridad-monto" className="block text-xs font-medium text-navy-700 mb-1">
+          Monto *
+        </label>
         <input
+          id="solidaridad-monto"
           type="text"
           inputMode="numeric"
           value={form.monto}
@@ -368,8 +375,14 @@ function SolidaridadForm({ onSuccess }: { onSuccess: () => void }) {
         />
       </div>
       <div className="md:col-span-2">
-        <label className="block text-xs font-medium text-navy-700 mb-1">Descripción *</label>
+        <label
+          htmlFor="solidaridad-descripcion"
+          className="block text-xs font-medium text-navy-700 mb-1"
+        >
+          Descripción *
+        </label>
         <select
+          id="solidaridad-descripcion"
           value={form.descripcion}
           onChange={(e) => setForm((p) => ({ ...p, descripcion: e.target.value }))}
           className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500"
@@ -383,8 +396,11 @@ function SolidaridadForm({ onSuccess }: { onSuccess: () => void }) {
         </select>
       </div>
       <div>
-        <label className="block text-xs font-medium text-navy-700 mb-1">Fecha</label>
+        <label htmlFor="solidaridad-fecha" className="block text-xs font-medium text-navy-700 mb-1">
+          Fecha
+        </label>
         <input
+          id="solidaridad-fecha"
           type="date"
           value={form.fecha}
           onChange={(e) => setForm((p) => ({ ...p, fecha: e.target.value }))}
@@ -392,8 +408,14 @@ function SolidaridadForm({ onSuccess }: { onSuccess: () => void }) {
         />
       </div>
       <div>
-        <label className="block text-xs font-medium text-navy-700 mb-1">Beneficiario *</label>
+        <label
+          htmlFor="solidaridad-beneficiario"
+          className="block text-xs font-medium text-navy-700 mb-1"
+        >
+          Beneficiario *
+        </label>
         <select
+          id="solidaridad-beneficiario"
           value={form.beneficiario}
           onChange={(e) => setForm((p) => ({ ...p, beneficiario: e.target.value }))}
           className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500"

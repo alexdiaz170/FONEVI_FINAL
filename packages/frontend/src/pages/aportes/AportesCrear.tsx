@@ -180,10 +180,11 @@ export default function AportesCrear() {
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="socio" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Socio <span className="text-red-400">*</span>
                 </label>
                 <select
+                  id="socio"
                   name="socioId"
                   value={form.socioId}
                   onChange={handleChange}
@@ -198,10 +199,11 @@ export default function AportesCrear() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="periodo" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Periodo <span className="text-red-400">*</span>
                 </label>
                 <select
+                  id="periodo"
                   name="periodoId"
                   value={form.periodoId}
                   onChange={handleChange}
@@ -216,7 +218,7 @@ export default function AportesCrear() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="monto" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Monto <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
@@ -224,6 +226,8 @@ export default function AportesCrear() {
                     $
                   </span>
                   <input
+                    id="monto"
+                    aria-label="Monto"
                     name="monto"
                     type="text"
                     inputMode="numeric"
@@ -235,10 +239,14 @@ export default function AportesCrear() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label
+                  htmlFor="tipo-operacion"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
                   Tipo de Operación <span className="text-red-400">*</span>
                 </label>
                 <select
+                  id="tipo-operacion"
                   name="tipoOperacion"
                   value={form.tipoOperacion}
                   onChange={handleChange}
@@ -252,8 +260,11 @@ export default function AportesCrear() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Estado</label>
+                <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Estado
+                </label>
                 <select
+                  id="estado"
                   name="estado"
                   value={form.estado}
                   onChange={handleChange}
@@ -265,10 +276,15 @@ export default function AportesCrear() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label
+                  htmlFor="fecha-pago"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
                   Fecha de Pago
                 </label>
                 <input
+                  id="fecha-pago"
+                  aria-label="Fecha de Pago"
                   name="fechaPago"
                   type="date"
                   value={form.fechaPago}
@@ -277,8 +293,11 @@ export default function AportesCrear() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Método</label>
+                <label htmlFor="metodo" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Método
+                </label>
                 <select
+                  id="metodo"
                   name="metodo"
                   value={form.metodo}
                   onChange={handleChange}
@@ -292,8 +311,12 @@ export default function AportesCrear() {
                 </select>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Notas</label>
+                <label htmlFor="notas" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Notas
+                </label>
                 <textarea
+                  id="notas"
+                  aria-label="Notas"
                   name="notas"
                   rows={3}
                   value={form.notas}

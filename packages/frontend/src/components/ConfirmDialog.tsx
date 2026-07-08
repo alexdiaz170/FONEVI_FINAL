@@ -22,22 +22,29 @@ export default function ConfirmDialog({
   loading = false,
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
 
   useEffect(() => {
     if (open) {
       const handleKey = (e: KeyboardEvent) => {
-        if (e.key === 'Escape' && !loading) onCancel();
+        if (e.key === 'Escape' && !loading) onCancelRef.current();
       };
       document.addEventListener('keydown', handleKey);
       return () => document.removeEventListener('keydown', handleKey);
     }
-  }, [open, onCancel, loading]);
+  }, [open, loading]);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/40" onClick={() => !loading && onCancel()} />
+      <button
+        type="button"
+        aria-label="Cerrar"
+        className="fixed inset-0 bg-black/40"
+        onClick={() => !loading && onCancel()}
+      />
       <div
         ref={dialogRef}
         className="relative bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 p-6"
@@ -46,6 +53,7 @@ export default function ConfirmDialog({
         <p className="text-sm text-gray-600 mb-6">{message}</p>
         <div className="flex justify-end gap-3">
           <button
+            type="button"
             onClick={onCancel}
             disabled={loading}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
@@ -53,6 +61,7 @@ export default function ConfirmDialog({
             {cancelLabel}
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             disabled={loading}
             className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"

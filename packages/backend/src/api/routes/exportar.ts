@@ -2,6 +2,10 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { ExportService } from '../../application/services/ExportService.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { apiResponse } from '../response.js';
+import { initQueue, enqueue, shutdownQueues as _ } from '../../infrastructure/queue/JobQueue.js';
+import { generateReportBuffer, getExportsDir } from '../../infrastructure/queue/reportWorker.js';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 
 const router = Router();
 const exportService = new ExportService();
@@ -39,6 +43,17 @@ const exporters: Record<string, (req: Request) => Promise<ExportResult>> = {
   },
 };
 
+function getExportPayload(req: Request) {
+  return {
+    tipo: String(req.params.tipo),
+    formato: String(req.params.formato) as 'xlsx' | 'pdf',
+    socioId: req.query.socioId as string | undefined,
+    creditoId: req.query.creditoId as string | undefined,
+    desde: req.query.desde as string | undefined,
+    hasta: req.query.hasta as string | undefined,
+  };
+}
+
 router.get(
   '/:tipo/:formato',
   authenticate,
@@ -58,6 +73,16 @@ router.get(
         return;
       }
 
+      const useQueue = req.query.async === 'true';
+      if (useQueue) {
+        const queue = await initQueue('reportes');
+        if (queue) {
+          const jobId = await enqueue(queue, getExportPayload(req));
+          apiResponse.success(res, { encolado: true, jobId });
+          return;
+        }
+      }
+
       const { data, columns, title } = await handler(req);
 
       if (formato === 'xlsx') {
@@ -74,6 +99,27 @@ router.get(
         res.set('Content-Disposition', `attachment; filename="${tipo}.pdf"`);
         res.send(buffer);
       }
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+router.get(
+  '/descargar/:filename',
+  authenticate,
+  authorize('admin', 'superadmin'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const filename = String(req.params.filename);
+      const filePath = join(getExportsDir(), filename);
+      const buffer = await readFile(filePath);
+      const ext = filename.endsWith('.pdf')
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      res.set('Content-Type', ext);
+      res.set('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(buffer);
     } catch (error) {
       next(error);
     }

@@ -7,6 +7,12 @@ import { logger } from './infrastructure/logging/logger.js';
 import { httpLogger } from './api/middleware/httpLogging.js';
 import { securityHeaders, corsMiddleware, rateLimiter } from './api/middleware/security.js';
 import { errorHandler } from './api/middleware/errorHandler.js';
+import { disconnectPrisma } from './infrastructure/persistence/prismaClient.js';
+import { disconnectCache } from './infrastructure/cache/CacheFactory.js';
+import { startBackupScheduler } from './infrastructure/backup/BackupScheduler.js';
+import { initQueue, initWorker, shutdownQueues } from './infrastructure/queue/JobQueue.js';
+import { createWhatsAppProcessor } from './infrastructure/queue/whatsappWorker.js';
+import { PrismaWaLogRepository } from './infrastructure/persistence/PrismaWaLogRepository.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 import healthRouter from './api/routes/health.js';
@@ -29,6 +35,7 @@ import whatsappRouter from './api/routes/whatsapp.js';
 import usuariosRouter from './api/routes/usuarios.js';
 import backupRouter from './api/routes/backup.js';
 import exportarRouter from './api/routes/exportar.js';
+import docsRouter from './api/routes/docs.js';
 
 const app = express();
 
@@ -42,6 +49,7 @@ app.use(httpLogger);
 app.use(express.json({ limit: '1mb' }));
 
 // ─── Rutas ─────────────────────────────────────────────────
+app.use('/api-docs', docsRouter);
 app.use('/health', healthRouter);
 app.use('/auth', authRouter);
 app.use('/api/socios', sociosRouter);
@@ -67,11 +75,8 @@ app.use('/api/exportar', exportarRouter);
 const publicDir = resolve(__dirname, '..', 'public');
 if (existsSync(publicDir)) {
   logger.info(`Sirviendo frontend desde ${publicDir}`);
-  // Cache static assets for a week
   app.use('/assets', express.static(resolve(publicDir, 'assets'), { maxAge: '7d' }));
-  // Root static files (favicon, icons, etc.)
   app.use(express.static(publicDir));
-  // SPA catch-all — any unmatched GET route returns index.html
   app.use((req, res, next) => {
     if (req.method !== 'GET') return next();
     if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path === '/health')
@@ -85,13 +90,52 @@ if (existsSync(publicDir)) {
 // ─── Error handler global ──────────────────────────────────
 app.use(errorHandler);
 
+// ─── Graceful Shutdown ──────────────────────────────────────
+let httpServer: ReturnType<typeof app.listen> | null = null;
+
+async function shutdown(signal: string) {
+  logger.info(`Señal ${signal} recibida — iniciando apagado gradual...`);
+
+  if (httpServer) {
+    await new Promise<void>((resolve) => {
+      httpServer!.close((err) => {
+        if (err) {
+          logger.error('Error al cerrar servidor HTTP', { error: String(err) });
+        } else {
+          logger.info('Servidor HTTP cerrado');
+        }
+        resolve();
+      });
+    });
+  }
+
+  await shutdownQueues();
+  await disconnectPrisma();
+  await disconnectCache();
+  logger.info('Apagado completado');
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
 // ─── Inicio del servidor ───────────────────────────────────
 export async function startServer(port = config.port) {
   return new Promise<{ app: express.Application; server: ReturnType<typeof app.listen> }>(
-    (resolve, reject) => {
+    async (resolve, reject) => {
       try {
+        // Inicializar colas y workers
+        const waLogRepo = new PrismaWaLogRepository();
+        const processor = createWhatsAppProcessor(waLogRepo);
+        await initWorker(
+          'whatsapp',
+          processor as unknown as (payload: Record<string, unknown>) => Promise<void>,
+        );
+
         const server = app.listen(port, () => {
           logger.info(`Servidor iniciado en puerto ${port} (${config.env})`);
+          httpServer = server;
+          startBackupScheduler();
           resolve({ app, server });
         });
         server.on('error', reject);
@@ -102,7 +146,6 @@ export async function startServer(port = config.port) {
   );
 }
 
-// Solo arranca el server si es el entry point directo
 const isMainModule =
   process.argv[1]?.includes('index') ||
   process.argv[1]?.includes('dist/index') ||

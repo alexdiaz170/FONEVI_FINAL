@@ -14,7 +14,9 @@ export function AppLayout() {
       <Sidebar mobileOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
 
       {mobileSidebarOpen && (
-        <div
+        <button
+          type="button"
+          aria-label="Cerrar menú"
           className="fixed inset-0 bg-black/50 z-20 md:hidden"
           onClick={() => setMobileSidebarOpen(false)}
         />

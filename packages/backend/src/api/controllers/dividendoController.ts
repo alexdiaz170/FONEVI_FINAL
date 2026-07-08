@@ -4,11 +4,6 @@ import { ISocioRepository } from '../../domain/repositories/ISocioRepository.js'
 import { CrearDividendoUseCase } from '../../application/use-cases/dividendos/CrearDividendoUseCase.js';
 import { DistribuirDividendoUseCase } from '../../application/use-cases/dividendos/DistribuirDividendoUseCase.js';
 import { apiResponse } from '../response.js';
-import {
-  crearDividendoSchema,
-  distribuirDividendoSchema,
-} from '../../application/dto/sprint6.dto.js';
-import { ValidationError } from '../../application/errors.js';
 
 export function createDividendoController(
   dividendoRepo: IDividendoRepository,
@@ -45,10 +40,7 @@ export function createDividendoController(
 
     async create(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = crearDividendoSchema.safeParse(req.body);
-        if (!parsed.success)
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        const dividendo = await crearUseCase.execute(parsed.data);
+        const dividendo = await crearUseCase.execute(req.body);
         apiResponse.created(res, dividendo);
       } catch (error) {
         next(error);
@@ -58,10 +50,7 @@ export function createDividendoController(
     async distribuir(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
         const id = String(req.params.id ?? '');
-        const parsed = distribuirDividendoSchema.safeParse(req.body);
-        if (!parsed.success)
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        const result = await distribuirUseCase.execute(id, parsed.data.socioIds);
+        const result = await distribuirUseCase.execute(id, req.body.socioIds);
         apiResponse.success(res, result);
       } catch (error) {
         next(error);

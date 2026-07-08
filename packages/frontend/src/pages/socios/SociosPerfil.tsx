@@ -256,16 +256,21 @@ export default function SociosPerfil() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 {['nombre', 'email', 'telefono', 'cargo', 'sede'].map((field) => (
                   <div key={field}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5 capitalize">
+                    <label
+                      htmlFor={`editar-${field}`}
+                      className="block text-sm font-medium text-gray-700 mb-1.5 capitalize"
+                    >
                       {field === 'nombre' ? 'Nombre completo' : field}
                     </label>
                     <input
+                      id={`editar-${field}`}
                       name={field}
                       value={form[field] ?? ''}
                       onChange={(e) =>
                         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
                       }
                       className="w-full px-3.5 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all"
+                      aria-label={field === 'nombre' ? 'Nombre completo' : field}
                     />
                   </div>
                 ))}

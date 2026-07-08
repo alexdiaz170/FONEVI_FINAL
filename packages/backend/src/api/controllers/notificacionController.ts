@@ -5,11 +5,7 @@ import { EliminarNotificacionUseCase } from '../../application/use-cases/notific
 import { ListarNotificacionesUseCase } from '../../application/use-cases/notificaciones/ListarNotificacionesUseCase.js';
 import { MarcarNotificacionLeidaUseCase } from '../../application/use-cases/notificaciones/MarcarNotificacionLeidaUseCase.js';
 import { apiResponse } from '../response.js';
-import {
-  crearNotificacionSchema,
-  listarNotificacionesSchema,
-} from '../../application/dto/notificacion-solidaridad.dto.js';
-import { ValidationError } from '../../application/errors.js';
+import { listarNotificacionesSchema } from '../../application/dto/notificacion-solidaridad.dto.js';
 
 export function createNotificacionController(notificacionRepo: INotificacionRepository) {
   const crearUseCase = new CrearNotificacionUseCase(notificacionRepo);
@@ -60,10 +56,7 @@ export function createNotificacionController(notificacionRepo: INotificacionRepo
 
     async create(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = crearNotificacionSchema.safeParse(req.body);
-        if (!parsed.success)
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        const notificacion = await crearUseCase.execute(parsed.data);
+        const notificacion = await crearUseCase.execute(req.body);
         apiResponse.created(res, mapNotificacion(notificacion));
       } catch (error) {
         next(error);

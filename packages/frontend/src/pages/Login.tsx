@@ -18,6 +18,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [anio] = useState(() => new Date().getFullYear());
 
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
@@ -176,7 +177,7 @@ export function LoginPage() {
 
         <AnimatedFadeIn delay={0.5}>
           <p className="text-center text-navy-300 text-xs mt-6">
-            &copy; {new Date().getFullYear()} FONEVI &mdash; Fondo de Empleados Docentes
+            &copy; {anio} FONEVI &mdash; Fondo de Empleados Docentes
           </p>
         </AnimatedFadeIn>
       </AnimatedContainer>

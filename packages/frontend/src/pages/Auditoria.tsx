@@ -90,8 +90,11 @@ export default function AuditoriaPage() {
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Tabla</label>
+            <label htmlFor="filtro-tabla" className="block text-xs font-medium text-gray-600 mb-1">
+              Tabla
+            </label>
             <select
+              id="filtro-tabla"
               value={filtroTabla}
               onChange={(e) => {
                 setFiltroTabla(e.target.value);
@@ -107,13 +110,16 @@ export default function AuditoriaPage() {
             </select>
           </div>
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Buscar</label>
+            <label htmlFor="buscar" className="block text-xs font-medium text-gray-600 mb-1">
+              Buscar
+            </label>
             <div className="relative">
               <Search
                 size={16}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
               />
               <input
+                id="buscar"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 placeholder="Usuario, acción, detalle..."
@@ -123,6 +129,7 @@ export default function AuditoriaPage() {
           </div>
           {busqueda && (
             <button
+              type="button"
               onClick={() => setBusqueda('')}
               className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-xl"
             >
@@ -216,28 +223,40 @@ export default function AuditoriaPage() {
       {data && data.totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           <button
+            type="button"
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page <= 1}
             className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
           >
             Anterior
           </button>
-          {Array.from({ length: data.totalPages }, (_, i) => i + 1)
-            .filter((p) => p === 1 || p === data.totalPages || Math.abs(p - page) <= 2)
-            .map((p, idx, arr) => (
-              <span key={p} className="flex items-center gap-1">
-                {idx > 0 && arr[idx - 1] !== p - 1 && (
-                  <span className="text-gray-400 px-1">...</span>
-                )}
-                <button
-                  onClick={() => setPage(p)}
-                  className={`px-3 py-1.5 text-sm border border-gray-200 rounded-lg ${p === page ? 'bg-gradient-to-r from-slate-600 to-slate-500 text-white' : 'hover:bg-gray-50'}`}
-                >
-                  {p}
-                </button>
-              </span>
-            ))}
+          {
+            Array.from({ length: data.totalPages }, (_, i) => i + 1).reduce(
+              (acc, p) => {
+                if (p === 1 || p === data.totalPages || Math.abs(p - page) <= 2) {
+                  acc.elements.push(
+                    <span key={p} className="flex items-center gap-1">
+                      {acc.lastPage !== undefined && acc.lastPage !== p - 1 && (
+                        <span className="text-gray-400 px-1">...</span>
+                      )}
+                      <button
+                        onClick={() => setPage(p)}
+                        type="button"
+                        className={`px-3 py-1.5 text-sm border border-gray-200 rounded-lg ${p === page ? 'bg-gradient-to-r from-slate-600 to-slate-500 text-white' : 'hover:bg-gray-50'}`}
+                      >
+                        {p}
+                      </button>
+                    </span>,
+                  );
+                  acc.lastPage = p;
+                }
+                return acc;
+              },
+              { elements: [] as React.ReactNode[], lastPage: undefined as number | undefined },
+            ).elements
+          }
           <button
+            type="button"
             onClick={() => setPage(Math.min(data.totalPages, page + 1))}
             disabled={page >= data.totalPages}
             className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"

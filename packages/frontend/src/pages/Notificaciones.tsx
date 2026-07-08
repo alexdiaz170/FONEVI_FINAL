@@ -105,6 +105,7 @@ export default function NotificacionesPage() {
       <div className="flex gap-2 mb-4">
         {(['noleidas', 'todas', 'leidas'] as const).map((f) => (
           <button
+            type="button"
             key={f}
             onClick={() => {
               setFiltro(f);
@@ -162,6 +163,7 @@ export default function NotificacionesPage() {
                   <span className="text-xs text-gray-400">{formatDate(n.createdAt)}</span>
                   {!n.leida && (
                     <button
+                      type="button"
                       onClick={() => marcarMutation.mutate(n.id)}
                       className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                       title="Marcar como leída"
@@ -170,6 +172,7 @@ export default function NotificacionesPage() {
                     </button>
                   )}
                   <button
+                    type="button"
                     onClick={() => {
                       if (confirm('¿Eliminar esta notificación?')) eliminarMutation.mutate(n.id);
                     }}
@@ -233,6 +236,7 @@ export default function NotificacionesPage() {
                 <h3 className="text-lg font-bold text-navy-800">Nueva Notificación</h3>
               </div>
               <button
+                type="button"
                 onClick={() => setShowCrear(false)}
                 className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-all"
               >
@@ -241,8 +245,14 @@ export default function NotificacionesPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-navy-700 mb-1">Tipo</label>
+                <label
+                  htmlFor="notif-tipo"
+                  className="block text-sm font-medium text-navy-700 mb-1"
+                >
+                  Tipo
+                </label>
                 <select
+                  id="notif-tipo"
                   value={form.tipo}
                   onChange={(e) => setForm((p) => ({ ...p, tipo: e.target.value }))}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
@@ -254,16 +264,28 @@ export default function NotificacionesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-navy-700 mb-1">Título *</label>
+                <label
+                  htmlFor="notif-titulo"
+                  className="block text-sm font-medium text-navy-700 mb-1"
+                >
+                  Título *
+                </label>
                 <input
+                  id="notif-titulo"
                   value={form.titulo}
                   onChange={(e) => setForm((p) => ({ ...p, titulo: e.target.value }))}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-navy-700 mb-1">Mensaje *</label>
+                <label
+                  htmlFor="notif-mensaje"
+                  className="block text-sm font-medium text-navy-700 mb-1"
+                >
+                  Mensaje *
+                </label>
                 <textarea
+                  id="notif-mensaje"
                   rows={3}
                   value={form.mensaje}
                   onChange={(e) => setForm((p) => ({ ...p, mensaje: e.target.value }))}

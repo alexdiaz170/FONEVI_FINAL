@@ -69,8 +69,14 @@ export default function WhatsAppPage() {
               <h2 className="text-lg font-bold text-navy-800 mb-4">Enviar mensaje</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-navy-700 mb-1">Número</label>
+                  <label
+                    htmlFor="wa-numero"
+                    className="block text-sm font-medium text-navy-700 mb-1"
+                  >
+                    Número
+                  </label>
                   <input
+                    id="wa-numero"
                     type="text"
                     value={numero}
                     onChange={(e) => setNumero(e.target.value)}
@@ -79,8 +85,14 @@ export default function WhatsAppPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-navy-700 mb-1">Template</label>
+                  <label
+                    htmlFor="wa-template"
+                    className="block text-sm font-medium text-navy-700 mb-1"
+                  >
+                    Template
+                  </label>
                   <select
+                    id="wa-template"
                     value={template}
                     onChange={(e) => setTemplate(e.target.value)}
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
@@ -92,10 +104,14 @@ export default function WhatsAppPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-navy-700 mb-1">
+                  <label
+                    htmlFor="wa-variables"
+                    className="block text-sm font-medium text-navy-700 mb-1"
+                  >
                     Variables (JSON opcional)
                   </label>
                   <textarea
+                    id="wa-variables"
                     value={variables}
                     onChange={(e) => setVariables(e.target.value)}
                     placeholder='{"nombre": "Juan", "monto": "125000"}'
@@ -155,6 +171,7 @@ export default function WhatsAppPage() {
                 <h2 className="text-lg font-bold text-navy-800">Logs de envío</h2>
                 <div className="flex items-center gap-2">
                   <select
+                    aria-label="Filtrar por estado"
                     value={filtroEstado}
                     onChange={(e) => {
                       setFiltroEstado(e.target.value);
@@ -169,7 +186,9 @@ export default function WhatsAppPage() {
                     <option value="pendiente">Pendiente</option>
                   </select>
                   <button
+                    type="button"
                     onClick={() => queryClient.invalidateQueries({ queryKey: ['whatsapp-logs'] })}
+                    aria-label="Actualizar logs"
                     className="p-2 text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg"
                   >
                     <RefreshCw size={16} />
@@ -232,21 +251,34 @@ export default function WhatsAppPage() {
                   >
                     Anterior
                   </AnimatedButton>
-                  {Array.from({ length: logs.totalPages }, (_, i) => i + 1)
-                    .filter((p) => p === 1 || p === logs.totalPages || Math.abs(p - logPage) <= 2)
-                    .map((p, idx, arr) => (
-                      <span key={p} className="flex items-center gap-1">
-                        {idx > 0 && arr[idx - 1] !== p - 1 && (
-                          <span className="text-gray-400 px-1">...</span>
-                        )}
-                        <button
-                          onClick={() => setLogPage(p)}
-                          className={`px-3 py-1.5 text-sm border border-gray-200 rounded-lg ${p === logPage ? 'bg-gradient-to-r from-emerald-600 to-green-500 text-white' : 'hover:bg-gray-50'}`}
-                        >
-                          {p}
-                        </button>
-                      </span>
-                    ))}
+                  {
+                    Array.from({ length: logs.totalPages }, (_, i) => i + 1).reduce(
+                      (acc, p) => {
+                        if (p === 1 || p === logs.totalPages || Math.abs(p - logPage) <= 2) {
+                          acc.elements.push(
+                            <span key={p} className="flex items-center gap-1">
+                              {acc.lastPage !== undefined && acc.lastPage !== p - 1 && (
+                                <span className="text-gray-400 px-1">...</span>
+                              )}
+                              <button
+                                onClick={() => setLogPage(p)}
+                                type="button"
+                                className={`px-3 py-1.5 text-sm border border-gray-200 rounded-lg ${p === logPage ? 'bg-gradient-to-r from-emerald-600 to-green-500 text-white' : 'hover:bg-gray-50'}`}
+                              >
+                                {p}
+                              </button>
+                            </span>,
+                          );
+                          acc.lastPage = p;
+                        }
+                        return acc;
+                      },
+                      {
+                        elements: [] as React.ReactNode[],
+                        lastPage: undefined as number | undefined,
+                      },
+                    ).elements
+                  }
                   <AnimatedButton
                     onClick={() => setLogPage(Math.min(logs.totalPages, logPage + 1))}
                     disabled={logPage >= logs.totalPages}

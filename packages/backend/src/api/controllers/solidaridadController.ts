@@ -4,11 +4,7 @@ import { IMovimientoRepository } from '../../domain/repositories/IMovimientoRepo
 import { RegistrarSolidaridadUseCase } from '../../application/use-cases/solidaridad/RegistrarSolidaridadUseCase.js';
 import { ListarSolidaridadUseCase } from '../../application/use-cases/solidaridad/ListarSolidaridadUseCase.js';
 import { apiResponse } from '../response.js';
-import {
-  registrarSolidaridadSchema,
-  listarSolidaridadSchema,
-} from '../../application/dto/notificacion-solidaridad.dto.js';
-import { ValidationError } from '../../application/errors.js';
+import { listarSolidaridadSchema } from '../../application/dto/notificacion-solidaridad.dto.js';
 
 export function createSolidaridadController(
   solidaridadRepo: ISolidaridadMovimientoRepository,
@@ -62,10 +58,7 @@ export function createSolidaridadController(
 
     async create(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = registrarSolidaridadSchema.safeParse(req.body);
-        if (!parsed.success)
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        const movimiento = await registrarUseCase.execute(parsed.data);
+        const movimiento = await registrarUseCase.execute(req.body);
         apiResponse.created(res, mapSolidaridad(movimiento));
       } catch (error) {
         next(error);

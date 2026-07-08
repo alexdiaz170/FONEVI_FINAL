@@ -37,6 +37,7 @@ export default function ConfiguracionPage() {
       <div className="flex gap-1 mb-6 overflow-x-auto">
         {sections.map((s) => (
           <button
+            type="button"
             key={s.key}
             onClick={() => setActiveSection(s.key)}
             className={`px-4 py-2.5 text-sm font-medium transition-all rounded-xl whitespace-nowrap ${

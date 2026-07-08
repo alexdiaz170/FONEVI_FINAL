@@ -166,9 +166,13 @@ export class RegistrarAporteUseCase {
       if (creditoActivo && distribucion.totalPagoCredito.value > 0) {
         const creditoActual = await prisma.credito.findUnique({
           where: { id: creditoActivo.id },
-          select: { cuotasPagadas: true, cuotas: true },
+          select: { cuotasPagadas: true, cuotas: true, saldoCapital: true },
         });
         const nuevasPagadas = (creditoActual?.cuotasPagadas ?? 0) + 1;
+        const saldoAnterior = Number(
+          creditoActual?.saldoCapital ??
+            distribucion.nuevoSaldoCapital.value + distribucion.pagoCapital.value,
+        );
 
         await prisma.pagoCuota.create({
           data: {
@@ -189,6 +193,20 @@ export class RegistrarAporteUseCase {
             cuotasPagadas: nuevasPagadas,
             estado: distribucion.creditoPagado ? 'pagado' : 'activo',
             fechaUltimoPago: fechaPago ?? new Date(),
+          },
+        });
+
+        await prisma.creditoMovimiento.create({
+          data: {
+            creditoId: creditoActivo.id,
+            tipo: 'pago_cuota',
+            monto: distribucion.totalPagoCredito.value,
+            montoCapital: distribucion.pagoCapital.value,
+            montoInteres: distribucion.pagoInteres.value,
+            seguro: distribucion.pagoSeguro.value,
+            saldoCapitalAnterior: saldoAnterior,
+            saldoCapitalPosterior: distribucion.nuevoSaldoCapital.value,
+            descripcion: `Pago cuota vía aporte - ${periodo.nombre}`,
           },
         });
       }

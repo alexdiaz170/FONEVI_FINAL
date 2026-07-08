@@ -1,9 +1,11 @@
+import type { ICache } from './ICache.js';
+
 interface CacheEntry<T> {
   data: T;
   expiresAt: number;
 }
 
-export class SimpleCache {
+export class SimpleCache implements ICache {
   private store = new Map<string, CacheEntry<unknown>>();
 
   get<T>(key: string): T | null {
@@ -24,5 +26,3 @@ export class SimpleCache {
     this.store.clear();
   }
 }
-
-export const dashboardCache = new SimpleCache();

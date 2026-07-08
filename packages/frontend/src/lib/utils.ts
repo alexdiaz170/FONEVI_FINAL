@@ -5,13 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const currencyFormatter = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  minimumFractionDigits: 0,
+});
+
 export function formatCurrency(value: number | null | undefined): string {
   if (value == null || isNaN(value)) return '$0';
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-  }).format(value);
+  return currencyFormatter.format(value);
 }
 
 export function formatDate(date: Date | string | null | undefined): string {

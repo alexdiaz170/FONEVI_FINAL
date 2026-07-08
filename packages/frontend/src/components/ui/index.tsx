@@ -1,4 +1,5 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { domAnimation } from 'framer-motion/dom';
 import { staggerContainer, staggerItem } from '../../lib/animations';
 
 export function AnimatedContainer({
@@ -11,14 +12,16 @@ export function AnimatedContainer({
   delay?: number;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3, delay }}
-      className={className}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, delay }}
+        className={className}
+      >
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
@@ -32,14 +35,16 @@ export function AnimatedFadeIn({
   className?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3, delay }}
-      className={className}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, delay }}
+        className={className}
+      >
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
@@ -53,14 +58,16 @@ export function AnimatedSlideDown({
   className?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay }}
-      className={className}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay }}
+        className={className}
+      >
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
@@ -72,13 +79,11 @@ export function AnimatedSlideLeft({
   className?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      className={className}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className={className}>
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
@@ -90,15 +95,17 @@ export function AnimatedPage({
   className?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.3 }}
-      className={className}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        transition={{ duration: 0.3 }}
+        className={className}
+      >
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
@@ -110,15 +117,17 @@ export function AnimatedCard({
   className?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      whileHover={{ y: -2, boxShadow: '0 6px 20px rgba(0,0,0,0.08)' }}
-      className={`bg-white rounded-lg shadow transition-shadow ${className ?? ''}`}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        whileHover={{ y: -2, boxShadow: '0 6px 20px rgba(0,0,0,0.08)' }}
+        className={`bg-white rounded-lg shadow transition-shadow ${className ?? ''}`}
+      >
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
@@ -136,16 +145,18 @@ export function AnimatedButton({
   type?: 'button' | 'submit' | 'reset';
 }) {
   return (
-    <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      className={className}
-      disabled={disabled}
-      onClick={onClick}
-      type={type}
-    >
-      {children}
-    </motion.button>
+    <LazyMotion features={domAnimation}>
+      <m.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={className}
+        disabled={disabled}
+        onClick={onClick}
+        type={type}
+      >
+        {children}
+      </m.button>
+    </LazyMotion>
   );
 }
 
@@ -159,14 +170,16 @@ export function AnimatedInputWrapper({
   className?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay }}
-      className={className}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay }}
+        className={className}
+      >
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
@@ -180,18 +193,20 @@ export function AnimatedTableRow({
   className?: string;
 }) {
   return (
-    <motion.tr
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.04 }}
-      className={className}
-    >
-      {children}
-    </motion.tr>
+    <LazyMotion features={domAnimation}>
+      <m.tr
+        initial={{ opacity: 0, x: -8 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: index * 0.04 }}
+        className={className}
+      >
+        {children}
+      </m.tr>
+    </LazyMotion>
   );
 }
 
-export function AnimatedModal({
+function AnimatedModal({
   open,
   onClose,
   children,
@@ -201,29 +216,31 @@ export function AnimatedModal({
   children: React.ReactNode;
 }) {
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 20 }}
-            transition={{ duration: 0.25 }}
-            className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+    <LazyMotion features={domAnimation}>
+      <AnimatePresence>
+        {open && (
+          <m.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={onClose}
           >
-            {children}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+            <m.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              transition={{ duration: 0.25 }}
+              className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {children}
+            </m.div>
+          </m.div>
+        )}
+      </AnimatePresence>
+    </LazyMotion>
   );
 }
 
@@ -235,14 +252,11 @@ export function AnimatedStaggerContainer({
   className?: string;
 }) {
   return (
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      animate="visible"
-      className={className}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div variants={staggerContainer} initial="hidden" animate="visible" className={className}>
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
@@ -256,17 +270,19 @@ export function AnimatedStaggerItem({
   hoverEffect?: boolean;
 }) {
   return (
-    <motion.div
-      variants={staggerItem}
-      className={className}
-      whileHover={hoverEffect ? { y: -3, boxShadow: '0 8px 25px rgba(0,0,0,0.1)' } : undefined}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div
+        variants={staggerItem}
+        className={className}
+        whileHover={hoverEffect ? { y: -3, boxShadow: '0 8px 25px rgba(0,0,0,0.1)' } : undefined}
+      >
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
-export function AnimatedStaggerItemCard({
+function AnimatedStaggerItemCard({
   children,
   className,
 }: {
@@ -274,13 +290,15 @@ export function AnimatedStaggerItemCard({
   className?: string;
 }) {
   return (
-    <motion.div
-      variants={staggerItem}
-      className={className}
-      whileHover={{ boxShadow: '0 12px 40px rgba(0,0,0,0.2)' }}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div
+        variants={staggerItem}
+        className={className}
+        whileHover={{ boxShadow: '0 12px 40px rgba(0,0,0,0.2)' }}
+      >
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
@@ -292,23 +310,25 @@ type StatCardProps = {
   color: string;
 };
 
-export function StatCard({ label, value, sub, icon: Icon, color }: StatCardProps) {
+function StatCard({ label, value, sub, icon: Icon, color }: StatCardProps) {
   return (
-    <AnimatedStaggerItem>
-      <motion.div
-        whileHover={{ y: -3, boxShadow: '0 8px 25px rgba(0,0,0,0.1)' }}
-        className="bg-white rounded-lg shadow p-4 flex items-start gap-3 transition-shadow"
-      >
-        <div className={`${color} p-2 rounded-lg shrink-0`}>
-          <Icon size={20} className="text-white" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">{label}</p>
-          <p className="text-lg font-bold font-mono text-gray-900 truncate">{value}</p>
-          {sub && <p className="text-xs text-gray-400">{sub}</p>}
-        </div>
-      </motion.div>
-    </AnimatedStaggerItem>
+    <LazyMotion features={domAnimation}>
+      <AnimatedStaggerItem>
+        <m.div
+          whileHover={{ y: -3, boxShadow: '0 8px 25px rgba(0,0,0,0.1)' }}
+          className="bg-white rounded-lg shadow p-4 flex items-start gap-3 transition-shadow"
+        >
+          <div className={`${color} p-2 rounded-lg shrink-0`}>
+            <Icon size={20} className="text-white" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">{label}</p>
+            <p className="text-lg font-bold font-mono text-gray-900 truncate">{value}</p>
+            {sub && <p className="text-xs text-gray-400">{sub}</p>}
+          </div>
+        </m.div>
+      </AnimatedStaggerItem>
+    </LazyMotion>
   );
 }
 
@@ -331,14 +351,16 @@ export function GlassCard({
   padding?: boolean;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className={`bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl ${padding ? 'p-6' : ''} ${className ?? ''}`}
-    >
-      {children}
-    </motion.div>
+    <LazyMotion features={domAnimation}>
+      <m.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className={`bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl ${padding ? 'p-6' : ''} ${className ?? ''}`}
+      >
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }
 
@@ -351,15 +373,17 @@ export function CardPanel({
   headerRight,
 }: CardPanelProps) {
   return (
-    <AnimatedStaggerItem>
-      <div className={`bg-white rounded-lg shadow ${className ?? ''}`}>
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-          <Icon size={18} className={iconColor} />
-          <h2 className="font-semibold text-gray-800">{title}</h2>
-          {headerRight}
+    <LazyMotion features={domAnimation}>
+      <AnimatedStaggerItem>
+        <div className={`bg-white rounded-lg shadow ${className ?? ''}`}>
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+            <Icon size={18} className={iconColor} />
+            <h2 className="font-semibold text-gray-800">{title}</h2>
+            {headerRight}
+          </div>
+          {children}
         </div>
-        {children}
-      </div>
-    </AnimatedStaggerItem>
+      </AnimatedStaggerItem>
+    </LazyMotion>
   );
 }

@@ -109,8 +109,14 @@ export function GestionPeriodos() {
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-navy-700 mb-1">Nombre *</label>
+              <label
+                htmlFor="periodo-nombre"
+                className="block text-xs font-medium text-navy-700 mb-1"
+              >
+                Nombre *
+              </label>
               <input
+                id="periodo-nombre"
                 value={form.nombre}
                 onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-500/30 focus:border-slate-500"
@@ -118,8 +124,14 @@ export function GestionPeriodos() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-navy-700 mb-1">Año</label>
+              <label
+                htmlFor="periodo-anio"
+                className="block text-xs font-medium text-navy-700 mb-1"
+              >
+                Año
+              </label>
               <input
+                id="periodo-anio"
                 type="number"
                 value={form.anio}
                 onChange={(e) => setForm((p) => ({ ...p, anio: e.target.value }))}
@@ -127,8 +139,11 @@ export function GestionPeriodos() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-navy-700 mb-1">Mes</label>
+              <label htmlFor="periodo-mes" className="block text-xs font-medium text-navy-700 mb-1">
+                Mes
+              </label>
               <select
+                id="periodo-mes"
                 value={form.mes}
                 onChange={(e) => setForm((p) => ({ ...p, mes: e.target.value }))}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-500/30 focus:border-slate-500"
@@ -216,6 +231,7 @@ export function GestionPeriodos() {
                         </AnimatedButton>
                       )}
                       <button
+                        type="button"
                         onClick={() => {
                           if (confirm(`¿Eliminar período ${p.nombre}?`))
                             deleteMutation.mutate(p.id);

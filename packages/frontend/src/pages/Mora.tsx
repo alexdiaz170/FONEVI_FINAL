@@ -31,6 +31,12 @@ import {
   AnimatedButton,
 } from '../components/ui';
 
+const estadoEstilo: Record<string, string> = {
+  activo: 'bg-blue-50 text-blue-700 border border-blue-200',
+  cumplido: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  incumplido: 'bg-red-50 text-red-700 border border-red-200',
+};
+
 export default function MoraPage() {
   const queryClient = useQueryClient();
   const [selectedSocio, setSelectedSocio] = useState<MoraCalculada | null>(null);
@@ -73,12 +79,6 @@ export default function MoraPage() {
       criticos: moraList.filter((m) => m.diasMora > 60).length,
     };
   }, [moraList]);
-
-  const estadoEstilo: Record<string, string> = {
-    activo: 'bg-blue-50 text-blue-700 border border-blue-200',
-    cumplido: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-    incumplido: 'bg-red-50 text-red-700 border border-red-200',
-  };
 
   return (
     <div className="relative">
@@ -168,6 +168,7 @@ export default function MoraPage() {
 
       <div className="flex gap-2 mb-6">
         <button
+          type="button"
           onClick={() => setTab('mora')}
           className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
             tab === 'mora'
@@ -178,6 +179,7 @@ export default function MoraPage() {
           Socios en Mora ({moraList?.length ?? 0})
         </button>
         <button
+          type="button"
           onClick={() => setTab('acuerdos')}
           className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
             tab === 'acuerdos'
@@ -432,6 +434,7 @@ export default function MoraPage() {
                 <h3 className="text-lg font-bold text-navy-800">Acuerdo de Pago</h3>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedSocio(null)}
                 className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-all"
               >
@@ -451,10 +454,14 @@ export default function MoraPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                <label
+                  htmlFor="num-cuotas"
+                  className="block text-sm font-medium text-navy-700 mb-1.5"
+                >
                   Número de Cuotas
                 </label>
                 <input
+                  id="num-cuotas"
                   type="number"
                   min={1}
                   value={acuerdoForm.cuotas}
@@ -471,8 +478,11 @@ export default function MoraPage() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-navy-700 mb-1.5">Notas</label>
+                <label htmlFor="notas" className="block text-sm font-medium text-navy-700 mb-1.5">
+                  Notas
+                </label>
                 <textarea
+                  id="notas"
                   rows={2}
                   value={acuerdoForm.notas}
                   onChange={(e) => setAcuerdoForm((p) => ({ ...p, notas: e.target.value }))}

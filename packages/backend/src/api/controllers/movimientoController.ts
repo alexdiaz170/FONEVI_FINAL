@@ -3,11 +3,7 @@ import { IMovimientoRepository } from '../../domain/repositories/IMovimientoRepo
 import { RegistrarMovimientoUseCase } from '../../application/use-cases/movimientos/RegistrarMovimientoUseCase.js';
 import { ListarMovimientosUseCase } from '../../application/use-cases/movimientos/ListarMovimientosUseCase.js';
 import { apiResponse } from '../response.js';
-import {
-  registrarMovimientoSchema,
-  listarMovimientosSchema,
-} from '../../application/dto/movimiento.dto.js';
-import { ValidationError } from '../../application/errors.js';
+import { listarMovimientosSchema } from '../../application/dto/movimiento.dto.js';
 import { PrismaMovimientoRepository } from '../../infrastructure/persistence/PrismaMovimientoRepository.js';
 
 type RepoWithSocio = IMovimientoRepository & {
@@ -63,11 +59,7 @@ export function createMovimientoController(movimientoRepo: RepoWithSocio) {
 
     async create(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = registrarMovimientoSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-        const movimiento = await registrarUseCase.execute(parsed.data);
+        const movimiento = await registrarUseCase.execute(req.body);
         apiResponse.created(res, mapMovimiento(movimiento));
       } catch (error) {
         next(error);

@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -27,7 +28,6 @@ import {
   apiGetDashboardResumen,
   apiMiDashboard,
   apiListarNotificaciones,
-  apiListarAportes,
   apiListarSocios,
   ApiError,
 } from '../lib/api';
@@ -42,19 +42,44 @@ import {
   AnimatedButton,
   AnimatedTableRow,
 } from '../components/ui';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from 'recharts';
+import React, { Suspense } from 'react';
+
+const AportesChart = React.lazy(() => import('../components/AportesChart'));
+const AdminChartPanels = React.lazy(() => import('../components/AdminChartPanels'));
+const SocioCharts = React.lazy(() => import('../components/SocioCharts'));
+
+interface DashboardCardProps {
+  card: {
+    label: string;
+    value: string;
+    sub?: string;
+    bg: string;
+    icon: LucideIcon;
+    group: string;
+  };
+}
+
+function DashboardCard({ card }: DashboardCardProps) {
+  return (
+    <AnimatedStaggerItem>
+      <div
+        className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.bg} p-4 text-white shadow-lg`}
+      >
+        <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-1/3 translate-x-1/4" />
+        <div className="relative">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium uppercase tracking-wider opacity-80">
+              {card.label}
+            </span>
+            <card.icon size={16} className="opacity-50" />
+          </div>
+          <p className="text-xl font-bold font-mono">{card.value}</p>
+          {card.sub && <p className="text-xs mt-1 opacity-70">{card.sub}</p>}
+        </div>
+      </div>
+    </AnimatedStaggerItem>
+  );
+}
 
 export default function DashboardPage() {
   const usuario = useAuthStore((s) => s.usuario);
@@ -134,28 +159,6 @@ function AdminDashboard() {
   const now = new Date();
   const greeting =
     now.getHours() < 12 ? 'Buenos días' : now.getHours() < 18 ? 'Buenas tardes' : 'Buenas noches';
-
-  function DashboardCard({ card }: { card: (typeof cards)[0] }) {
-    return (
-      <AnimatedStaggerItem>
-        <div
-          className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.bg} p-4 text-white shadow-lg`}
-        >
-          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-1/3 translate-x-1/4" />
-          <div className="relative">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium uppercase tracking-wider opacity-80">
-                {card.label}
-              </span>
-              <card.icon size={16} className="opacity-50" />
-            </div>
-            <p className="text-xl font-bold font-mono">{card.value}</p>
-            {card.sub && <p className="text-xs mt-1 opacity-70">{card.sub}</p>}
-          </div>
-        </div>
-      </AnimatedStaggerItem>
-    );
-  }
 
   const cards = [
     {
@@ -266,11 +269,10 @@ function AdminDashboard() {
             <Users size={16} /> Socios
           </h3>
           <AnimatedStaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {cards
-              .filter((c) => c.group === 'socios')
-              .map((card) => (
-                <DashboardCard key={card.label} card={card} />
-              ))}
+            {cards.reduce((acc, card) => {
+              if (card.group === 'socios') acc.push(<DashboardCard key={card.label} card={card} />);
+              return acc;
+            }, [] as React.ReactNode[])}
           </AnimatedStaggerContainer>
         </div>
         <div>
@@ -278,11 +280,11 @@ function AdminDashboard() {
             <CreditCard size={16} /> Créditos
           </h3>
           <AnimatedStaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {cards
-              .filter((c) => c.group === 'creditos')
-              .map((card) => (
-                <DashboardCard key={card.label} card={card} />
-              ))}
+            {cards.reduce((acc, card) => {
+              if (card.group === 'creditos')
+                acc.push(<DashboardCard key={card.label} card={card} />);
+              return acc;
+            }, [] as React.ReactNode[])}
           </AnimatedStaggerContainer>
         </div>
         <div>
@@ -290,11 +292,11 @@ function AdminDashboard() {
             <PiggyBank size={16} /> Aportes &amp; Ahorro
           </h3>
           <AnimatedStaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {cards
-              .filter((c) => c.group === 'aportes')
-              .map((card) => (
-                <DashboardCard key={card.label} card={card} />
-              ))}
+            {cards.reduce((acc, card) => {
+              if (card.group === 'aportes')
+                acc.push(<DashboardCard key={card.label} card={card} />);
+              return acc;
+            }, [] as React.ReactNode[])}
           </AnimatedStaggerContainer>
         </div>
         <div>
@@ -302,11 +304,11 @@ function AdminDashboard() {
             <TrendingUp size={16} /> Movimientos
           </h3>
           <AnimatedStaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {cards
-              .filter((c) => c.group === 'movimientos')
-              .map((card) => (
-                <DashboardCard key={card.label} card={card} />
-              ))}
+            {cards.reduce((acc, card) => {
+              if (card.group === 'movimientos')
+                acc.push(<DashboardCard key={card.label} card={card} />);
+              return acc;
+            }, [] as React.ReactNode[])}
           </AnimatedStaggerContainer>
         </div>
         <div>
@@ -314,11 +316,10 @@ function AdminDashboard() {
             <Building2 size={16} /> Fondos
           </h3>
           <AnimatedStaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {cards
-              .filter((c) => c.group === 'fondos')
-              .map((card) => (
-                <DashboardCard key={card.label} card={card} />
-              ))}
+            {cards.reduce((acc, card) => {
+              if (card.group === 'fondos') acc.push(<DashboardCard key={card.label} card={card} />);
+              return acc;
+            }, [] as React.ReactNode[])}
           </AnimatedStaggerContainer>
         </div>
       </div>
@@ -388,82 +389,9 @@ function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <AnimatedFadeIn>
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-4">
-            <h2 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
-              <CreditCard size={16} className="text-purple-500" /> Cartera
-            </h2>
-            {resumen.creditos.total > 0 ? (
-              <div className="h-52">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Activos', value: resumen.creditos.activos },
-                        { name: 'Pagados', value: resumen.creditos.pagados },
-                        { name: 'Cancelados', value: resumen.creditos.cancelados ?? 0 },
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={80}
-                      dataKey="value"
-                    >
-                      <Cell fill="#7c3aed" />
-                      <Cell fill="#10b981" />
-                      <Cell fill="#6b7280" />
-                    </Pie>
-                    <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <p className="text-gray-400 text-sm text-center py-8">Sin datos</p>
-            )}
-          </div>
-        </AnimatedFadeIn>
-        <AnimatedFadeIn>
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 p-4">
-            <h2 className="text-sm font-semibold text-navy-800 mb-3 flex items-center gap-2">
-              <Users size={16} className="text-blue-500" /> Socios
-            </h2>
-            {resumen.socios.total > 0 ? (
-              <div className="h-52">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Activos', value: resumen.socios.activos },
-                        { name: 'En Mora', value: resumen.socios.enMora },
-                        {
-                          name: 'Retirados',
-                          value:
-                            resumen.socios.total - resumen.socios.activos - resumen.socios.enMora,
-                        },
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={80}
-                      dataKey="value"
-                    >
-                      <Cell fill="#3b82f6" />
-                      <Cell fill="#ef4444" />
-                      <Cell fill="#9ca3af" />
-                    </Pie>
-                    <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <p className="text-gray-400 text-sm text-center py-8">Sin datos</p>
-            )}
-          </div>
-        </AnimatedFadeIn>
-      </div>
+      <Suspense fallback={<div className="h-52 animate-pulse bg-gray-100 rounded mb-6" />}>
+        <AdminChartPanels resumen={resumen} />
+      </Suspense>
 
       <AnimatedFadeIn>
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -624,6 +552,22 @@ function SocioDashboard() {
   );
   const notisNoLeidas = notis?.data ?? [];
 
+  const notificacionesHeaderRight = (
+    <>
+      {notisNoLeidas.length > 0 && (
+        <span className="bg-amber-100 text-amber-700 text-xs font-bold px-1.5 py-0.5 rounded-full">
+          {notisNoLeidas.length}
+        </span>
+      )}
+      <Link
+        to="/notificaciones"
+        className="text-xs text-navy-600 hover:text-navy-800 font-medium ml-auto"
+      >
+        Ver todas
+      </Link>
+    </>
+  );
+
   return (
     <div className="space-y-6 relative">
       <div className="absolute top-0 right-0 w-48 md:w-96 h-48 md:h-96 bg-navy-500/5 rounded-full -translate-y-1/3 translate-x-1/3 pointer-events-none" />
@@ -651,6 +595,7 @@ function SocioDashboard() {
                     <h2 className="text-xl font-bold mt-0.5">{data.socio.nombre}</h2>
                   </div>
                   <button
+                    type="button"
                     onClick={() => window.print()}
                     className="print:hidden p-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white/80 hover:text-white transition-all"
                     title="Imprimir carnet"
@@ -753,40 +698,9 @@ function SocioDashboard() {
                   </div>
                 );
               })}
-              <div className="px-5 py-4 border-t border-gray-100">
-                <p className="text-xs text-gray-500 mb-2">Progreso de pagos</p>
-                <div className="h-28">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={[
-                          {
-                            name: 'Pagadas',
-                            value: creditosActivos.reduce((s, c) => s + (c.cuotasPagadas ?? 0), 0),
-                          },
-                          {
-                            name: 'Pendientes',
-                            value: creditosActivos.reduce(
-                              (s, c) => s + c.cuotas - (c.cuotasPagadas ?? 0),
-                              0,
-                            ),
-                          },
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={30}
-                        outerRadius={50}
-                        dataKey="value"
-                      >
-                        <Cell fill="#10b981" />
-                        <Cell fill="#f59e0b" />
-                      </Pie>
-                      <Tooltip />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
+              <Suspense fallback={<div className="h-28 animate-pulse bg-gray-100 rounded" />}>
+                <SocioCharts creditosActivos={creditosActivos} />
+              </Suspense>
             </div>
           )}
         </CardPanel>
@@ -824,21 +738,7 @@ function SocioDashboard() {
           title="Notificaciones"
           icon={Bell}
           iconColor="text-amber-500"
-          headerRight={
-            <>
-              {notisNoLeidas.length > 0 && (
-                <span className="bg-amber-100 text-amber-700 text-xs font-bold px-1.5 py-0.5 rounded-full">
-                  {notisNoLeidas.length}
-                </span>
-              )}
-              <Link
-                to="/notificaciones"
-                className="text-xs text-navy-600 hover:text-navy-800 font-medium ml-auto"
-              >
-                Ver todas
-              </Link>
-            </>
-          }
+          headerRight={notificacionesHeaderRight}
         >
           {notisNoLeidas.length === 0 ? (
             <p className="text-gray-400 text-sm text-center py-8">
@@ -867,84 +767,11 @@ function SocioDashboard() {
         </CardPanel>
 
         <AnimatedStaggerItem>
-          <AportesChart />
+          <Suspense fallback={<div className="h-48 animate-pulse bg-gray-100 rounded" />}>
+            <AportesChart />
+          </Suspense>
         </AnimatedStaggerItem>
       </AnimatedStaggerContainer>
-    </div>
-  );
-}
-
-function AportesChart() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['aportes-chart'],
-    queryFn: () => apiListarAportes({ limit: 100 }),
-    refetchInterval: 60000,
-  });
-
-  if (isLoading)
-    return (
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 animate-pulse">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <div className="h-4 bg-gray-200 rounded w-32" />
-        </div>
-        <div className="p-5 flex items-end gap-2" style={{ height: 140 }}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-              <div className="h-3 bg-gray-200 rounded w-10" />
-              <div
-                className="w-full bg-gray-200 rounded-t"
-                style={{ height: `${20 + i * 10}px` }}
-              />
-              <div className="h-3 bg-gray-200 rounded w-6" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-
-  if (!data || data.data.length === 0) {
-    return (
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-          <TrendingUp size={18} className="text-emerald-500" />
-          <h2 className="font-semibold text-navy-800">Historial de Aportes</h2>
-        </div>
-        <p className="text-gray-400 text-sm text-center py-8">No hay aportes registrados</p>
-      </div>
-    );
-  }
-
-  const porPeriodo = new Map<number, number>();
-  for (const a of data.data) {
-    if (a.estado === 'pagado')
-      porPeriodo.set(a.periodoId, (porPeriodo.get(a.periodoId) ?? 0) + a.monto);
-  }
-  const periodos = [...porPeriodo.entries()].sort(([a], [b]) => a - b).slice(-6);
-
-  const chartData = periodos.map(([pid, valor]) => ({
-    periodo: `#${pid}`,
-    monto: valor,
-  }));
-
-  return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100">
-      <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-        <TrendingUp size={18} className="text-emerald-500" />
-        <h2 className="font-semibold text-navy-800">Historial de Aportes</h2>
-      </div>
-      <div className="p-5">
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="periodo" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} />
-              <Bar dataKey="monto" fill="#14b8a6" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
     </div>
   );
 }

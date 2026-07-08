@@ -55,6 +55,7 @@ export default function MovimientosLista() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 transition-all"
+                aria-label="Buscar movimientos"
               />
             </div>
             {movimientosList.length > 0 && (
@@ -113,6 +114,7 @@ export default function MovimientosLista() {
               }}
               className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-cyan-500/30"
               title="Desde"
+              aria-label="Desde"
             />
             <span className="text-gray-400 text-xs">a</span>
             <input
@@ -124,6 +126,7 @@ export default function MovimientosLista() {
               }}
               className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-cyan-500/30"
               title="Hasta"
+              aria-label="Hasta"
             />
           </div>
         </div>

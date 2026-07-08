@@ -6,7 +6,7 @@ import { apiResponse } from '../response.js';
 import { ValidationError } from '../../application/errors.js';
 import { z } from 'zod';
 
-const crearPeriodoSchema = z.object({
+export const crearPeriodoSchema = z.object({
   nombre: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
   anio: z.number().int().min(2000).max(2100),
   mes: z.number().int().min(1).max(12),
@@ -56,11 +56,7 @@ export function createPeriodoController(periodoRepo: IPeriodoRepository) {
 
     async create(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = crearPeriodoSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-        const periodo = await crearUseCase.execute(parsed.data);
+        const periodo = await crearUseCase.execute(req.body);
         apiResponse.created(res, {
           id: periodo.id,
           nombre: periodo.nombre,

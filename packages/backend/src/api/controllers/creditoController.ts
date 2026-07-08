@@ -13,12 +13,7 @@ import { ObtenerResumenCreditosUseCase } from '../../application/use-cases/credi
 import { RechazarCreditoUseCase } from '../../application/use-cases/creditos/RechazarCreditoUseCase.js';
 import { EliminarPagoCuotaUseCase } from '../../application/use-cases/creditos/EliminarPagoCuotaUseCase.js';
 import { apiResponse } from '../response.js';
-import {
-  solicitarCreditoSchema,
-  pagarCuotaSchema,
-  listarCreditosSchema,
-} from '../../application/use-cases/creditos/creditoSchemas.js';
-import { ValidationError } from '../../application/errors.js';
+import { listarCreditosSchema } from '../../application/use-cases/creditos/creditoSchemas.js';
 import { getPrismaClient } from '../../infrastructure/persistence/prismaClient.js';
 
 export function createCreditoController(
@@ -206,11 +201,7 @@ export function createCreditoController(
 
     async create(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = solicitarCreditoSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-        const credito = await solicitarUseCase.execute(parsed.data, req.usuario?.rol);
+        const credito = await solicitarUseCase.execute(req.body, req.usuario?.rol);
         apiResponse.created(res, mapCredito(credito));
       } catch (error) {
         next(error);
@@ -220,11 +211,7 @@ export function createCreditoController(
     async pagarCuota(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
         const id = String(req.params.id ?? '');
-        const parsed = pagarCuotaSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-        const pago = await pagarCuotaUseCase.execute(id, parsed.data);
+        const pago = await pagarCuotaUseCase.execute(id, req.body);
         apiResponse.created(res, {
           id: pago.id,
           creditoId: pago.creditoId,

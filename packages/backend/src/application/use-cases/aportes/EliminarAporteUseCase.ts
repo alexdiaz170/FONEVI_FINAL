@@ -71,6 +71,18 @@ export class EliminarAporteUseCase {
             where: { id: creditoActivo.id },
             data: { saldoCapital: saldoRestaurado, estado: 'activo' },
           });
+
+          await prisma.creditoMovimiento.create({
+            data: {
+              creditoId: creditoActivo.id,
+              tipo: 'reversion',
+              monto: aporte.detalle.capital.value,
+              montoCapital: aporte.detalle.capital.value,
+              saldoCapitalAnterior: Number(creditoActivo.saldoCapital),
+              saldoCapitalPosterior: saldoRestaurado,
+              descripcion: `Reversión por eliminación de aporte`,
+            },
+          });
         }
       }
 

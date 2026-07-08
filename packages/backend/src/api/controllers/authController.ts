@@ -5,7 +5,6 @@ import { RefreshTokenUseCase } from '../../application/use-cases/auth/RefreshTok
 import { IUsuarioRepository } from '../../domain/repositories/IUsuarioRepository.js';
 import { TokenService } from '../../domain/services/TokenService.js';
 import { apiResponse } from '../response.js';
-import { loginSchema, registerSchema, refreshSchema } from '../../application/dto/auth.dto.js';
 import { ValidationError } from '../../application/errors.js';
 
 export function createAuthController(usuarioRepo: IUsuarioRepository) {
@@ -17,12 +16,7 @@ export function createAuthController(usuarioRepo: IUsuarioRepository) {
   return {
     async login(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = loginSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-
-        const { email, password } = parsed.data;
+        const { email, password } = req.body;
         const result = await loginUseCase.execute(email, password);
 
         apiResponse.success(res, {
@@ -42,12 +36,7 @@ export function createAuthController(usuarioRepo: IUsuarioRepository) {
 
     async register(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = registerSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-
-        const usuario = await registerUseCase.execute(parsed.data);
+        const usuario = await registerUseCase.execute(req.body);
 
         apiResponse.created(res, {
           id: usuario.id,
@@ -62,12 +51,7 @@ export function createAuthController(usuarioRepo: IUsuarioRepository) {
 
     async refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = refreshSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-
-        const tokens = await refreshUseCase.execute(parsed.data.refreshToken);
+        const tokens = await refreshUseCase.execute(req.body.refreshToken);
 
         apiResponse.success(res, {
           token: tokens.accessToken,

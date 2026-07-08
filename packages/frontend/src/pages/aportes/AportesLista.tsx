@@ -36,6 +36,25 @@ import {
 
 const ESTADOS = ['', 'pendiente', 'pagado', 'mora', 'vencido', 'anulado'];
 
+const estadoColor: Record<string, string> = {
+  pagado: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  pendiente: 'bg-amber-50 text-amber-700 border border-amber-200',
+  mora: 'bg-red-50 text-red-700 border border-red-200',
+  vencido: 'bg-orange-50 text-orange-700 border border-orange-200',
+  anulado: 'bg-gray-50 text-gray-600 border border-gray-200',
+};
+
+const estadoDot: Record<string, string> = {
+  pagado: 'bg-emerald-500',
+  pendiente: 'bg-amber-500',
+  mora: 'bg-red-500',
+  vencido: 'bg-orange-500',
+  anulado: 'bg-gray-400',
+};
+
+const handleExportExcel = () => downloadExport('aportes', 'xlsx');
+const handleExportPDF = () => downloadExport('aportes', 'pdf');
+
 export default function AportesLista() {
   const usuario = useAuthStore((s) => s.usuario);
   const esSocio = usuario?.rol === 'socio';
@@ -79,26 +98,6 @@ export default function AportesLista() {
   const pagados = aportesList.filter((a) => a.estado === 'pagado').length;
   const pendientes = aportesList.filter((a) => a.estado === 'pendiente').length;
   const enMora = aportesList.filter((a) => a.estado === 'mora' || a.estado === 'vencido').length;
-
-  const handleExportExcel = () => downloadExport('aportes', 'xlsx');
-
-  const handleExportPDF = () => downloadExport('aportes', 'pdf');
-
-  const estadoColor: Record<string, string> = {
-    pagado: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-    pendiente: 'bg-amber-50 text-amber-700 border border-amber-200',
-    mora: 'bg-red-50 text-red-700 border border-red-200',
-    vencido: 'bg-orange-50 text-orange-700 border border-orange-200',
-    anulado: 'bg-gray-50 text-gray-600 border border-gray-200',
-  };
-
-  const estadoDot: Record<string, string> = {
-    pagado: 'bg-emerald-500',
-    pendiente: 'bg-amber-500',
-    mora: 'bg-red-500',
-    vencido: 'bg-orange-500',
-    anulado: 'bg-gray-400',
-  };
 
   return (
     <div>
@@ -162,6 +161,7 @@ export default function AportesLista() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
+                  aria-label="Buscar aportes"
                 />
               </div>
               {aportesList.length > 0 && (
@@ -295,6 +295,7 @@ export default function AportesLista() {
                                 <Eye size={15} />
                               </Link>
                               <button
+                                type="button"
                                 onClick={() => setConfirmDelete(aporte.id)}
                                 className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
                               >

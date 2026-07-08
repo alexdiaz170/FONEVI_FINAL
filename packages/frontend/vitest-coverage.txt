@@ -1,0 +1,11 @@
+﻿
+[1m[46m RUN [49m[22m [36mv3.2.6 [39m[90mC:/Users/ingea/Music/FONEVI_FINAL/packages/frontend[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32mÔ£ô[39m src/stores/authStore.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/configuracion/constants.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32mÔ£ô[39m src/lib/utils.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32mÔ£ô[39m src/components/ConfirmDialog.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[32m 126[2mms[22m[39m
+ [32mÔ£ô[39m src/components/ui/index.test.tsx [2m([22m[2m20 tests[22m[2m)[22m[32m 152[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/Login.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 444[2mms[22m[39m
+ [32mÔ£ô[39m src/pages/movimientos/MovimientosCrear.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 400[2mms[22m[39m

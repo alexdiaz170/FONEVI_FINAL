@@ -134,6 +134,7 @@ export default function SociosLista() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-navy-500/30 focus:border-navy-500 transition-all"
+                aria-label="Buscar socios"
               />
             </div>
             {sociosList.length > 0 && (
@@ -238,6 +239,7 @@ export default function SociosLista() {
                               <Eye size={15} />
                             </Link>
                             <button
+                              type="button"
                               onClick={() => setConfirmDelete(socio.id)}
                               disabled={deleting === socio.id}
                               className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors disabled:opacity-50"

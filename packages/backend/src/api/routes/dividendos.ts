@@ -3,6 +3,11 @@ import { PrismaDividendoRepository } from '../../infrastructure/persistence/Pris
 import { PrismaSocioRepository } from '../../infrastructure/persistence/PrismaSocioRepository.js';
 import { createDividendoController } from '../controllers/dividendoController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import {
+  crearDividendoSchema,
+  distribuirDividendoSchema,
+} from '../../application/dto/sprint6.dto.js';
 
 const router = Router();
 const dividendoRepo = new PrismaDividendoRepository();
@@ -15,12 +20,14 @@ router.post(
   '/',
   authenticate,
   authorize('admin', 'superadmin'),
+  validate(crearDividendoSchema),
   controller.create.bind(controller),
 );
 router.post(
   '/:id/distribuir',
   authenticate,
   authorize('admin', 'superadmin'),
+  validate(distribuirDividendoSchema),
   controller.distribuir.bind(controller),
 );
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { domAnimation } from 'framer-motion/dom';
 import {
   LayoutDashboard,
   Users,
@@ -115,30 +116,32 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
   const [collapsed, setCollapsed] = useState(false);
   const usuario = useAuthStore((s) => s.usuario);
 
-  const visibleGroups = navGroups
-    .map((g) => ({
-      ...g,
-      items: g.items.filter((item) => usuario && item.roles.includes(usuario.rol)),
-    }))
-    .filter((g) => g.items.length > 0);
+  const visibleGroups = navGroups.reduce((acc, g) => {
+    const items = g.items.filter((item) => usuario && item.roles.includes(usuario.rol));
+    if (items.length > 0) {
+      acc.push({ ...g, items });
+    }
+    return acc;
+  }, [] as NavGroup[]);
 
   const sidebarContent = (
     <>
       <div className="flex items-center justify-between p-4 border-b border-navy-600 shrink-0">
         <AnimatePresence>
           {!collapsed && (
-            <motion.span
+            <m.span
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -8 }}
               className="text-gold-500 font-bold text-lg"
             >
               FONEVI
-            </motion.span>
+            </m.span>
           )}
         </AnimatePresence>
         <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={() => {
               onClose();
               setCollapsed(false);
@@ -148,16 +151,17 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
             <X size={20} />
           </button>
           <button
+            type="button"
             onClick={() => setCollapsed(!collapsed)}
             className="p-1 hover:bg-navy-700 rounded max-md:hidden"
           >
-            <motion.span
+            <m.span
               animate={{ rotate: collapsed ? 0 : 90 }}
               transition={{ duration: 0.3 }}
               className="block"
             >
               {collapsed ? <Menu size={20} /> : <X size={20} />}
-            </motion.span>
+            </m.span>
           </button>
         </div>
       </div>
@@ -167,19 +171,19 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           <div key={group.label} className="mb-2">
             <AnimatePresence>
               {!collapsed && (
-                <motion.p
+                <m.p
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   className="px-4 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-widest overflow-hidden"
                 >
                   {group.label}
-                </motion.p>
+                </m.p>
               )}
             </AnimatePresence>
-            <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+            <m.div variants={staggerContainer} initial="hidden" animate="visible">
               {group.items.map((item) => (
-                <motion.div key={item.to} variants={staggerItem}>
+                <m.div key={item.to} variants={staggerItem}>
                   <NavLink
                     to={item.to}
                     onClick={onClose}
@@ -195,9 +199,9 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
                     <item.icon size={20} />
                     {!collapsed && <span>{item.label}</span>}
                   </NavLink>
-                </motion.div>
+                </m.div>
               ))}
-            </motion.div>
+            </m.div>
           </div>
         ))}
       </nav>
@@ -205,8 +209,8 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
   );
 
   return (
-    <>
-      <motion.aside
+    <LazyMotion features={domAnimation}>
+      <m.aside
         layout
         className={cn(
           'bg-navy-800 text-white flex flex-col overflow-hidden shrink-0',
@@ -219,7 +223,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
         transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
         {sidebarContent}
-      </motion.aside>
-    </>
+      </m.aside>
+    </LazyMotion>
   );
 }

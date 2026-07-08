@@ -113,7 +113,7 @@ export function GestionCredenciales() {
           className={`mb-4 px-4 py-3 rounded-xl text-sm border ${mensaje.type === 'ok' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
         >
           {mensaje.text}
-          <button onClick={() => setMensaje(null)} className="float-right font-bold">
+          <button type="button" onClick={() => setMensaje(null)} className="float-right font-bold">
             &times;
           </button>
         </div>
@@ -184,13 +184,16 @@ export function GestionCredenciales() {
                       {user ? (
                         <>
                           <button
+                            type="button"
                             onClick={() => abrirReset(user, s)}
                             className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"
                             title="Resetear contraseña"
+                            aria-label="Resetear contraseña"
                           >
                             <Key size={16} />
                           </button>
                           <button
+                            type="button"
                             onClick={() => {
                               if (confirm(`¿Eliminar usuario ${user.nombre}?`))
                                 eliminarMutation.mutate(user.id);
@@ -198,15 +201,18 @@ export function GestionCredenciales() {
                             disabled={eliminarMutation.isPending}
                             className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
                             title="Eliminar usuario"
+                            aria-label="Eliminar usuario"
                           >
                             <Trash2 size={16} />
                           </button>
                         </>
                       ) : s.email ? (
                         <button
+                          type="button"
                           onClick={() => abrirCrear(s)}
                           className="p-1.5 text-slate-600 hover:bg-slate-50 rounded-lg"
                           title="Crear usuario"
+                          aria-label="Crear usuario"
                         >
                           <UserPlus size={16} />
                         </button>
@@ -262,6 +268,7 @@ export function GestionCredenciales() {
                     <Copy size={16} /> Copiar
                   </AnimatedButton>
                   <button
+                    type="button"
                     onClick={() => setModal(null)}
                     className="px-4 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl text-sm font-medium transition-all"
                   >
@@ -283,12 +290,21 @@ export function GestionCredenciales() {
                   {modal.user ? 'Nueva contraseña para' : 'Se creará usuario para'}
                 </p>
                 <p className="font-medium mb-4 text-navy-800">{modal.socio.nombre}</p>
-                <label className="block text-sm font-medium text-navy-700 mb-1">Contraseña</label>
+                <label
+                  htmlFor="modal-password"
+                  className="block text-sm font-medium text-navy-700 mb-1"
+                >
+                  Contraseña
+                </label>
                 <div className="flex gap-2 mb-4">
-                  <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 font-mono text-lg font-bold tracking-wider text-navy-700 select-all">
+                  <div
+                    id="modal-password"
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 font-mono text-lg font-bold tracking-wider text-navy-700 select-all"
+                  >
                     {modal.password}
                   </div>
                   <button
+                    type="button"
                     onClick={() => setModal({ ...modal, password: generarPassword() })}
                     className="p-2.5 text-gray-500 hover:text-slate-600 hover:bg-gray-100 rounded-lg transition-all"
                     title="Generar nueva contraseña"
@@ -307,6 +323,7 @@ export function GestionCredenciales() {
                       : 'Confirmar'}
                   </AnimatedButton>
                   <button
+                    type="button"
                     onClick={() => setModal(null)}
                     className="px-4 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl text-sm font-medium transition-all"
                   >

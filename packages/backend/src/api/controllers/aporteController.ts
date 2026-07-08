@@ -8,12 +8,7 @@ import { IPeriodoRepository } from '../../domain/repositories/IPeriodoRepository
 import { ISocioRepository } from '../../domain/repositories/ISocioRepository.js';
 import { DistribucionAporteService } from '../../domain/services/DistribucionAporteService.js';
 import { apiResponse } from '../response.js';
-import {
-  crearAporteSchema,
-  actualizarAporteSchema,
-  listarAportesSchema,
-} from '../../application/dto/aporte.dto.js';
-import { ValidationError } from '../../application/errors.js';
+import { listarAportesSchema } from '../../application/dto/aporte.dto.js';
 import { getPrismaClient } from '../../infrastructure/persistence/prismaClient.js';
 import { ConfiguracionService } from '../../application/services/ConfiguracionService.js';
 
@@ -141,12 +136,7 @@ export function createAporteController(
 
     async create(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = crearAporteSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-
-        const aporte = await registrarUseCase.execute(parsed.data);
+        const aporte = await registrarUseCase.execute(req.body);
         apiResponse.created(res, mapAporte(aporte));
       } catch (error) {
         next(error);
@@ -156,12 +146,7 @@ export function createAporteController(
     async update(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
         const id = String(req.params.id ?? '');
-        const parsed = actualizarAporteSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-
-        const aporte = await actualizarUseCase.execute(id, parsed.data);
+        const aporte = await actualizarUseCase.execute(id, req.body);
         apiResponse.success(res, mapAporte(aporte));
       } catch (error) {
         next(error);

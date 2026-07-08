@@ -257,10 +257,12 @@ export default function SociosCrear() {
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Nombre completo <span className="text-red-400">*</span>
                 </label>
                 <input
+                  id="nombre"
+                  aria-label="Nombre completo"
                   name="nombre"
                   value={form.nombre}
                   onChange={handleChange}
@@ -269,10 +271,14 @@ export default function SociosCrear() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label
+                  htmlFor="tipo-documento"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
                   Tipo Documento
                 </label>
                 <select
+                  id="tipo-documento"
                   name="tipoDocumento"
                   value={form.tipoDocumento}
                   onChange={handleChange}
@@ -285,10 +291,15 @@ export default function SociosCrear() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label
+                  htmlFor="numero-documento"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
                   Nro. Documento <span className="text-red-400">*</span>
                 </label>
                 <input
+                  id="numero-documento"
+                  aria-label="Nro. Documento"
                   name="numeroDocumento"
                   value={form.numeroDocumento}
                   onChange={handleChange}
@@ -297,8 +308,12 @@ export default function SociosCrear() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Email
+                </label>
                 <input
+                  id="email"
+                  aria-label="Email"
                   name="email"
                   type="email"
                   value={form.email}
@@ -308,8 +323,15 @@ export default function SociosCrear() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Teléfono</label>
+                <label
+                  htmlFor="telefono"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  Teléfono
+                </label>
                 <input
+                  id="telefono"
+                  aria-label="Teléfono"
                   name="telefono"
                   value={form.telefono}
                   onChange={handleChange}
@@ -318,10 +340,11 @@ export default function SociosCrear() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="cargo" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Cargo <span className="text-red-400">*</span>
                 </label>
                 <select
+                  id="cargo"
                   name="cargo"
                   value={form.cargo}
                   onChange={handleChange}
@@ -333,10 +356,15 @@ export default function SociosCrear() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label
+                  htmlFor="fecha-ingreso"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
                   Fecha Ingreso
                 </label>
                 <input
+                  id="fecha-ingreso"
+                  aria-label="Fecha Ingreso"
                   name="fechaIngreso"
                   type="date"
                   value={form.fechaIngreso}
@@ -345,10 +373,12 @@ export default function SociosCrear() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="sede" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Institución Educativa
                 </label>
                 <input
+                  id="sede"
+                  aria-label="Institución Educativa"
                   name="sede"
                   value={form.sede}
                   onChange={handleChange}
@@ -357,10 +387,14 @@ export default function SociosCrear() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label
+                  htmlFor="departamento"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
                   Departamento
                 </label>
                 <select
+                  id="departamento"
                   name="departamento"
                   value={form.departamento}
                   onChange={handleDepartamentoChange}
@@ -375,8 +409,14 @@ export default function SociosCrear() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Municipio</label>
+                <label
+                  htmlFor="municipio"
+                  className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                  Municipio
+                </label>
                 <select
+                  id="municipio"
                   name="municipio"
                   value={form.municipio}
                   onChange={handleChange}

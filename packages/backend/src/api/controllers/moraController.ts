@@ -7,11 +7,7 @@ import { RegistrarAcuerdoUseCase } from '../../application/use-cases/mora/Regist
 import { ListarAcuerdosUseCase } from '../../application/use-cases/mora/ListarAcuerdosUseCase.js';
 import { ConfiguracionService } from '../../application/services/ConfiguracionService.js';
 import { apiResponse } from '../response.js';
-import {
-  registrarAcuerdoSchema,
-  listarAuditoriaSchema,
-} from '../../application/dto/sprint6.dto.js';
-import { ValidationError } from '../../application/errors.js';
+import { listarAuditoriaSchema } from '../../application/dto/sprint6.dto.js';
 
 export function createMoraController(
   acuerdoRepo: IAcuerdoPagoRepository,
@@ -46,10 +42,7 @@ export function createMoraController(
 
     async crearAcuerdo(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = registrarAcuerdoSchema.safeParse(req.body);
-        if (!parsed.success)
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        const acuerdo = await registrarAcuerdoUseCase.execute(parsed.data);
+        const acuerdo = await registrarAcuerdoUseCase.execute(req.body);
         apiResponse.created(res, acuerdo);
       } catch (error) {
         next(error);

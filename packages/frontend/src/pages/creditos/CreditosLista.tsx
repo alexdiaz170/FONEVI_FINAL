@@ -45,6 +45,20 @@ const ESTADO_LABELS: Record<string, string> = {
   '': 'Todos',
 };
 
+const estadoColor: Record<string, string> = {
+  pendiente: 'bg-amber-50 text-amber-700 border border-amber-200',
+  activo: 'bg-blue-50 text-blue-700 border border-blue-200',
+  pagado: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  cancelado: 'bg-red-50 text-red-700 border border-red-200',
+};
+
+const estadoDot: Record<string, string> = {
+  pendiente: 'bg-amber-500',
+  activo: 'bg-blue-500',
+  pagado: 'bg-emerald-500',
+  cancelado: 'bg-red-500',
+};
+
 export default function CreditosLista() {
   const usuario = useAuthStore((s) => s.usuario);
   const esSocio = usuario?.rol === 'socio';
@@ -103,20 +117,6 @@ export default function CreditosLista() {
         (c.nombreSocio ?? '').toLowerCase().includes(search.toLowerCase()) ||
         (c.socioId ?? '').toLowerCase().includes(search.toLowerCase()),
     ) ?? [];
-
-  const estadoColor: Record<string, string> = {
-    pendiente: 'bg-amber-50 text-amber-700 border border-amber-200',
-    activo: 'bg-blue-50 text-blue-700 border border-blue-200',
-    pagado: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-    cancelado: 'bg-red-50 text-red-700 border border-red-200',
-  };
-
-  const estadoDot: Record<string, string> = {
-    pendiente: 'bg-amber-500',
-    activo: 'bg-blue-500',
-    pagado: 'bg-emerald-500',
-    cancelado: 'bg-red-500',
-  };
 
   return (
     <div>
@@ -191,6 +191,7 @@ export default function CreditosLista() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
+                  aria-label="Buscar créditos"
                 />
               </div>
               {filteredData.length > 0 && (

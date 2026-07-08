@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   CalendarCheck,
   AlertCircle,
@@ -22,7 +22,15 @@ import { AnimatedFadeIn, AnimatedButton } from '../components/ui';
 
 type Step = 'inicio' | 'validacion' | 'simulacion' | 'resultado';
 
+const steps = [
+  { key: 'inicio' as const, label: 'Inicio', numero: 1 },
+  { key: 'validacion' as const, label: 'Validar', numero: 2 },
+  { key: 'simulacion' as const, label: 'Simular', numero: 3 },
+  { key: 'resultado' as const, label: 'Resultado', numero: 4 },
+];
+
 export default function CierrePeriodoPage() {
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>('inicio');
   const [validacion, setValidacion] = useState<ValidacionCierre | null>(null);
   const [simulacion, setSimulacion] = useState<SimulacionCierre | null>(null);
@@ -33,6 +41,7 @@ export default function CierrePeriodoPage() {
     onSuccess: (data) => {
       setValidacion(data);
       setStep('validacion');
+      queryClient.invalidateQueries({ queryKey: ['periodos'] });
     },
   });
   const simularMutation = useMutation({
@@ -40,6 +49,7 @@ export default function CierrePeriodoPage() {
     onSuccess: (data) => {
       setSimulacion(data);
       setStep('simulacion');
+      queryClient.invalidateQueries({ queryKey: ['periodos'] });
     },
   });
   const ejecutarMutation = useMutation({
@@ -47,6 +57,10 @@ export default function CierrePeriodoPage() {
     onSuccess: (data) => {
       setResultado(data);
       setStep('resultado');
+      queryClient.invalidateQueries({ queryKey: ['periodos'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-resumen'] });
+      queryClient.invalidateQueries({ queryKey: ['mi-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['movimientos'] });
     },
   });
 
@@ -57,12 +71,6 @@ export default function CierrePeriodoPage() {
     setResultado(null);
   };
 
-  const steps = [
-    { key: 'inicio' as const, label: 'Inicio', numero: 1 },
-    { key: 'validacion' as const, label: 'Validar', numero: 2 },
-    { key: 'simulacion' as const, label: 'Simular', numero: 3 },
-    { key: 'resultado' as const, label: 'Resultado', numero: 4 },
-  ];
   const stepIdx = ['inicio', 'validacion', 'simulacion', 'resultado'].indexOf(step);
 
   return (
@@ -164,7 +172,7 @@ export default function CierrePeriodoPage() {
                   <p className="text-sm font-medium text-red-700">Errores:</p>
                   {validacion.errores.map((e, i) => (
                     <div
-                      key={i}
+                      key={e}
                       className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl p-3"
                     >
                       <XCircle size={16} className="shrink-0 mt-0.5" />
@@ -178,7 +186,7 @@ export default function CierrePeriodoPage() {
                   <p className="text-sm font-medium text-amber-700">Advertencias:</p>
                   {validacion.advertencias.map((a, i) => (
                     <div
-                      key={i}
+                      key={a}
                       className="flex items-start gap-2 text-sm text-amber-600 bg-amber-50 border border-amber-100 rounded-xl p-3"
                     >
                       <AlertCircle size={16} className="shrink-0 mt-0.5" />

@@ -131,8 +131,11 @@ export default function CreditosCrear() {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-navy-700 mb-1.5">Socio</label>
+                <label htmlFor="socio" className="block text-sm font-medium text-navy-700 mb-1.5">
+                  Socio
+                </label>
                 <select
+                  id="socio"
                   value={form.socioId}
                   onChange={(e) => setForm({ ...form, socioId: e.target.value })}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
@@ -146,7 +149,10 @@ export default function CreditosCrear() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                <label
+                  htmlFor="monto-solicitado"
+                  className="block text-sm font-medium text-navy-700 mb-1.5"
+                >
                   Monto solicitado
                 </label>
                 <div className="relative">
@@ -154,6 +160,8 @@ export default function CreditosCrear() {
                     $
                   </span>
                   <input
+                    id="monto-solicitado"
+                    aria-label="Monto solicitado"
                     type="number"
                     min={0}
                     step={1000}
@@ -172,11 +180,16 @@ export default function CreditosCrear() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                <label
+                  htmlFor="tasa-interes"
+                  className="block text-sm font-medium text-navy-700 mb-1.5"
+                >
                   Tasa interés mensual (%)
                 </label>
                 <div className="relative">
                   <input
+                    id="tasa-interes"
+                    aria-label="Tasa interés mensual"
                     type="number"
                     min={0}
                     max={100}
@@ -193,10 +206,13 @@ export default function CreditosCrear() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                <label
+                  htmlFor="numero-cuotas"
+                  className="block text-sm font-medium text-navy-700 mb-1.5"
+                >
                   Número de cuotas
                 </label>
-                <div className="flex flex-wrap gap-1.5">
+                <div id="numero-cuotas" className="flex flex-wrap gap-1.5">
                   {MESES_DISTRIBUCION.map((m) => (
                     <button
                       key={m}
@@ -214,10 +230,15 @@ export default function CreditosCrear() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                <label
+                  htmlFor="fecha-desembolso"
+                  className="block text-sm font-medium text-navy-700 mb-1.5"
+                >
                   Fecha de desembolso
                 </label>
                 <input
+                  id="fecha-desembolso"
+                  aria-label="Fecha de desembolso"
                   type="date"
                   value={form.fechaDesembolso}
                   onChange={(e) => setForm({ ...form, fechaDesembolso: e.target.value })}
@@ -225,10 +246,15 @@ export default function CreditosCrear() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                <label
+                  htmlFor="proposito"
+                  className="block text-sm font-medium text-navy-700 mb-1.5"
+                >
                   Propósito del crédito
                 </label>
                 <input
+                  id="proposito"
+                  aria-label="Propósito del crédito"
                   type="text"
                   value={form.proposito}
                   placeholder="Ej: Capital de trabajo, mejora de vivienda..."
@@ -237,10 +263,15 @@ export default function CreditosCrear() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-navy-700 mb-1.5">
+                <label
+                  htmlFor="notas-credito"
+                  className="block text-sm font-medium text-navy-700 mb-1.5"
+                >
                   Notas (opcional)
                 </label>
                 <textarea
+                  id="notas-credito"
+                  aria-label="Notas"
                   rows={2}
                   value={form.notas}
                   placeholder="Notas internas..."

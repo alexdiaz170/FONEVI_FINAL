@@ -1,5 +1,6 @@
 import { ICreditoRepository } from '../../../domain/repositories/ICreditoRepository.js';
 import { EntityNotFoundError, DomainError } from '../../../domain/errors.js';
+import { getPrismaClient } from '../../../infrastructure/persistence/prismaClient.js';
 
 export class AprobarCreditoUseCase {
   constructor(private readonly creditoRepo: ICreditoRepository) {}
@@ -13,6 +14,20 @@ export class AprobarCreditoUseCase {
     }
 
     const aprobado = credito.aprobar(aprobadoPor);
-    await this.creditoRepo.update(aprobado);
+
+    const prisma = getPrismaClient();
+    await prisma.$transaction(async () => {
+      await this.creditoRepo.update(aprobado);
+      await prisma.creditoMovimiento.create({
+        data: {
+          creditoId: credito.id,
+          tipo: 'aprobacion',
+          monto: credito.monto.value,
+          saldoCapitalAnterior: Number(credito.saldoCapital.value),
+          saldoCapitalPosterior: Number(aprobado.saldoCapital.value),
+          descripcion: `Crédito aprobado por ${aprobadoPor}`,
+        },
+      });
+    });
   }
 }

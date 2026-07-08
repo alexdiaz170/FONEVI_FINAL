@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useReducer } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   User,
@@ -25,6 +25,59 @@ import {
   AnimatedSlideLeft,
 } from '../components/ui';
 
+type State = {
+  showForm: boolean;
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+  showPwd: boolean;
+  pwdMsg: { text: string; ok: boolean } | null;
+  pwdLoading: boolean;
+};
+
+type Action =
+  | {
+      type: 'SET_FIELD';
+      payload: { field: 'currentPassword' | 'newPassword' | 'confirmPassword'; value: string };
+    }
+  | { type: 'SHOW_FORM' }
+  | { type: 'HIDE_FORM' }
+  | { type: 'TOGGLE_PWD' }
+  | { type: 'SET_MESSAGE'; payload: { text: string; ok: boolean } | null }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'CANCEL' };
+
+const initialState: State = {
+  showForm: false,
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+  showPwd: false,
+  pwdMsg: null,
+  pwdLoading: false,
+};
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case 'SET_FIELD':
+      return { ...state, [action.payload.field]: action.payload.value };
+    case 'SHOW_FORM':
+      return { ...state, showForm: true };
+    case 'HIDE_FORM':
+      return { ...state, showForm: false };
+    case 'TOGGLE_PWD':
+      return { ...state, showPwd: !state.showPwd };
+    case 'SET_MESSAGE':
+      return { ...state, pwdMsg: action.payload };
+    case 'SET_LOADING':
+      return { ...state, pwdLoading: action.payload };
+    case 'CANCEL':
+      return { ...state, showForm: false, pwdMsg: null };
+    default:
+      return state;
+  }
+}
+
 export default function MiCuentaPage() {
   const { usuario } = useAuth();
   const {
@@ -39,40 +92,48 @@ export default function MiCuentaPage() {
 
   const display = profile ?? usuario;
 
-  const [showForm, setShowForm] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPwd, setShowPwd] = useState(false);
-  const [pwdMsg, setPwdMsg] = useState<{ text: string; ok: boolean } | null>(null);
-  const [pwdLoading, setPwdLoading] = useState(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { showForm, currentPassword, newPassword, confirmPassword, showPwd, pwdMsg, pwdLoading } =
+    state;
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
-    setPwdMsg(null);
+    dispatch({ type: 'SET_MESSAGE', payload: null });
     if (newPassword.length < 6) {
-      setPwdMsg({ text: 'La nueva contraseña debe tener al menos 6 caracteres', ok: false });
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: { text: 'La nueva contraseña debe tener al menos 6 caracteres', ok: false },
+      });
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPwdMsg({ text: 'Las contraseñas no coinciden', ok: false });
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: { text: 'Las contraseñas no coinciden', ok: false },
+      });
       return;
     }
-    setPwdLoading(true);
+    dispatch({ type: 'SET_LOADING', payload: true });
     try {
       await apiCambiarPassword(currentPassword, newPassword);
-      setPwdMsg({ text: 'Contraseña actualizada correctamente', ok: true });
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setShowForm(false);
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: { text: 'Contraseña actualizada correctamente', ok: true },
+      });
+      dispatch({ type: 'SET_FIELD', payload: { field: 'currentPassword', value: '' } });
+      dispatch({ type: 'SET_FIELD', payload: { field: 'newPassword', value: '' } });
+      dispatch({ type: 'SET_FIELD', payload: { field: 'confirmPassword', value: '' } });
+      dispatch({ type: 'HIDE_FORM' });
     } catch (err) {
-      setPwdMsg({
-        text: err instanceof ApiError ? err.message : 'Error al cambiar contraseña',
-        ok: false,
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: {
+          text: err instanceof ApiError ? err.message : 'Error al cambiar contraseña',
+          ok: false,
+        },
       });
     } finally {
-      setPwdLoading(false);
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   }
 
@@ -236,7 +297,7 @@ export default function MiCuentaPage() {
 
               {!showForm ? (
                 <AnimatedButton
-                  onClick={() => setShowForm(true)}
+                  onClick={() => dispatch({ type: 'SHOW_FORM' })}
                   className="w-full py-3 bg-gradient-to-r from-navy-600 to-navy-500 text-white rounded-xl text-sm font-medium hover:from-navy-700 hover:to-navy-600 shadow-lg shadow-navy-500/25 transition-all"
                 >
                   <Lock size={16} className="inline mr-2" />
@@ -245,7 +306,10 @@ export default function MiCuentaPage() {
               ) : (
                 <form onSubmit={handleChangePassword} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    <label
+                      htmlFor="current-password"
+                      className="block text-sm font-medium text-gray-700 mb-1.5"
+                    >
                       Contraseña actual
                     </label>
                     <div className="relative">
@@ -254,16 +318,23 @@ export default function MiCuentaPage() {
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                       />
                       <input
+                        id="current-password"
                         type={showPwd ? 'text' : 'password'}
                         value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        onChange={(e) =>
+                          dispatch({
+                            type: 'SET_FIELD',
+                            payload: { field: 'currentPassword', value: e.target.value },
+                          })
+                        }
                         required
                         className="w-full pl-10 pr-10 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500 transition-all"
                         placeholder="••••••••"
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPwd(!showPwd)}
+                        onClick={() => dispatch({ type: 'TOGGLE_PWD' })}
+                        aria-label="Mostrar u ocultar contraseña"
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -271,7 +342,10 @@ export default function MiCuentaPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    <label
+                      htmlFor="new-password"
+                      className="block text-sm font-medium text-gray-700 mb-1.5"
+                    >
                       Nueva contraseña
                     </label>
                     <div className="relative">
@@ -280,9 +354,15 @@ export default function MiCuentaPage() {
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                       />
                       <input
+                        id="new-password"
                         type={showPwd ? 'text' : 'password'}
                         value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
+                        onChange={(e) =>
+                          dispatch({
+                            type: 'SET_FIELD',
+                            payload: { field: 'newPassword', value: e.target.value },
+                          })
+                        }
                         required
                         minLength={6}
                         className="w-full pl-10 pr-3 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500 transition-all"
@@ -291,7 +371,10 @@ export default function MiCuentaPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    <label
+                      htmlFor="confirm-password"
+                      className="block text-sm font-medium text-gray-700 mb-1.5"
+                    >
                       Confirmar nueva contraseña
                     </label>
                     <div className="relative">
@@ -300,9 +383,15 @@ export default function MiCuentaPage() {
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                       />
                       <input
+                        id="confirm-password"
                         type={showPwd ? 'text' : 'password'}
                         value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        onChange={(e) =>
+                          dispatch({
+                            type: 'SET_FIELD',
+                            payload: { field: 'confirmPassword', value: e.target.value },
+                          })
+                        }
                         required
                         className="w-full pl-10 pr-3 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-navy-500 transition-all"
                         placeholder="Repite la contraseña"
@@ -326,10 +415,7 @@ export default function MiCuentaPage() {
                     </AnimatedButton>
                     <AnimatedButton
                       type="button"
-                      onClick={() => {
-                        setShowForm(false);
-                        setPwdMsg(null);
-                      }}
+                      onClick={() => dispatch({ type: 'CANCEL' })}
                       className="px-4 py-2.5 bg-white/80 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-white hover:text-gray-800 transition-all"
                     >
                       Cancelar

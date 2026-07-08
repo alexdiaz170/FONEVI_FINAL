@@ -10,12 +10,7 @@ import { IAporteRepository } from '../../domain/repositories/IAporteRepository.j
 import { IUsuarioRepository } from '../../domain/repositories/IUsuarioRepository.js';
 import { GeneradorCodigoSocio } from '../../domain/services/GeneradorCodigoSocio.js';
 import { apiResponse } from '../response.js';
-import {
-  crearSocioSchema,
-  actualizarSocioSchema,
-  socioQuerySchema,
-} from '../../application/dto/socio.dto.js';
-import { ValidationError } from '../../application/errors.js';
+import { socioQuerySchema } from '../../application/dto/socio.dto.js';
 
 export function createSocioController(
   socioRepo: ISocioRepository,
@@ -123,12 +118,7 @@ export function createSocioController(
 
     async create(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = crearSocioSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-
-        const result = await crearUseCase.execute(parsed.data);
+        const result = await crearUseCase.execute(req.body);
 
         if (registrarUsuarioUseCase && result.socio.email) {
           try {
@@ -154,13 +144,8 @@ export function createSocioController(
 
     async update(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
-        const parsed = actualizarSocioSchema.safeParse(req.body);
-        if (!parsed.success) {
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        }
-
         const id = String(req.params.id ?? '');
-        const socio = await actualizarUseCase.execute(id, parsed.data);
+        const socio = await actualizarUseCase.execute(id, req.body);
         apiResponse.success(res, mapSocio(socio));
       } catch (error) {
         next(error);

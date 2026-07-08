@@ -3,8 +3,6 @@ import { IConfiguracionRepository } from '../../domain/repositories/IConfiguraci
 import { ObtenerConfigUseCase } from '../../application/use-cases/configuracion/ObtenerConfigUseCase.js';
 import { ActualizarConfigUseCase } from '../../application/use-cases/configuracion/ActualizarConfigUseCase.js';
 import { apiResponse } from '../response.js';
-import { actualizarConfigSchema } from '../../application/dto/sprint6.dto.js';
-import { ValidationError } from '../../application/errors.js';
 
 export function createConfigController(configRepo: IConfiguracionRepository) {
   const obtenerUseCase = new ObtenerConfigUseCase(configRepo);
@@ -33,10 +31,7 @@ export function createConfigController(configRepo: IConfiguracionRepository) {
     async update(req: Request, res: Response, next: NextFunction): Promise<void> {
       try {
         const clave = String(req.params.clave ?? '');
-        const parsed = actualizarConfigSchema.safeParse(req.body);
-        if (!parsed.success)
-          throw new ValidationError('Datos inválidos', parsed.error.flatten().fieldErrors);
-        const config = await actualizarUseCase.execute(clave, parsed.data.valor, req.usuario?.id);
+        const config = await actualizarUseCase.execute(clave, req.body.valor, req.usuario?.id);
         apiResponse.success(res, config);
       } catch (error) {
         next(error);

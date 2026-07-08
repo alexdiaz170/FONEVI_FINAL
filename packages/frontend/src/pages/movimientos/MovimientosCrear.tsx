@@ -67,8 +67,11 @@ export default function MovimientosCrear() {
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-navy-700 mb-1">Tipo *</label>
+              <label htmlFor="tipo" className="block text-sm font-medium text-navy-700 mb-1">
+                Tipo *
+              </label>
               <select
+                id="tipo"
                 name="tipo"
                 value={form.tipo}
                 onChange={handleChange}
@@ -79,8 +82,12 @@ export default function MovimientosCrear() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-navy-700 mb-1">Categoría *</label>
+              <label htmlFor="categoria" className="block text-sm font-medium text-navy-700 mb-1">
+                Categoría *
+              </label>
               <input
+                id="categoria"
+                aria-label="Categoría"
                 name="categoria"
                 value={form.categoria}
                 onChange={handleChange}
@@ -89,8 +96,12 @@ export default function MovimientosCrear() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-navy-700 mb-1">Descripción *</label>
+              <label htmlFor="descripcion" className="block text-sm font-medium text-navy-700 mb-1">
+                Descripción *
+              </label>
               <textarea
+                id="descripcion"
+                aria-label="Descripción"
                 name="descripcion"
                 rows={3}
                 value={form.descripcion}
@@ -99,8 +110,15 @@ export default function MovimientosCrear() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-navy-700 mb-1">Monto *</label>
+              <label
+                htmlFor="monto-movimiento"
+                className="block text-sm font-medium text-navy-700 mb-1"
+              >
+                Monto *
+              </label>
               <input
+                id="monto-movimiento"
+                aria-label="Monto"
                 name="monto"
                 type="number"
                 step="0.01"
@@ -110,8 +128,15 @@ export default function MovimientosCrear() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-navy-700 mb-1">Fecha</label>
+              <label
+                htmlFor="fecha-movimiento"
+                className="block text-sm font-medium text-navy-700 mb-1"
+              >
+                Fecha
+              </label>
               <input
+                id="fecha-movimiento"
+                aria-label="Fecha"
                 name="fecha"
                 type="date"
                 value={form.fecha}

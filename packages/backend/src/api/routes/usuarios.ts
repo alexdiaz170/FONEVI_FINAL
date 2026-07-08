@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { PrismaUsuarioRepository } from '../../infrastructure/persistence/PrismaUsuarioRepository.js';
-import { createUsuarioController } from '../controllers/usuarioController.js';
+import { createUsuarioController, crearUsuarioSchema } from '../controllers/usuarioController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
 
 const router = Router();
 const usuarioRepo = new PrismaUsuarioRepository();
@@ -12,6 +13,7 @@ router.post(
   '/',
   authenticate,
   authorize('superadmin', 'admin'),
+  validate(crearUsuarioSchema),
   controller.create.bind(controller),
 );
 router.put(
